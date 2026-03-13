@@ -1,13 +1,10 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <cmath>
-#include <cstddef>
-#include <cstdio>
 #include <filesystem>
 #include <fstream>
-#include <sstream>
 
-std::string string_from_file(const std::filesystem::path &path)
+std::string str_from_file(const std::filesystem::path &path)
 {
     std::ifstream file(path);
     if (!file)
@@ -50,7 +47,6 @@ int main(int argc, char **argv)
     if (!window)
     {
         throw std::runtime_error("Failed to create GLFW window");
-        glfwTerminate();
     }
 
     glfwMakeContextCurrent(window);
@@ -67,8 +63,8 @@ int main(int argc, char **argv)
 
     std::filesystem::path exePath = argv[0];
 
-    std::string vCodeStr = string_from_file(exePath.parent_path() / "vertex.glsl");
-    std::string fCodeStr = string_from_file(exePath.parent_path() / "fragment.glsl");
+    std::string vCodeStr = str_from_file(exePath.parent_path() / "shader/vertex.glsl");
+    std::string fCodeStr = str_from_file(exePath.parent_path() / "shader/fragment.glsl");
 
     const GLchar *vCode = vCodeStr.c_str();
     const GLchar *fCode = fCodeStr.c_str();
@@ -85,7 +81,6 @@ int main(int argc, char **argv)
     {
         glGetShaderInfoLog(vertex, 512, NULL, infoLog);
         throw std::runtime_error("Vertex shader compilation failed");
-        glfwTerminate();
     }
 
     glCompileShader(fragment);
@@ -94,7 +89,6 @@ int main(int argc, char **argv)
     {
         glGetShaderInfoLog(fragment, 512, NULL, infoLog);
         throw std::runtime_error("Fragment shader compilation failed");
-        glfwTerminate();
     }
 
     glAttachShader(program, vertex);
@@ -106,7 +100,6 @@ int main(int argc, char **argv)
     {
         glGetProgramInfoLog(fragment, 512, NULL, infoLog);
         throw std::runtime_error("Linking error");
-        glfwTerminate();
     }
 
     glUseProgram(program);
