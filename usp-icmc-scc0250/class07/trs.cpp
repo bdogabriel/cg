@@ -9,14 +9,14 @@ void identity(Mat4 &M)
     M.col[3] = _mm_set_ps(1, 0, 0, 0);
 }
 
-void translate(Mat4 &M, float x, float y, float z)
+void translate(Mat4 &M, float tx, float ty, float tz)
 {
     Mat4 T;
 
     T.col[0] = _mm_set_ps(0, 0, 0, 1);
     T.col[1] = _mm_set_ps(0, 0, 1, 0);
     T.col[2] = _mm_set_ps(0, 1, 0, 0);
-    T.col[3] = _mm_set_ps(1, z, y, x);
+    T.col[3] = _mm_set_ps(1, tz, ty, tx);
 
     M *= T;
 }
@@ -33,10 +33,10 @@ void scale(Mat4 &M, float sx, float sy, float sz)
     M *= S;
 }
 
-void rotateX(Mat4 &M, float angle)
+void rotate_x(Mat4 &M, float rx)
 {
-    float s = std::sin(angle);
-    float c = std::cos(angle);
+    float s = std::sin(rx);
+    float c = std::cos(rx);
 
     Mat4 R;
 
@@ -48,10 +48,10 @@ void rotateX(Mat4 &M, float angle)
     M *= R;
 }
 
-void rotateY(Mat4 &M, float angle)
+void rotate_y(Mat4 &M, float ry)
 {
-    float c = std::cos(angle);
-    float s = std::sin(angle);
+    float c = std::cos(ry);
+    float s = std::sin(ry);
 
     Mat4 R;
 
@@ -63,10 +63,10 @@ void rotateY(Mat4 &M, float angle)
     M *= R;
 }
 
-void rotateZ(Mat4 &M, float angle)
+void rotate_z(Mat4 &M, float rz)
 {
-    float c = std::cos(angle);
-    float s = std::sin(angle);
+    float c = std::cos(rz);
+    float s = std::sin(rz);
 
     Mat4 R;
 
@@ -78,11 +78,11 @@ void rotateZ(Mat4 &M, float angle)
     M *= R;
 }
 
-void buildTRS(float tX, float tY, float tZ, float angX, float angY, float angZ, float sX, float sY, float sZ, Mat4 &M)
+void build_trs(Mat4 &M, float tx, float ty, float tz, float rx, float ry, float rz, float sx, float sy, float sz)
 {
-    float cosX = std::cos(angX), sinX = std::sin(angX);
-    float cosY = std::cos(angY), sinY = std::sin(angY);
-    float cosZ = std::cos(angZ), sinZ = std::sin(angZ);
+    float cosX = std::cos(rx), sinX = std::sin(rx);
+    float cosY = std::cos(ry), sinY = std::sin(ry);
+    float cosZ = std::cos(rz), sinZ = std::sin(rz);
 
     // c0: x vector (right)
     float c00 = cosY * cosZ;
@@ -100,8 +100,30 @@ void buildTRS(float tX, float tY, float tZ, float angX, float angY, float angZ, 
     float c22 = cosY * cosX;
 
     // _mm_set_ps order: (w, z, y, x)
-    M.col[0] = _mm_set_ps(0, c02 * sZ, c01 * sY, c00 * sX); // right
-    M.col[1] = _mm_set_ps(0, c12 * sZ, c11 * sY, c10 * sX); // up
-    M.col[2] = _mm_set_ps(0, c22 * sZ, c21 * sY, c20 * sX); // forward
-    M.col[3] = _mm_set_ps(1, tZ, tY, tX);
+    M.col[0] = _mm_set_ps(0, c02 * sz, c01 * sy, c00 * sx); // right
+    M.col[1] = _mm_set_ps(0, c12 * sz, c11 * sy, c10 * sx); // up
+    M.col[2] = _mm_set_ps(0, c22 * sz, c21 * sy, c20 * sx); // forward
+    M.col[3] = _mm_set_ps(1, tz, ty, tx);
+}
+
+void translate(Mat4 &M, const TRS &trs)
+{
+    translate(M, trs.tx, trs.ty, trs.tz);
+}
+
+void rotate(Mat4 &M, const TRS &trs)
+{
+    rotate_x(M, trs.rx);
+    rotate_y(M, trs.ry);
+    rotate_z(M, trs.rz);
+}
+
+void scale(Mat4 &M, const TRS &trs)
+{
+    scale(M, trs.sx, trs.sy, trs.sz);
+}
+
+void build_trs(Mat4 &M, const TRS &trs)
+{
+    build_trs(M, trs.tx, trs.ty, trs.tz, trs.rx, trs.ry, trs.rz, trs.sx, trs.sy, trs.sz);
 }

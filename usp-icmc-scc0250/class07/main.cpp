@@ -5,7 +5,7 @@
 #include <filesystem>
 #include <fstream>
 
-float tX = 0, tY = 0, tZ = 0, sX = 1, sY = 1, sZ = 1, angle = 0;
+TRS trs;
 
 bool keys[1024] = {false};
 
@@ -27,19 +27,19 @@ void handle_input()
 
     if (keys[GLFW_KEY_UP] || keys[GLFW_KEY_W] || keys[GLFW_KEY_K])
     {
-        tY += speed;
+        trs.ty += speed;
     }
     if (keys[GLFW_KEY_DOWN] || keys[GLFW_KEY_S] || keys[GLFW_KEY_J])
     {
-        tY -= speed;
+        trs.ty -= speed;
     }
     if (keys[GLFW_KEY_LEFT] || keys[GLFW_KEY_A] || keys[GLFW_KEY_H])
     {
-        tX -= speed;
+        trs.tx -= speed;
     }
     if (keys[GLFW_KEY_RIGHT] || keys[GLFW_KEY_D] || keys[GLFW_KEY_L])
     {
-        tX += speed;
+        trs.tx += speed;
     }
 }
 
@@ -122,9 +122,9 @@ int main(int argc, char **argv)
     glUseProgram(program);
 
     float squareSideLength = 0.5;
-    float squareVertices[12] = {1, -1, 0, 1, 1, 0, -1, -1, 0, -1, 1, 0};
+    float squareVertices[16] = {1, -1, 0, 0, 1, 1, 0, 0, -1, -1, 0, 0, -1, 1, 0, 0};
 
-    for (int i = 0; i < 12; i++)
+    for (int i = 0; i < 16; i++)
     {
         squareVertices[i] *= squareSideLength;
     }
@@ -136,7 +136,7 @@ int main(int argc, char **argv)
 
     GLint loc = glGetAttribLocation(program, "position");
     glEnableVertexAttribArray(loc);
-    glVertexAttribPointer(loc, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    glVertexAttribPointer(loc, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
 
     GLfloat R = 0.2, G = 0.3, B = 0.8;
 
@@ -146,9 +146,9 @@ int main(int argc, char **argv)
     glfwShowWindow(window);
     // glClearColor(1, 1, 1, 1);
 
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    Mat4 transform;
+    Mat4 trsMat;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -156,22 +156,23 @@ int main(int argc, char **argv)
 
         handle_input();
 
-        angle -= 0.01;
-        sX = 1.5;
-        sY = 0.5;
-        sZ = 0.5;
+        trs.rx -= 0.01;
+        trs.ry -= 0.01;
+        trs.rz -= 0.01;
 
-        buildTRS(tX, tY, tZ, angle, angle, angle, sX, sY, sZ, transform);
+        trs.sx = 1.5;
+        trs.sy = 0.5;
+        trs.sz = 0.5;
 
-        identity(transform);
-        translate(transform, tX, tY, tZ);
-        rotateX(transform, angle);
-        rotateY(transform, angle);
-        rotateZ(transform, angle);
-        scale(transform, sX, sY, sZ);
+        build_trs(trsMat, trs);
+
+        identity(trsMat);
+        translate(trsMat, trs);
+        rotate(trsMat, trs);
+        scale(trsMat, trs);
 
         loc = glGetUniformLocation(program, "mat_transform");
-        glUniformMatrix4fv(loc, 1, GL_FALSE, transform.data());
+        glUniformMatrix4fv(loc, 1, GL_FALSE, trsMat.data());
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         glUniform4f(locColor, R, G, B, 1.0);
 
