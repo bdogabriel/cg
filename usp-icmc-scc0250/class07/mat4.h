@@ -2,22 +2,34 @@
 
 #include <xmmintrin.h>
 
+// column-major + broadcast scalars
 struct alignas(16) Mat4
 {
     __m128 col[4];
 
-    float *data()
+    Mat4() noexcept = default;
+
+    [[nodiscard]] static Mat4 identity() noexcept
+    {
+        Mat4 m;
+        m.col[0] = _mm_set_ps(0, 0, 0, 1);
+        m.col[1] = _mm_set_ps(0, 0, 1, 0);
+        m.col[2] = _mm_set_ps(0, 1, 0, 0);
+        m.col[3] = _mm_set_ps(1, 0, 0, 0);
+        return m;
+    }
+
+    [[nodiscard]] float *data() noexcept
     {
         return reinterpret_cast<float *>(col);
     }
 
-    const float *data() const
+    [[nodiscard]] const float *data() const noexcept
     {
         return reinterpret_cast<const float *>(col);
     }
 
-    // column-major + broadcast scalars
-    inline Mat4 operator*(const Mat4 &B) const
+    [[nodiscard]] Mat4 operator*(const Mat4 &B) const noexcept
     {
         Mat4 R;
 
@@ -37,10 +49,9 @@ struct alignas(16) Mat4
         return R;
     }
 
-    inline Mat4 &operator*=(const Mat4 &B)
+    Mat4 &operator*=(const Mat4 &B) noexcept
     {
-        Mat4 R = *this * B;
-        *this = R;
+        *this = *this * B;
         return *this;
     }
 };

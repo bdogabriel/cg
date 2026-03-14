@@ -1,13 +1,8 @@
-// vertex shader
-#version 330 core
+#version 430 core
 
-attribute vec3 position;
-attribute vec2 texture_coord;
-varying vec2 coordenadasTextura;
-
-uniform mat4 mat_transform;
+layout(location = 0) in vec4 v;
+layout(location = 0) uniform mat4 trs;
 
 void main() {
-    gl_Position = mat_transform * vec4(position, 1.0);
-    coordenadasTextura = vec2(texture_coord);
+    gl_Position = trs * v;
 }

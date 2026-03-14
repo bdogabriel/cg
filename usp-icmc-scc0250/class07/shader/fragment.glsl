@@ -1,12 +1,8 @@
-// fragment shader
-#version 330 core
+#version 430 core
 
-uniform vec4 color;
-varying vec2 coordenadasTextura;
-uniform sampler2D imagem;
+layout(location = 1) uniform vec4 color;
+out vec4 fragColor;
 
 void main() {
-    vec4 texture = texture2D(imagem, coordenadasTextura);
-    // gl_FragColor = texture;
-    gl_FragColor = color;
+    fragColor = color;
 }

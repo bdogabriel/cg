@@ -1,15 +1,7 @@
 #include "trs.h"
 #include <cmath>
 
-void identity(Mat4 &m)
-{
-    m.col[0] = _mm_set_ps(0, 0, 0, 1);
-    m.col[1] = _mm_set_ps(0, 0, 1, 0);
-    m.col[2] = _mm_set_ps(0, 1, 0, 0);
-    m.col[3] = _mm_set_ps(1, 0, 0, 0);
-}
-
-void translate(Mat4 &m, float tx, float ty, float tz)
+void trs::translate(Mat4 &m, float tx, float ty, float tz)
 {
     Mat4 t;
 
@@ -21,7 +13,7 @@ void translate(Mat4 &m, float tx, float ty, float tz)
     m *= t;
 }
 
-void scale(Mat4 &m, float sx, float sy, float sz)
+void trs::scale(Mat4 &m, float sx, float sy, float sz)
 {
     Mat4 s;
 
@@ -33,7 +25,7 @@ void scale(Mat4 &m, float sx, float sy, float sz)
     m *= s;
 }
 
-void rotate_x(Mat4 &m, float rx)
+void trs::rotate_x(Mat4 &m, float rx)
 {
     float cos = std::cos(rx);
     float sin = std::sin(rx);
@@ -48,7 +40,7 @@ void rotate_x(Mat4 &m, float rx)
     m *= r;
 }
 
-void rotate_y(Mat4 &m, float ry)
+void trs::rotate_y(Mat4 &m, float ry)
 {
     float cos = std::cos(ry);
     float sin = std::sin(ry);
@@ -63,7 +55,7 @@ void rotate_y(Mat4 &m, float ry)
     m *= r;
 }
 
-void rotate_z(Mat4 &m, float rz)
+void trs::rotate_z(Mat4 &m, float rz)
 {
     float cos = std::cos(rz);
     float sin = std::sin(rz);
@@ -78,9 +70,9 @@ void rotate_z(Mat4 &m, float rz)
     m *= r;
 }
 
-void build_trs(Mat4 &m, float tx, float ty, float tz, float rx, float ry, float rz, float sx, float sy, float sz)
+void trs::build(Mat4 &m, float tx, float ty, float tz, float rx, float ry, float rz, float sx, float sy, float sz)
 {
-    identity(m);
+    m = Mat4::identity();
     translate(m, tx, ty, tz);
     rotate_x(m, rx);
     rotate_y(m, ry);
@@ -88,7 +80,8 @@ void build_trs(Mat4 &m, float tx, float ty, float tz, float rx, float ry, float 
     scale(m, sx, sy, sz);
 }
 
-void build_trs_direct(Mat4 &m, float tx, float ty, float tz, float rx, float ry, float rz, float sx, float sy, float sz)
+void trs::build_direct(Mat4 &m, float tx, float ty, float tz, float rx, float ry, float rz, float sx, float sy,
+                       float sz)
 {
     float cosX = std::cos(rx), sinX = std::sin(rx);
     float cosY = std::cos(ry), sinY = std::sin(ry);
@@ -116,29 +109,29 @@ void build_trs_direct(Mat4 &m, float tx, float ty, float tz, float rx, float ry,
     m.col[3] = _mm_set_ps(1, tz, ty, tx);
 }
 
-void translate(Mat4 &m, const TRS &trs)
+void trs::translate(Mat4 &m, const TRS &t)
 {
-    translate(m, trs.tx, trs.ty, trs.tz);
+    translate(m, t.tx, t.ty, t.tz);
 }
 
-void rotate(Mat4 &m, const TRS &trs)
+void trs::rotate(Mat4 &m, const TRS &t)
 {
-    rotate_x(m, trs.rx);
-    rotate_y(m, trs.ry);
-    rotate_z(m, trs.rz);
+    rotate_x(m, t.rx);
+    rotate_y(m, t.ry);
+    rotate_z(m, t.rz);
 }
 
-void scale(Mat4 &m, const TRS &trs)
+void trs::scale(Mat4 &m, const TRS &t)
 {
-    scale(m, trs.sx, trs.sy, trs.sz);
+    scale(m, t.sx, t.sy, t.sz);
 }
 
-void build_trs(Mat4 &m, const TRS &trs)
+void trs::build(Mat4 &m, const TRS &t)
 {
-    build_trs(m, trs.tx, trs.ty, trs.tz, trs.rx, trs.ry, trs.rz, trs.sx, trs.sy, trs.sz);
+    build(m, t.tx, t.ty, t.tz, t.rx, t.ry, t.rz, t.sx, t.sy, t.sz);
 }
 
-void build_trs_direct(Mat4 &m, const TRS &trs)
+void trs::build_direct(Mat4 &m, const TRS &t)
 {
-    build_trs_direct(m, trs.tx, trs.ty, trs.tz, trs.rx, trs.ry, trs.rz, trs.sx, trs.sy, trs.sz);
+    build_direct(m, t.tx, t.ty, t.tz, t.rx, t.ry, t.rz, t.sx, t.sy, t.sz);
 }
