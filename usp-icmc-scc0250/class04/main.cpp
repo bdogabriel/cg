@@ -18,7 +18,7 @@ std::string str_from_file(const std::filesystem::path &path)
     return buffer.str();
 }
 
-float tX = 0.0f, tY = 0.0f, angle = 0.0f;
+float tX = 0.0f, tY = 0.0f, r = 0.0f;
 
 bool keys[1024] = {false};
 
@@ -148,9 +148,9 @@ int main(int argc, char **argv)
             tX += speed;
         }
 
-        angle -= 0.01;
-        float c = std::cos(angle);
-        float s = std::sin(angle);
+        r -= 0.01;
+        float c = std::cos(r);
+        float s = std::sin(r);
         float transform[] = {c, -s, 0.0f, tX, s, c, 0.0f, tY, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
 
         loc = glGetUniformLocation(program, "mat_transformation");

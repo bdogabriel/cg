@@ -148,7 +148,7 @@ int main(int argc, char **argv)
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    Mat4 trsMat;
+    Mat4 m;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -162,19 +162,37 @@ int main(int argc, char **argv)
 
         trs.sx = 1.5;
         trs.sy = 0.5;
-        trs.sz = 0.5;
+        trs.sz = 1;
 
-        build_trs(trsMat, trs);
-
-        identity(trsMat);
-        translate(trsMat, trs);
-        rotate(trsMat, trs);
-        scale(trsMat, trs);
+        identity(m);
+        translate(m, trs);
+        rotate(m, trs);
+        scale(m, trs);
 
         loc = glGetUniformLocation(program, "mat_transform");
-        glUniformMatrix4fv(loc, 1, GL_FALSE, trsMat.data());
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        glUniformMatrix4fv(loc, 1, GL_FALSE, m.data());
         glUniform4f(locColor, R, G, B, 1.0);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+        trs.ty += 0.75;
+
+        build_trs(m, trs);
+
+        loc = glGetUniformLocation(program, "mat_transform");
+        glUniformMatrix4fv(loc, 1, GL_FALSE, m.data());
+        glUniform4f(locColor, R, G, B, 1.0);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+        trs.ty += 0.75;
+
+        build_trs_direct(m, trs);
+
+        loc = glGetUniformLocation(program, "mat_transform");
+        glUniformMatrix4fv(loc, 1, GL_FALSE, m.data());
+        glUniform4f(locColor, R, G, B, 1.0);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+        trs.ty -= 1.5;
 
         glfwSwapBuffers(window);
         glfwPollEvents();
