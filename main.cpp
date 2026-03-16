@@ -7,20 +7,52 @@
 #include <filesystem>
 #include <fstream>
 
-std::array<bool, 1024> keys;
+// TODO: refactor trs (use quaternions)
 
-std::string str_from_file(const std::filesystem::path &path)
+constexpr GLint locTransform = 0;
+constexpr GLint locColor = 1;
+constexpr GLuint idxVertex = 0;
+
+std::array<bool, 1024> keys;
+bool mouseLeftDown = false;
+bool mouseRightDown = false;
+double mouseX = 0, mouseY = 0;
+double mouseDeltaX = 0, mouseDeltaY = 0;
+double scrollDeltaY = 0;
+
+void scroll_callback(GLFWwindow *window, double dx, double dy)
 {
-    std::ifstream file(path);
-    if (!file)
+    scrollDeltaY = dy;
+}
+
+void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
+{
+    bool pressed = action == GLFW_PRESS;
+
+    if (button == GLFW_MOUSE_BUTTON_LEFT)
     {
-        throw std::runtime_error(std::string("Failed to open file: ") + path.string());
+        mouseLeftDown = pressed;
+    }
+    else if (button == GLFW_MOUSE_BUTTON_RIGHT)
+    {
+        mouseRightDown = pressed;
     }
 
-    std::stringstream buffer;
-    buffer << file.rdbuf();
+    if (pressed)
+    {
+        glfwGetCursorPos(window, &mouseX, &mouseY);
+    }
+}
 
-    return buffer.str();
+void cursor_pos_callback(GLFWwindow *window, double x, double y)
+{
+    if (mouseLeftDown || mouseRightDown)
+    {
+        mouseDeltaX = x - mouseX;
+        mouseDeltaY = y - mouseY;
+        mouseX = x;
+        mouseY = y;
+    }
 }
 
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
@@ -38,12 +70,39 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 TRS handle_input()
 {
     float speed = 0.01f;
+    float mouseSensitivity = 0.005f;
+    float scrollSensitivity = 0.1f;
 
     TRS t;
 
-    t.rx -= speed;
-    t.ry -= speed;
-    t.rz -= speed;
+    if (mouseLeftDown)
+    {
+        t.rx += mouseDeltaY * mouseSensitivity;
+        t.ry += mouseDeltaX * mouseSensitivity;
+
+        mouseDeltaX = 0;
+        mouseDeltaY = 0;
+    }
+
+    if (mouseRightDown)
+    {
+        t.tx += mouseDeltaX * mouseSensitivity;
+        t.ty -= mouseDeltaY * mouseSensitivity;
+
+        mouseDeltaX = 0;
+        mouseDeltaY = 0;
+    }
+
+    if (scrollDeltaY)
+    {
+        float scale = 1.0f + scrollDeltaY * scrollSensitivity;
+
+        t.sx = scale;
+        t.sy = scale;
+        t.sz = scale;
+
+        scrollDeltaY = 0;
+    }
 
     if (keys[GLFW_KEY_UP] || keys[GLFW_KEY_W] || keys[GLFW_KEY_K])
     {
@@ -63,6 +122,20 @@ TRS handle_input()
     }
 
     return t;
+}
+
+std::string str_from_file(const std::filesystem::path &path)
+{
+    std::ifstream file(path);
+    if (!file)
+    {
+        throw std::runtime_error(std::string("Failed to open file: ") + path.string());
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+
+    return buffer.str();
 }
 
 void load_shader(GLuint program, const std::string &code, GLenum type)
@@ -93,7 +166,11 @@ GLFWwindow *setup_window()
     glfwMakeContextCurrent(window);
     glewInit();
 
+    glfwSetScrollCallback(window, scroll_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetCursorPosCallback(window, cursor_pos_callback);
     glfwSetKeyCallback(window, key_callback);
+
     glfwShowWindow(window);
 
     return window;
@@ -138,7 +215,30 @@ int main(int argc, char *argv[])
                    .transform = {.sx = 0.5f, .sy = 0.5f, .sz = 0.5f},
                    .color = {0.2f, 0.3f, 0.8f, 1}};
 
-    cube.geometry.upload(0);
+    Entity axisX = {.geometry = geometry::axis_x(),
+                    .transform = {.sx = 2},
+                    .color = {1, 0, 0, 1},
+                    .primitive = GL_LINES,
+                    .parentMatrix = &cube.matrix};
+
+    Entity axisY = {.geometry = geometry::axis_y(),
+                    .transform = {.sy = 2},
+                    .color = {0, 1, 0, 1},
+                    .primitive = GL_LINES,
+                    .parentMatrix = &cube.matrix};
+
+    Entity axisZ = {.geometry = geometry::axis_z(),
+                    .transform = {.sz = 2},
+                    .color = {0, 0, 1, 1},
+                    .primitive = GL_LINES,
+                    .parentMatrix = &cube.matrix};
+
+    std::array<Entity *, 4> scene = {&cube, &axisX, &axisY, &axisZ};
+
+    for (Entity *e : scene)
+    {
+        e->geometry.upload(idxVertex);
+    }
 
     while (!glfwWindowShouldClose(window))
     {
@@ -148,8 +248,12 @@ int main(int argc, char *argv[])
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         cube.transform += t;
-        cube.build();
-        cube.draw(0, 1);
+
+        for (Entity *e : scene)
+        {
+            e->build();
+            e->draw(locTransform, locColor);
+        }
 
         glfwSwapBuffers(window);
     }

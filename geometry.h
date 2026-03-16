@@ -14,7 +14,7 @@ struct GeometryBuffer
 
     void upload(GLuint idxVertex);
     void update() const;
-    void draw() const;
+    void draw(GLenum primitive) const;
     void free();
 
     ~GeometryBuffer()
@@ -29,6 +29,9 @@ struct GeometryBuffer
 namespace geometry
 {
 GeometryBuffer cube();
+GeometryBuffer axis_x();
+GeometryBuffer axis_y();
+GeometryBuffer axis_z();
 
 constexpr std::array<float, 16> SQUARE_V = {1,  -1, 0, 1, //
                                             1,  1,  0, 1, //

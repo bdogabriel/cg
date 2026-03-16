@@ -3,11 +3,15 @@
 void Entity::build()
 {
     trs::build(matrix, transform);
+    if (parentMatrix)
+    {
+        matrix = *parentMatrix * matrix;
+    }
 }
 
 void Entity::draw(GLint locTransform, GLint locColor) const
 {
     glUniform4f(locColor, color.r, color.g, color.b, color.a);
     glUniformMatrix4fv(locTransform, 1, GL_FALSE, matrix.data());
-    geometry.draw();
+    geometry.draw(primitive);
 }

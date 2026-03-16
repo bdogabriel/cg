@@ -23,10 +23,10 @@ void GeometryBuffer::update() const
     glNamedBufferData(ebo, i.size() * sizeof(unsigned int), i.data(), GL_DYNAMIC_DRAW);
 }
 
-void GeometryBuffer::draw() const
+void GeometryBuffer::draw(GLenum primitive) const
 {
     glBindVertexArray(vao);
-    glDrawElements(GL_TRIANGLES, i.size(), GL_UNSIGNED_INT, 0);
+    glDrawElements(primitive, i.size(), GL_UNSIGNED_INT, 0);
 }
 
 void GeometryBuffer::free()
@@ -41,4 +41,22 @@ GeometryBuffer geometry::cube()
 {
     return GeometryBuffer{.v = std::vector(CUBE_V.begin(), CUBE_V.end()),
                           .i = std::vector(CUBE_I.begin(), CUBE_I.end())};
+}
+
+GeometryBuffer geometry::axis_x()
+{
+    return GeometryBuffer{.v = {0, 0, 0, 1, 1, 0, 0, 1}, // origin -> +x
+                          .i = {0, 1}};
+}
+
+GeometryBuffer geometry::axis_y()
+{
+    return GeometryBuffer{.v = {0, 0, 0, 1, 0, 1, 0, 1}, // origin -> +y
+                          .i = {0, 1}};
+}
+
+GeometryBuffer geometry::axis_z()
+{
+    return GeometryBuffer{.v = {0, 0, 0, 1, 0, 0, 1, 1}, // origin -> +z
+                          .i = {0, 1}};
 }
