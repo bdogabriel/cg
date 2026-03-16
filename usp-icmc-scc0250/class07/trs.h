@@ -5,6 +5,31 @@
 struct TRS
 {
     float tx = 0, ty = 0, tz = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1;
+
+    [[nodiscard]] TRS operator+(const TRS &t) const noexcept
+    {
+        TRS r;
+
+        r.tx = tx + t.tx;
+        r.ty = ty + t.ty;
+        r.tz = tz + t.tz;
+
+        r.rx = rx + t.rx;
+        r.ry = ry + t.ry;
+        r.rz = rz + t.rz;
+
+        r.sx = sx * t.sx;
+        r.sy = sy * t.sy;
+        r.sz = sz * t.sz;
+
+        return r;
+    }
+
+    TRS &operator+=(const TRS &t) noexcept
+    {
+        *this = *this + t;
+        return *this;
+    }
 };
 
 namespace trs

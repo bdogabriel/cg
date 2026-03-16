@@ -1,5 +1,5 @@
-#include "mat4.h"
-#include "shape.h"
+#include "entity.h"
+#include "geometry.h"
 #include "trs.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -8,7 +8,6 @@
 #include <fstream>
 
 std::array<bool, 1024> keys;
-TRS t;
 
 std::string str_from_file(const std::filesystem::path &path)
 {
@@ -36,10 +35,15 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
     }
 }
 
-void handle_input()
+TRS handle_input()
 {
-    glfwPollEvents();
     float speed = 0.01f;
+
+    TRS t;
+
+    t.rx -= speed;
+    t.ry -= speed;
+    t.rz -= speed;
 
     if (keys[GLFW_KEY_UP] || keys[GLFW_KEY_W] || keys[GLFW_KEY_K])
     {
@@ -57,12 +61,14 @@ void handle_input()
     {
         t.tx += speed;
     }
+
+    return t;
 }
 
 void load_shader(GLuint program, const std::string &code, GLenum type)
 {
     GLuint shader = glCreateShader(type);
-    char *codeCStr = (char *)code.c_str();
+    const char *codeCStr = code.c_str();
 
     glShaderSource(shader, 1, &codeCStr, NULL);
     glCompileShader(shader);
@@ -93,7 +99,7 @@ GLFWwindow *setup_window()
     return window;
 }
 
-GLuint setup_program(std::filesystem::path exePath)
+GLuint setup_program(const std::filesystem::path &exePath)
 {
     GLuint program = glCreateProgram();
 
@@ -121,24 +127,6 @@ void setup_graphics()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
-void setup_shape(GLuint &VBO, GLuint &EBO, GLuint &VAO)
-{
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-    glGenVertexArrays(1, &VAO);
-
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(CUBE_V4), CUBE_V4.data(), GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(CUBE_IDX), CUBE_IDX.data(), GL_STATIC_DRAW);
-
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
-}
-
 int main(int argc, char *argv[])
 {
     GLFWwindow *window = setup_window();
@@ -146,40 +134,27 @@ int main(int argc, char *argv[])
     GLuint program = setup_program(exePath);
     setup_graphics();
 
-    GLuint VBO, EBO, VAO;
-    setup_shape(VBO, EBO, VAO);
+    Entity cube = {.geometry = geometry::cube(),
+                   .transform = {.sx = 0.5f, .sy = 0.5f, .sz = 0.5f},
+                   .color = {0.2f, 0.3f, 0.8f, 1}};
 
-    GLfloat R = 0.2f, G = 0.3f, B = 0.8f, A = 1;
-    glUniform4f(1, R, G, B, A);
-
-    t.sx = 0.5;
-    t.sy = 0.5;
-    t.sz = 0.5;
+    cube.geometry.upload(0);
 
     while (!glfwWindowShouldClose(window))
     {
-        handle_input();
-
-        t.rx -= 0.01f;
-        t.ry -= 0.01f;
-        t.rz -= 0.01f;
+        glfwPollEvents();
+        TRS t = handle_input();
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        Mat4 m = Mat4::identity();
-        trs::build(m, t);
-
-        glUniformMatrix4fv(0, 1, GL_FALSE, m.data());
-        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+        cube.transform += t;
+        cube.build();
+        cube.draw(0, 1);
 
         glfwSwapBuffers(window);
     }
 
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
     glDeleteProgram(program);
-
     glfwTerminate();
 
     return 0;
