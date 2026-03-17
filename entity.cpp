@@ -1,12 +1,17 @@
 #include "entity.h"
 
-void Entity::build()
+void Entity::build_matrix()
 {
-    trs::build(matrix, transform);
-    if (parentMatrix)
-    {
-        matrix = *parentMatrix * matrix;
-    }
+    matrix = Mat4::identity();
+    trs::translate(matrix, transform);
+
+    trs::rotate(rotation, transform);
+    matrix *= rotation;
+    transform.rx = 0;
+    transform.ry = 0;
+    transform.rz = 0;
+
+    trs::scale(matrix, transform);
 }
 
 void Entity::draw(GLint locTransform, GLint locColor) const
