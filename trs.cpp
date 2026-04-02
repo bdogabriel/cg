@@ -77,6 +77,40 @@ void scale(Mat4 &m, const TRS &t)
     scale(m, t.sx, t.sy, t.sz);
 }
 
+void apply(Mat4 &m, const TRS &t)
+{
+    Mat4 deltaR = mat4::IDENTITY;
+    rotate(deltaR, t);
+
+    Mat4 deltaT = mat4::IDENTITY;
+    translate(deltaT, t);
+
+    Mat4 deltaS = mat4::IDENTITY;
+    scale(deltaS, t);
+
+    m = deltaT * m * deltaR * deltaS;
+}
+
+void apply_world(Mat4 &m, const TRS &t)
+{
+    Mat4 comeBack = mat4::IDENTITY;
+    comeBack.col[3] = m.col[3];
+
+    Mat4 moveToOrigin = mat4::IDENTITY;
+    moveToOrigin.col[3] = _mm_mul_ps(m.col[3], _mm_setr_ps(-1.f, -1.f, -1.f, 1.f));
+
+    Mat4 deltaR = mat4::IDENTITY;
+    rotate(deltaR, t);
+
+    Mat4 deltaT = mat4::IDENTITY;
+    translate(deltaT, t);
+
+    Mat4 deltaS = mat4::IDENTITY;
+    scale(deltaS, t);
+
+    m = deltaT * comeBack * deltaR * deltaS * moveToOrigin * m;
+}
+
 TRS combine(const TRS &t1, const TRS &t2)
 {
     TRS r;

@@ -111,13 +111,21 @@ struct DrawBuffer
         glNamedBufferData(colorBuffer, objCount * sizeof(Color), colors, GL_DYNAMIC_DRAW);
     }
 
-    void draw() const
+    void draw()
     {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, transformBuffer);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, colorBuffer);
         glBindVertexArray(vao);
         glBindBuffer(GL_DRAW_INDIRECT_BUFFER, commandBuffer);
         glMultiDrawElementsIndirect(primitive, GL_UNSIGNED_INT, 0, objCount, 0);
+    }
+
+    void update()
+    {
+        update_geometry();
+        update_transforms();
+        update_colors();
+        update_commands();
     }
 
     void free()

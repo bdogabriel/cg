@@ -8,8 +8,7 @@
 #include <filesystem>
 #include <fstream>
 
-// TODO: refactor trs (use quaternions)
-// TODO: extract input handling
+// TODO: track ball with quaternions
 
 const GLuint IDX_VERTEX = 0;
 
@@ -167,30 +166,24 @@ int main(int argc, char *argv[])
     glUniformMatrix4fv(uProjection, 1, GL_FALSE, mat4::IDENTITY.data());
 
     DrawBuffer triangles;
-    CubeGeometry cube_geo;
-    Mat4 cube_mat = mat4::IDENTITY;
-    trs::scale(cube_mat, 0.5f, 0.5f, 0.5f);
-    Ref cube_ref = triangles.add(cube_geo.vertices, 8, cube_geo.indices, 36, cube_mat, {0.2f, 0.3f, 0.8f, 1});
+    CubeGeometry cubeGeo;
+    Mat4 cubeMat = mat4::IDENTITY;
+    trs::scale(cubeMat, 0.5f, 0.5f, 0.5f);
+    Ref cubeRef = triangles.add(cubeGeo.vertices, 8, cubeGeo.indices, 36, cubeMat, {0.2f, 0.3f, 0.8f, 1});
     triangles.init(IDX_VERTEX);
-    triangles.update_geometry();
-    triangles.update_commands();
-    triangles.update_colors();
-    triangles.update_transforms();
+    triangles.update();
 
     DrawBuffer lines;
     lines.primitive = GL_LINES;
-    Mat4 axis_mat = mat4::IDENTITY;
-    AxisXGeometry ax_geo;
-    AxisYGeometry ay_geo;
-    AxisZGeometry az_geo;
-    Ref ax_ref = lines.add(ax_geo.vertices, 2, ax_geo.indices, 2, axis_mat, {1, 0, 0, 1});
-    Ref ay_ref = lines.add(ay_geo.vertices, 2, ay_geo.indices, 2, axis_mat, {0, 1, 0, 1});
-    Ref az_ref = lines.add(az_geo.vertices, 2, az_geo.indices, 2, axis_mat, {0, 0, 1, 1});
+    Mat4 axisMat = mat4::IDENTITY;
+    AxisXGeometry axGeo;
+    AxisYGeometry ayGeo;
+    AxisZGeometry azGeo;
+    Ref axRef = lines.add(axGeo.vertices, 2, axGeo.indices, 2, axisMat, {1, 0, 0, 1});
+    Ref ayRef = lines.add(ayGeo.vertices, 2, ayGeo.indices, 2, axisMat, {0, 1, 0, 1});
+    Ref azRef = lines.add(azGeo.vertices, 2, azGeo.indices, 2, axisMat, {0, 0, 1, 1});
     lines.init(IDX_VERTEX);
-    lines.update_geometry();
-    lines.update_commands();
-    lines.update_colors();
-    lines.update_transforms();
+    lines.update();
 
     Input input;
     input::setup_input(window, input);
@@ -205,24 +198,15 @@ int main(int argc, char *argv[])
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        Mat4 delta_r = mat4::IDENTITY;
-        trs::rotate(delta_r, delta);
-
-        Mat4 delta_t = mat4::IDENTITY;
-        trs::translate(delta_t, delta);
-
-        Mat4 delta_s = mat4::IDENTITY;
-        trs::scale(delta_s, delta);
-
-        cube_mat = delta_t * cube_mat * delta_r * delta_s;
-        triangles.transforms[cube_ref] = cube_mat;
+        trs::apply(cubeMat, delta);
+        triangles.transforms[cubeRef] = cubeMat;
         triangles.update_transforms();
         triangles.draw();
 
-        axis_mat = delta_t * axis_mat * delta_r * delta_s;
-        lines.transforms[ax_ref] = axis_mat;
-        lines.transforms[ay_ref] = axis_mat;
-        lines.transforms[az_ref] = axis_mat;
+        trs::apply(axisMat, delta);
+        lines.transforms[axRef] = axisMat;
+        lines.transforms[ayRef] = axisMat;
+        lines.transforms[azRef] = axisMat;
         lines.update_transforms();
         lines.draw();
 

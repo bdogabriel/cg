@@ -19,6 +19,8 @@ void rotate_z(Mat4 &m, float rz);
 void translate(Mat4 &m, const TRS &t);
 void rotate(Mat4 &m, const TRS &t);
 void scale(Mat4 &m, const TRS &t);
+void apply(Mat4 &m, const TRS &delta);
+void apply_world(Mat4 &m, const TRS &delta);
 
 TRS combine(const TRS &t1, const TRS &t2);
 } // namespace trs
