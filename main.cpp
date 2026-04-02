@@ -1,8 +1,9 @@
-#include "entity.h"
-#include "geometry.h"
+#include "buffer.h"
+#include "input.h"
+#include "mat4.h"
+#include "trs.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include <array>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -10,135 +11,14 @@
 // TODO: refactor trs (use quaternions)
 // TODO: extract input handling
 
-constexpr GLint LOC_TRANSFORM = 0;
-constexpr GLint LOC_COLOR = 1;
-constexpr GLuint IDX_VERTEX = 0;
+const GLuint IDX_VERTEX = 0;
 
-std::array<bool, 1024> keys;
-bool mouseLeftDown = false;
-bool mouseRightDown = false;
-double mouseX = 0, mouseY = 0;
-double mouseDeltaX = 0, mouseDeltaY = 0;
-double scrollDeltaY = 0;
-
-enum EditMode
+enum class EditMode
 {
     TRANSLATE,
     ROTATE,
     SCALE
 };
-
-void scroll_callback(GLFWwindow *window, double dx, double dy)
-{
-    scrollDeltaY = dy;
-}
-
-void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
-{
-    bool pressed = action == GLFW_PRESS;
-
-    if (button == GLFW_MOUSE_BUTTON_LEFT)
-    {
-        mouseLeftDown = pressed;
-    }
-    else if (button == GLFW_MOUSE_BUTTON_RIGHT)
-    {
-        mouseRightDown = pressed;
-    }
-
-    if (pressed)
-    {
-        glfwGetCursorPos(window, &mouseX, &mouseY);
-    }
-}
-
-void cursor_pos_callback(GLFWwindow *window, double x, double y)
-{
-    if (mouseLeftDown || mouseRightDown)
-    {
-        mouseDeltaX = x - mouseX;
-        mouseDeltaY = y - mouseY;
-        mouseX = x;
-        mouseY = y;
-    }
-}
-
-void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
-{
-    if (action == GLFW_PRESS)
-    {
-        keys[key] = true;
-    }
-    else if (action == GLFW_RELEASE)
-    {
-        keys[key] = false;
-    }
-}
-
-TRS handle_input(EditMode &mode)
-{
-    float keySensitivity = 0.05f;
-    float mouseSensitivity = 0.005f;
-    float scrollSensitivity = 0.1f;
-
-    TRS t;
-
-    if (mouseRightDown)
-    {
-        t.tx += mouseDeltaX * mouseSensitivity;
-        t.ty -= mouseDeltaY * mouseSensitivity;
-        mouseDeltaX = mouseDeltaY = 0;
-    }
-
-    if (scrollDeltaY)
-    {
-        float scale = 1.0f + scrollDeltaY * scrollSensitivity;
-        t.sx = t.sy = t.sz = scale;
-        scrollDeltaY = 0;
-    }
-
-    if (keys[GLFW_KEY_T])
-    {
-        mode = TRANSLATE;
-    }
-    if (keys[GLFW_KEY_R])
-    {
-        mode = ROTATE;
-    }
-    if (keys[GLFW_KEY_S])
-    {
-        mode = SCALE;
-    }
-
-    float x = (keys[GLFW_KEY_RIGHT] - keys[GLFW_KEY_LEFT]) * keySensitivity;
-    float y = (keys[GLFW_KEY_UP] - keys[GLFW_KEY_DOWN]) * keySensitivity;
-    float z = (keys[GLFW_KEY_PAGE_UP] - keys[GLFW_KEY_PAGE_DOWN]) * keySensitivity;
-
-    switch (mode)
-    {
-    case TRANSLATE:
-        t.tx += x;
-        t.ty += y;
-        t.tz += z;
-        break;
-    case ROTATE:
-        t.ry += x;
-        t.rx -= y;
-        t.rz += z;
-        break;
-    case SCALE:
-        t.sx += x;
-        t.sy += y;
-        t.sz += z;
-        break;
-    }
-
-    t.rx = std::fmod(t.rx, 2 * M_PI);
-    t.ry = std::fmod(t.ry, 2 * M_PI);
-    t.rz = std::fmod(t.rz, 2 * M_PI);
-
-    return t;
-}
 
 std::string str_from_file(const std::filesystem::path &path)
 {
@@ -182,14 +62,70 @@ GLFWwindow *setup_window()
     glfwMakeContextCurrent(window);
     glewInit();
 
-    glfwSetScrollCallback(window, scroll_callback);
-    glfwSetMouseButtonCallback(window, mouse_button_callback);
-    glfwSetCursorPosCallback(window, cursor_pos_callback);
-    glfwSetKeyCallback(window, key_callback);
-
     glfwShowWindow(window);
 
     return window;
+}
+
+TRS input_to_trs(Input in, EditMode &mode)
+{
+    TRS t;
+
+    if (in.mouseRightDown)
+    {
+        t.tx += in.mouseDeltaX * in.mouseSensitivity;
+        t.ty -= in.mouseDeltaY * in.mouseSensitivity;
+        in.mouseDeltaX = in.mouseDeltaY = 0;
+    }
+
+    if (in.scrollDeltaY)
+    {
+        float scale = 1.0f + in.scrollDeltaY * in.scrollSensitivity;
+        t.sx = t.sy = t.sz = scale;
+        in.scrollDeltaY = 0;
+    }
+
+    if (in.keys[GLFW_KEY_T])
+    {
+        mode = EditMode::TRANSLATE;
+    }
+    if (in.keys[GLFW_KEY_R])
+    {
+        mode = EditMode::ROTATE;
+    }
+    if (in.keys[GLFW_KEY_S])
+    {
+        mode = EditMode::SCALE;
+    }
+
+    float x = (in.keys[GLFW_KEY_RIGHT] - in.keys[GLFW_KEY_LEFT]) * in.keySensitivity;
+    float y = (in.keys[GLFW_KEY_UP] - in.keys[GLFW_KEY_DOWN]) * in.keySensitivity;
+    float z = (in.keys[GLFW_KEY_PAGE_UP] - in.keys[GLFW_KEY_PAGE_DOWN]) * in.keySensitivity;
+
+    switch (mode)
+    {
+    case EditMode::TRANSLATE:
+        t.tx += x;
+        t.ty += y;
+        t.tz += z;
+        break;
+    case EditMode::ROTATE:
+        t.ry += x;
+        t.rx -= y;
+        t.rz += z;
+        break;
+    case EditMode::SCALE:
+        t.sx += x;
+        t.sy += y;
+        t.sz += z;
+        break;
+    }
+
+    t.rx = std::fmod(t.rx, 2 * M_PI);
+    t.ry = std::fmod(t.ry, 2 * M_PI);
+    t.rz = std::fmod(t.rz, 2 * M_PI);
+
+    return t;
 }
 
 GLuint setup_program(const std::filesystem::path &exePath)
@@ -227,39 +163,74 @@ int main(int argc, char *argv[])
     GLuint program = setup_program(exePath);
     setup_graphics();
 
-    Entity cube = {.geometry = geometry::cube(),
-                   .transform = {.sx = 0.5f, .sy = 0.5f, .sz = 0.5f},
-                   .color = {0.2f, 0.3f, 0.8f, 1}};
-    Entity axisX = {.geometry = geometry::axis_x(), .color = {1, 0, 0, 1}, .primitive = GL_LINES};
-    Entity axisY = {.geometry = geometry::axis_y(), .color = {0, 1, 0, 1}, .primitive = GL_LINES};
-    Entity axisZ = {.geometry = geometry::axis_z(), .color = {0, 0, 1, 1}, .primitive = GL_LINES};
+    GLint uProjection = glGetUniformLocation(program, "uProjection");
+    glUniformMatrix4fv(uProjection, 1, GL_FALSE, mat4::IDENTITY.data());
 
-    std::array<Entity *, 4> scene = {&cube, &axisX, &axisY, &axisZ};
+    DrawBuffer triangles;
+    CubeGeometry cube_geo;
+    Mat4 cube_mat = mat4::IDENTITY;
+    trs::scale(cube_mat, 0.5f, 0.5f, 0.5f);
+    Ref cube_ref = triangles.add(cube_geo.vertices, 8, cube_geo.indices, 36, cube_mat, {0.2f, 0.3f, 0.8f, 1});
+    triangles.init(IDX_VERTEX);
+    triangles.update_geometry();
+    triangles.update_commands();
+    triangles.update_colors();
+    triangles.update_transforms();
 
-    for (Entity *e : scene)
-    {
-        e->geometry.upload(IDX_VERTEX);
-    }
+    DrawBuffer lines;
+    lines.primitive = GL_LINES;
+    Mat4 axis_mat = mat4::IDENTITY;
+    AxisXGeometry ax_geo;
+    AxisYGeometry ay_geo;
+    AxisZGeometry az_geo;
+    Ref ax_ref = lines.add(ax_geo.vertices, 2, ax_geo.indices, 2, axis_mat, {1, 0, 0, 1});
+    Ref ay_ref = lines.add(ay_geo.vertices, 2, ay_geo.indices, 2, axis_mat, {0, 1, 0, 1});
+    Ref az_ref = lines.add(az_geo.vertices, 2, az_geo.indices, 2, axis_mat, {0, 0, 1, 1});
+    lines.init(IDX_VERTEX);
+    lines.update_geometry();
+    lines.update_commands();
+    lines.update_colors();
+    lines.update_transforms();
 
-    EditMode mode = ROTATE;
+    Input input;
+    input::setup_input(window, input);
+    EditMode mode = EditMode::ROTATE;
 
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
-        TRS t = handle_input(mode);
+        TRS delta = input_to_trs(input, mode);
+        input.mouseDeltaX = input.mouseDeltaY = 0;
+        input.scrollDeltaY = 0;
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        for (Entity *e : scene)
-        {
-            e->transform += t;
-            e->build_matrix();
-            e->draw(LOC_TRANSFORM, LOC_COLOR);
-        }
+        Mat4 delta_r = mat4::IDENTITY;
+        trs::rotate(delta_r, delta);
+
+        Mat4 delta_t = mat4::IDENTITY;
+        trs::translate(delta_t, delta);
+
+        Mat4 delta_s = mat4::IDENTITY;
+        trs::scale(delta_s, delta);
+
+        cube_mat = delta_t * cube_mat * delta_r * delta_s;
+        triangles.transforms[cube_ref] = cube_mat;
+        triangles.update_transforms();
+        triangles.draw();
+
+        axis_mat = delta_t * axis_mat * delta_r * delta_s;
+        lines.transforms[ax_ref] = axis_mat;
+        lines.transforms[ay_ref] = axis_mat;
+        lines.transforms[az_ref] = axis_mat;
+        lines.update_transforms();
+        lines.draw();
 
         glfwSwapBuffers(window);
     }
 
+    triangles.free();
+    lines.free();
     glDeleteProgram(program);
     glfwTerminate();
 

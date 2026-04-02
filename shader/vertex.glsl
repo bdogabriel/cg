@@ -1,8 +1,23 @@
-#version 430 core
+#version 460 core
 
 layout(location = 0) in vec4 vertex;
-layout(location = 0) uniform mat4 transform;
 
-void main() {
-    gl_Position = transform * vertex;
+layout(std430, binding = 0) buffer TransformBuffer {
+    mat4 transforms[];
+};
+
+layout(std430, binding = 1) buffer ColorBuffer {
+    vec4 colors[];
+};
+
+uniform mat4 uProjection;
+
+out vec4 vColor;
+
+void main()
+{
+    mat4 transform = transforms[gl_DrawID];
+    vec4 color = colors[gl_DrawID];
+    vColor = color;
+    gl_Position = uProjection * transform * vertex;
 }

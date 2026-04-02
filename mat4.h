@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MAT4_H
+#define MAT4_H
 
 #include <xmmintrin.h>
 
@@ -8,18 +9,6 @@ struct alignas(16) Mat4
     __m128 col[4];
 
     Mat4() noexcept = default;
-
-    [[nodiscard]] static Mat4 identity() noexcept
-    {
-        Mat4 m;
-
-        m.col[0] = _mm_set_ps(0, 0, 0, 1);
-        m.col[1] = _mm_set_ps(0, 0, 1, 0);
-        m.col[2] = _mm_set_ps(0, 1, 0, 0);
-        m.col[3] = _mm_set_ps(1, 0, 0, 0);
-
-        return m;
-    }
 
     [[nodiscard]] float *data() noexcept
     {
@@ -57,3 +46,17 @@ struct alignas(16) Mat4
         return *this;
     }
 };
+
+namespace mat4
+{
+inline const Mat4 IDENTITY = []() noexcept {
+    Mat4 m;
+    m.col[0] = _mm_set_ps(0, 0, 0, 1);
+    m.col[1] = _mm_set_ps(0, 0, 1, 0);
+    m.col[2] = _mm_set_ps(0, 1, 0, 0);
+    m.col[3] = _mm_set_ps(1, 0, 0, 0);
+    return m;
+}();
+} // namespace mat4
+
+#endif // MAT4_H

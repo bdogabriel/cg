@@ -1,8 +1,9 @@
 #version 430 core
 
-layout(location = 1) uniform vec4 color;
+in vec4 vColor;
 out vec4 fragColor;
 
-void main() {
-    fragColor = color;
+void main()
+{
+    fragColor = vColor;
 }
