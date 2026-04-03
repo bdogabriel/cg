@@ -1,21 +1,20 @@
 #include "trs.h"
+#include "mat4.h"
 #include <cmath>
 
 namespace trs
 {
-void translate(Mat4 &m, float tx, float ty, float tz)
+Mat4 compose(const TRS &t)
 {
-    m.col[3] = _mm_add_ps(m.col[3], _mm_set_ps(0, tz, ty, tx));
+    Mat4 m = t.r;
+    m.col[0] = _mm_mul_ps(m.col[0], _mm_set1_ps(t.sx));
+    m.col[1] = _mm_mul_ps(m.col[1], _mm_set1_ps(t.sy));
+    m.col[2] = _mm_mul_ps(m.col[2], _mm_set1_ps(t.sz));
+    m.col[3] = _mm_set_ps(1, t.tz, t.ty, t.tx);
+    return m;
 }
 
-void scale(Mat4 &m, float sx, float sy, float sz)
-{
-    m.col[0] = _mm_mul_ps(m.col[0], _mm_set1_ps(sx));
-    m.col[1] = _mm_mul_ps(m.col[1], _mm_set1_ps(sy));
-    m.col[2] = _mm_mul_ps(m.col[2], _mm_set1_ps(sz));
-}
-
-void rotate_x(Mat4 &m, float rx)
+static Mat4 rotation_x(float rx)
 {
     float cos = std::cos(rx);
     float sin = std::sin(rx);
@@ -27,10 +26,10 @@ void rotate_x(Mat4 &m, float rx)
     r.col[2] = _mm_set_ps(0, cos, -sin, 0);
     r.col[3] = _mm_set_ps(1, 0, 0, 0);
 
-    m *= r;
+    return r;
 }
 
-void rotate_y(Mat4 &m, float ry)
+static Mat4 rotation_y(float ry)
 {
     float cos = std::cos(ry);
     float sin = std::sin(ry);
@@ -42,10 +41,10 @@ void rotate_y(Mat4 &m, float ry)
     r.col[2] = _mm_set_ps(0, cos, 0, sin);
     r.col[3] = _mm_set_ps(1, 0, 0, 0);
 
-    m *= r;
+    return r;
 }
 
-void rotate_z(Mat4 &m, float rz)
+static Mat4 rotation_z(float rz)
 {
     float cos = std::cos(rz);
     float sin = std::sin(rz);
@@ -57,76 +56,54 @@ void rotate_z(Mat4 &m, float rz)
     r.col[2] = _mm_set_ps(0, 1, 0, 0);
     r.col[3] = _mm_set_ps(1, 0, 0, 0);
 
-    m *= r;
-}
-
-void translate(Mat4 &m, const TRS &t)
-{
-    translate(m, t.tx, t.ty, t.tz);
-}
-
-void rotate(Mat4 &m, const TRS &t)
-{
-    rotate_x(m, t.rx);
-    rotate_y(m, t.ry);
-    rotate_z(m, t.rz);
-}
-
-void scale(Mat4 &m, const TRS &t)
-{
-    scale(m, t.sx, t.sy, t.sz);
-}
-
-void apply(Mat4 &m, const TRS &t)
-{
-    Mat4 deltaR = mat4::IDENTITY;
-    rotate(deltaR, t);
-
-    Mat4 deltaT = mat4::IDENTITY;
-    translate(deltaT, t);
-
-    Mat4 deltaS = mat4::IDENTITY;
-    scale(deltaS, t);
-
-    m = deltaT * m * deltaR * deltaS;
-}
-
-void apply_world(Mat4 &m, const TRS &t)
-{
-    Mat4 comeBack = mat4::IDENTITY;
-    comeBack.col[3] = m.col[3];
-
-    Mat4 moveToOrigin = mat4::IDENTITY;
-    moveToOrigin.col[3] = _mm_mul_ps(m.col[3], _mm_setr_ps(-1.f, -1.f, -1.f, 1.f));
-
-    Mat4 deltaR = mat4::IDENTITY;
-    rotate(deltaR, t);
-
-    Mat4 deltaT = mat4::IDENTITY;
-    translate(deltaT, t);
-
-    Mat4 deltaS = mat4::IDENTITY;
-    scale(deltaS, t);
-
-    m = deltaT * comeBack * deltaR * deltaS * moveToOrigin * m;
-}
-
-TRS combine(const TRS &t1, const TRS &t2)
-{
-    TRS r;
-
-    r.tx = t1.tx + t2.tx;
-    r.ty = t1.ty + t2.ty;
-    r.tz = t1.tz + t2.tz;
-
-    r.rx = t1.rx + t2.rx;
-    r.ry = t1.ry + t2.ry;
-    r.rz = t1.rz + t2.rz;
-
-    r.sx = t1.sx * t2.sx;
-    r.sy = t1.sy * t2.sy;
-    r.sz = t1.sz * t2.sz;
-
     return r;
+}
+
+void translate(TRS &t, float tx, float ty, float tz)
+{
+    t.tx += tx;
+    t.ty += ty;
+    t.tz += tz;
+}
+
+void translate_local(TRS &t, float tx, float ty, float tz)
+{
+    const float *d = t.r.data();
+    t.tx += d[0] * tx + d[4] * ty + d[8] * tz;
+    t.ty += d[1] * tx + d[5] * ty + d[9] * tz;
+    t.tz += d[2] * tx + d[6] * ty + d[10] * tz;
+}
+
+void rotate_x(TRS &t, float rx)
+{
+    t.r = rotation_x(rx) * t.r;
+}
+void rotate_y(TRS &t, float ry)
+{
+    t.r = rotation_y(ry) * t.r;
+}
+void rotate_z(TRS &t, float rz)
+{
+    t.r = rotation_z(rz) * t.r;
+}
+
+void rotate_x_local(TRS &t, float rx)
+{
+    t.r = t.r * rotation_x(rx);
+}
+void rotate_y_local(TRS &t, float ry)
+{
+    t.r = t.r * rotation_y(ry);
+}
+void rotate_z_local(TRS &t, float rz)
+{
+    t.r = t.r * rotation_z(rz);
+}
+
+void scale(TRS &t, float sx, float sy, float sz)
+{
+    t.sx *= sx;
+    t.sy *= sy;
+    t.sz *= sz;
 }
 } // namespace trs

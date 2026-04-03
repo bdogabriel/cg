@@ -10,8 +10,6 @@ layout(std430, binding = 1) buffer ColorBuffer {
     vec4 colors[];
 };
 
-uniform mat4 uProjection;
-
 out vec4 vColor;
 
 void main()
@@ -19,5 +17,5 @@ void main()
     mat4 transform = transforms[gl_DrawID];
     vec4 color = colors[gl_DrawID];
     vColor = color;
-    gl_Position = uProjection * transform * vertex;
+    gl_Position = transform * vertex;
 }

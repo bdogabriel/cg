@@ -5,24 +5,23 @@
 
 struct TRS
 {
-    float tx = 0, ty = 0, tz = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1;
+    float tx = 0, ty = 0, tz = 0;
+    Mat4 r = mat4::IDENTITY;
+    float sx = 1, sy = 1, sz = 1;
 };
 
 namespace trs
 {
-void translate(Mat4 &m, float tx, float ty, float tz);
-void scale(Mat4 &m, float sx, float sy, float sz);
-void rotate_x(Mat4 &m, float rx);
-void rotate_y(Mat4 &m, float ry);
-void rotate_z(Mat4 &m, float rz);
-
-void translate(Mat4 &m, const TRS &t);
-void rotate(Mat4 &m, const TRS &t);
-void scale(Mat4 &m, const TRS &t);
-void apply(Mat4 &m, const TRS &delta);
-void apply_world(Mat4 &m, const TRS &delta);
-
-TRS combine(const TRS &t1, const TRS &t2);
+Mat4 compose(const TRS &t);
+void translate(TRS &t, float tx, float ty, float tz);
+void translate_local(TRS &t, float tx, float ty, float tz);
+void rotate_x(TRS &t, float rx);
+void rotate_y(TRS &t, float ry);
+void rotate_z(TRS &t, float rz);
+void rotate_x_local(TRS &t, float rx);
+void rotate_y_local(TRS &t, float ry);
+void rotate_z_local(TRS &t, float rz);
+void scale(TRS &t, float sx, float sy, float sz);
 } // namespace trs
 
 #endif // TRS_H

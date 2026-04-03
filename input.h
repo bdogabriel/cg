@@ -3,22 +3,21 @@
 
 #include <GLFW/glfw3.h>
 
+const int KEY_SCROLL_UP   = GLFW_KEY_LAST + 1;
+const int KEY_SCROLL_DOWN = GLFW_KEY_LAST + 2;
+
 struct Input
 {
     bool keys[1024] = {};
-    float keySensitivity = 0.05f;
-    float mouseSensitivity = 0.005f;
-    float scrollSensitivity = 0.1f;
+    int  mods           = 0;
     double scrollDeltaY = 0;
     bool mouseLeftDown = false;
     bool mouseRightDown = false;
     double mouseX = 0, mouseY = 0;
     double mouseDeltaX = 0, mouseDeltaY = 0;
-};
 
-namespace input
-{
-void setup_input(GLFWwindow *window, Input &input);
-} // namespace input
+    void setup(GLFWwindow *window);
+    void reset();
+};
 
 #endif // INPUT_H
