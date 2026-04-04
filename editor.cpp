@@ -7,6 +7,7 @@ static const Binding bindings[] = {
     {Mode::ANY, GLFW_KEY_T, 0, true, [](EditorState &s, const Input &) { s.mode = Mode::TRANSLATE; }},
     {Mode::ANY, GLFW_KEY_R, 0, true, [](EditorState &s, const Input &) { s.mode = Mode::ROTATE; }},
     {Mode::ANY, GLFW_KEY_S, 0, true, [](EditorState &s, const Input &) { s.mode = Mode::SCALE; }},
+    {Mode::ANY, GLFW_KEY_E, 0, true, [](EditorState &s, const Input &) { s.mode = Mode::SHEAR; }},
 
     {Mode::TRANSLATE, GLFW_KEY_X, 0, true, [](EditorState &s, const Input &) { s.mode = Mode::TRANSLATE_X; }},
     {Mode::TRANSLATE, GLFW_KEY_Y, 0, true, [](EditorState &s, const Input &) { s.mode = Mode::TRANSLATE_Y; }},
@@ -124,6 +125,50 @@ static const Binding bindings[] = {
      [](EditorState &s, const Input &) { trs::scale(*s.selected, 1, 1, 1.0f - s.cfg.keySensitivity); }},
     {Mode::SCALE_Z, GLFW_KEY_K, 0, false,
      [](EditorState &s, const Input &) { trs::scale(*s.selected, 1, 1, 1.0f + s.cfg.keySensitivity); }},
+
+    {Mode::SHEAR, GLFW_KEY_X, 0, true, [](EditorState &s, const Input &) { s.mode = Mode::SHEAR_X; }},
+    {Mode::SHEAR, GLFW_KEY_Y, 0, true, [](EditorState &s, const Input &) { s.mode = Mode::SHEAR_Y; }},
+    {Mode::SHEAR, GLFW_KEY_Z, 0, true, [](EditorState &s, const Input &) { s.mode = Mode::SHEAR_Z; }},
+    {Mode::SHEAR_X, GLFW_KEY_X, 0, true, [](EditorState &s, const Input &) { s.mode = Mode::SHEAR; }},
+    {Mode::SHEAR_X, GLFW_KEY_Y, 0, true, [](EditorState &s, const Input &) { s.mode = Mode::SHEAR_Y; }},
+    {Mode::SHEAR_X, GLFW_KEY_Z, 0, true, [](EditorState &s, const Input &) { s.mode = Mode::SHEAR_Z; }},
+    {Mode::SHEAR_Y, GLFW_KEY_X, 0, true, [](EditorState &s, const Input &) { s.mode = Mode::SHEAR_X; }},
+    {Mode::SHEAR_Y, GLFW_KEY_Y, 0, true, [](EditorState &s, const Input &) { s.mode = Mode::SHEAR; }},
+    {Mode::SHEAR_Y, GLFW_KEY_Z, 0, true, [](EditorState &s, const Input &) { s.mode = Mode::SHEAR_Z; }},
+    {Mode::SHEAR_Z, GLFW_KEY_X, 0, true, [](EditorState &s, const Input &) { s.mode = Mode::SHEAR_X; }},
+    {Mode::SHEAR_Z, GLFW_KEY_Y, 0, true, [](EditorState &s, const Input &) { s.mode = Mode::SHEAR_Y; }},
+    {Mode::SHEAR_Z, GLFW_KEY_Z, 0, true, [](EditorState &s, const Input &) { s.mode = Mode::SHEAR; }},
+
+    // SHEAR_X: H/L = kxy, J/K = kxz
+    {Mode::SHEAR_X, GLFW_KEY_H, 0, false,
+     [](EditorState &s, const Input &) { trs::shear(*s.selected, -s.cfg.keySensitivity, 0, 0, 0, 0, 0); }},
+    {Mode::SHEAR_X, GLFW_KEY_L, 0, false,
+     [](EditorState &s, const Input &) { trs::shear(*s.selected, s.cfg.keySensitivity, 0, 0, 0, 0, 0); }},
+    {Mode::SHEAR_X, GLFW_KEY_J, 0, false,
+     [](EditorState &s, const Input &) { trs::shear(*s.selected, 0, -s.cfg.keySensitivity, 0, 0, 0, 0); }},
+    {Mode::SHEAR_X, GLFW_KEY_K, 0, false,
+     [](EditorState &s, const Input &) { trs::shear(*s.selected, 0, s.cfg.keySensitivity, 0, 0, 0, 0); }},
+
+    // SHEAR_Y: H/L = kyx, J/K = kyz
+    {Mode::SHEAR_Y, GLFW_KEY_H, 0, false,
+     [](EditorState &s, const Input &) { trs::shear(*s.selected, 0, 0, -s.cfg.keySensitivity, 0, 0, 0); }},
+    {Mode::SHEAR_Y, GLFW_KEY_L, 0, false,
+     [](EditorState &s, const Input &) { trs::shear(*s.selected, 0, 0, s.cfg.keySensitivity, 0, 0, 0); }},
+    {Mode::SHEAR_Y, GLFW_KEY_J, 0, false,
+     [](EditorState &s, const Input &) { trs::shear(*s.selected, 0, 0, 0, -s.cfg.keySensitivity, 0, 0); }},
+    {Mode::SHEAR_Y, GLFW_KEY_K, 0, false,
+     [](EditorState &s, const Input &) { trs::shear(*s.selected, 0, 0, 0, s.cfg.keySensitivity, 0, 0); }},
+
+    // SHEAR_Z: H/L = kzx, J/K = kzy
+    {Mode::SHEAR_Z, GLFW_KEY_H, 0, false,
+     [](EditorState &s, const Input &) { trs::shear(*s.selected, 0, 0, 0, 0, -s.cfg.keySensitivity, 0); }},
+    {Mode::SHEAR_Z, GLFW_KEY_L, 0, false,
+     [](EditorState &s, const Input &) { trs::shear(*s.selected, 0, 0, 0, 0, s.cfg.keySensitivity, 0); }},
+    {Mode::SHEAR_Z, GLFW_KEY_J, 0, false,
+     [](EditorState &s, const Input &) { trs::shear(*s.selected, 0, 0, 0, 0, 0, -s.cfg.keySensitivity); }},
+    {Mode::SHEAR_Z, GLFW_KEY_K, 0, false,
+     [](EditorState &s, const Input &) { trs::shear(*s.selected, 0, 0, 0, 0, 0, s.cfg.keySensitivity); }},
+
 };
 
 void editor::process_input(const Input &in, EditorState &state)

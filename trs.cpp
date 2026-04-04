@@ -2,6 +2,9 @@
 #include "mat4.h"
 #include <cmath>
 
+// NOTE: rotation accumulates float error -> axes lose orthogonality and unit length
+// TODO: re-orthogonalize periodically via Gram-Schmidt or use quaternions
+
 namespace trs
 {
 Mat4 compose(const TRS &t)
@@ -11,6 +14,11 @@ Mat4 compose(const TRS &t)
     m.col[1] = _mm_mul_ps(m.col[1], _mm_set1_ps(t.sy));
     m.col[2] = _mm_mul_ps(m.col[2], _mm_set1_ps(t.sz));
     m.col[3] = _mm_set_ps(1, t.tz, t.ty, t.tx);
+
+    __m128 c0 = m.col[0], c1 = m.col[1], c2 = m.col[2];
+    m.col[0] = _mm_add_ps(c0, _mm_add_ps(_mm_mul_ps(c1, _mm_set1_ps(t.kyx)), _mm_mul_ps(c2, _mm_set1_ps(t.kzx))));
+    m.col[1] = _mm_add_ps(c1, _mm_add_ps(_mm_mul_ps(c0, _mm_set1_ps(t.kxy)), _mm_mul_ps(c2, _mm_set1_ps(t.kzy))));
+    m.col[2] = _mm_add_ps(c2, _mm_add_ps(_mm_mul_ps(c0, _mm_set1_ps(t.kxz)), _mm_mul_ps(c1, _mm_set1_ps(t.kyz))));
     return m;
 }
 
@@ -105,5 +113,15 @@ void scale(TRS &t, float sx, float sy, float sz)
     t.sx *= sx;
     t.sy *= sy;
     t.sz *= sz;
+}
+
+void shear(TRS &t, float dkxy, float dkxz, float dkyx, float dkyz, float dkzx, float dkzy)
+{
+    t.kxy += dkxy;
+    t.kxz += dkxz;
+    t.kyx += dkyx;
+    t.kyz += dkyz;
+    t.kzx += dkzx;
+    t.kzy += dkzy;
 }
 } // namespace trs

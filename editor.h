@@ -20,6 +20,10 @@ enum class Mode
     SCALE_X,
     SCALE_Y,
     SCALE_Z,
+    SHEAR,
+    SHEAR_X,
+    SHEAR_Y,
+    SHEAR_Z,
 };
 
 struct EditorConfig
