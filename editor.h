@@ -7,11 +7,19 @@
 enum class Mode
 {
     ANY,
-    TRANSLATE_LOCAL,
-    TRANSLATE_WORLD,
-    ROTATE_LOCAL,
-    ROTATE_WORLD,
+    NORMAL,
+    TRANSLATE,
+    TRANSLATE_X,
+    TRANSLATE_Y,
+    TRANSLATE_Z,
+    ROTATE,
+    ROTATE_X,
+    ROTATE_Y,
+    ROTATE_Z,
     SCALE,
+    SCALE_X,
+    SCALE_Y,
+    SCALE_Z,
 };
 
 struct EditorConfig
@@ -23,7 +31,7 @@ struct EditorConfig
 
 struct EditorState
 {
-    Mode mode = Mode::ROTATE_LOCAL;
+    Mode mode = Mode::NORMAL;
     TRS *selected = nullptr;
     EditorConfig cfg;
 };
@@ -35,12 +43,13 @@ struct Binding
     Mode mode;
     int key;
     int mods;
+    bool oneShot;
     ActionFn action;
 };
 
 namespace editor
 {
 void process_input(const Input &input, EditorState &state);
-} // namespace editor
+}
 
-#endif // EDITOR_H
+#endif

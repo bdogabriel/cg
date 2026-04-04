@@ -3,16 +3,21 @@
 
 #include <GLFW/glfw3.h>
 
-const int KEY_SCROLL_UP   = GLFW_KEY_LAST + 1;
+const int KEY_SCROLL_UP = GLFW_KEY_LAST + 1;
 const int KEY_SCROLL_DOWN = GLFW_KEY_LAST + 2;
+
+enum class KeyState
+{
+    Up,
+    Down,
+    Released
+};
 
 struct Input
 {
-    bool keys[1024] = {};
-    int  mods           = 0;
+    KeyState keys[KEY_SCROLL_DOWN + 1] = {};
+    int mods = 0;
     double scrollDeltaY = 0;
-    bool mouseLeftDown = false;
-    bool mouseRightDown = false;
     double mouseX = 0, mouseY = 0;
     double mouseDeltaX = 0, mouseDeltaY = 0;
 
