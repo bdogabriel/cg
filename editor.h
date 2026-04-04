@@ -25,8 +25,6 @@ enum class Mode
 struct EditorConfig
 {
     float keySensitivity = 0.025f;
-    float mouseSensitivity = 0.005f;
-    float scrollSensitivity = 0.1f;
 };
 
 struct EditorState

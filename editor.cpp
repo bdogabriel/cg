@@ -3,22 +3,6 @@
 #include <GLFW/glfw3.h>
 
 static const Binding bindings[] = {
-    {Mode::ANY, GLFW_MOUSE_BUTTON_RIGHT, 0, false,
-     [](EditorState &s, const Input &in) {
-         trs::translate(*s.selected, (float)in.mouseDeltaX * s.cfg.mouseSensitivity,
-                        (float)in.mouseDeltaY * -s.cfg.mouseSensitivity, 0);
-     }},
-    {Mode::ANY, KEY_SCROLL_UP, 0, false,
-     [](EditorState &s, const Input &in) {
-         float f = 1.0f + (float)in.scrollDeltaY * s.cfg.scrollSensitivity;
-         trs::scale(*s.selected, f, f, f);
-     }},
-    {Mode::ANY, KEY_SCROLL_DOWN, 0, false,
-     [](EditorState &s, const Input &in) {
-         float f = 1.0f + (float)in.scrollDeltaY * s.cfg.scrollSensitivity;
-         trs::scale(*s.selected, f, f, f);
-     }},
-
     {Mode::ANY, GLFW_KEY_ESCAPE, 0, true, [](EditorState &s, const Input &) { s.mode = Mode::NORMAL; }},
     {Mode::ANY, GLFW_KEY_T, 0, true, [](EditorState &s, const Input &) { s.mode = Mode::TRANSLATE; }},
     {Mode::ANY, GLFW_KEY_R, 0, true, [](EditorState &s, const Input &) { s.mode = Mode::ROTATE; }},
