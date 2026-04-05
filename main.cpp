@@ -83,7 +83,6 @@ void setup_graphics()
 
     glClearColor(0, 0, 0, 1);
     glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
@@ -95,22 +94,22 @@ int main(int argc, char *argv[])
     setup_graphics();
 
     DrawBuffer triangles;
-    CubeGeometry cubeGeo;
     TRS cubeTRS;
     cubeTRS.sx = cubeTRS.sy = cubeTRS.sz = 0.5f;
-    Ref cubeRef = triangles.add(cubeGeo.vertices, 8, cubeGeo.indices, 36, cubeTRS, {0.2f, 0.3f, 0.8f, 1});
+    Ref cubeRef = triangles.add(geo::cube, cubeTRS);
     triangles.init(IDX_VERTEX);
     triangles.update();
+
+    DrawBuffer highlight;
+    highlight.primitive = GL_LINES;
+    highlight.init(IDX_VERTEX);
 
     DrawBuffer lines;
     lines.primitive = GL_LINES;
     Mat4 axisMat = mat4::IDENTITY;
-    AxisXGeometry axGeo;
-    AxisYGeometry ayGeo;
-    AxisZGeometry azGeo;
-    Ref axRef = lines.add(axGeo.vertices, 2, axGeo.indices, 2, TRS{}, {1, 0, 0, 1});
-    Ref ayRef = lines.add(ayGeo.vertices, 2, ayGeo.indices, 2, TRS{}, {0, 1, 0, 1});
-    Ref azRef = lines.add(azGeo.vertices, 2, azGeo.indices, 2, TRS{}, {0, 0, 1, 1});
+    Ref axRef = lines.add(geo::axisX, TRS{});
+    Ref ayRef = lines.add(geo::axisY, TRS{});
+    Ref azRef = lines.add(geo::axisZ, TRS{});
     lines.init(IDX_VERTEX);
     lines.update();
 
@@ -130,10 +129,46 @@ int main(int argc, char *argv[])
         axisMat = cubeMat;
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glPolygonMode(GL_FRONT_AND_BACK, state.wireframe ? GL_LINE : GL_FILL);
 
         triangles.models[cubeRef] = cubeMat;
         triangles.update_models();
+
+        highlight.vtxCount = 0;
+        highlight.idxCount = 0;
+        highlight.objCount = 1;
+
+        if (state.mode >= Mode::TRANSLATE_FACE)
+        {
+            DrawCommand &cmd = triangles.commands[cubeRef];
+            auto addFaceEdges = [&](int face, Color color) {
+                int base = cmd.indexOffset + face * 3;
+                Vec4 v[3] = {
+                    triangles.vertices[cmd.vertexOffset + triangles.indices[base + 0]],
+                    triangles.vertices[cmd.vertexOffset + triangles.indices[base + 1]],
+                    triangles.vertices[cmd.vertexOffset + triangles.indices[base + 2]],
+                };
+                unsigned int idx[6] = {0, 1, 1, 2, 2, 0};
+                Color c[3] = {color, color, color};
+                Ref r = highlight.add({v, 3, idx, 6, c, 3}, TRS{});
+                highlight.models[r] = cubeMat;
+            };
+
+            addFaceEdges(state.faceCursor, {1.0f, 0.8f, 0.0f, 1});
+            for (int i = 0; i < state.selectedFaceCount; i++)
+            {
+                addFaceEdges(state.selectedFaces[i], {1.0f, 0.4f, 0.0f, 1});
+            }
+        }
+        highlight.update();
+
         triangles.draw();
+
+        glLineWidth(3.0f);
+        glDepthFunc(GL_LEQUAL);
+        highlight.draw();
+        glDepthFunc(GL_LESS);
+        glLineWidth(1.0f);
 
         lines.models[axRef] = axisMat;
         lines.models[ayRef] = axisMat;
@@ -145,6 +180,7 @@ int main(int argc, char *argv[])
     }
 
     triangles.free();
+    highlight.free();
     lines.free();
     glDeleteProgram(program);
     glfwTerminate();

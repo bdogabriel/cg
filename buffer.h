@@ -31,39 +31,53 @@ struct DrawCommand
 
 typedef int Ref;
 
+struct Geometry
+{
+    Vec4 *vertices;
+    int vertexCount;
+    unsigned int *indices;
+    int indexCount;
+    Color *faceColors;
+    int faceCount;
+};
+
 struct DrawBuffer
 {
     int primitive = GL_TRIANGLES;
 
     Vec4 vertices[MAX_VERTICES] = {};
     unsigned int indices[MAX_INDICES] = {};
+    Color faceColors[MAX_INDICES / 3] = {};
+    int faceOffsets[MAX_OBJECTS] = {};
     TRS transforms[MAX_OBJECTS] = {};
     Mat4 models[MAX_OBJECTS] = {};
-    Color colors[MAX_OBJECTS] = {};
     DrawCommand commands[MAX_OBJECTS] = {};
 
     int vtxCount = 0;
     int idxCount = 0;
     int objCount = 1;
 
-    GLuint vao = 0, vbo = 0, ebo = 0, commandBuffer = 0, modelBuffer = 0, colorBuffer = 0;
+    GLuint vao = 0, vbo = 0, ebo = 0, commandBuffer = 0, modelBuffer = 0, faceColorBuffer = 0, faceOffsetBuffer = 0;
 
-    Ref add(Vec4 *vtx, int vtxSize, unsigned int *idx, int idxSize, TRS t, Color color)
+    Ref add(Geometry geo, TRS t)
     {
         int vtxOffset = vtxCount;
         int idxOffset = idxCount;
 
-        memcpy(vertices + vtxCount, vtx, vtxSize * sizeof(Vec4));
-        memcpy(indices + idxCount, idx, idxSize * sizeof(unsigned int));
+        memcpy(vertices + vtxCount, geo.vertices, geo.vertexCount * sizeof(Vec4));
+        memcpy(indices + idxCount, geo.indices, geo.indexCount * sizeof(unsigned int));
 
-        vtxCount += vtxSize;
-        idxCount += idxSize;
+        vtxCount += geo.vertexCount;
+        idxCount += geo.indexCount;
 
         transforms[objCount] = t;
         models[objCount] = trs::compose(t);
-        colors[objCount] = color;
 
-        commands[objCount] = {.indicesCount = (unsigned int)idxSize,
+        int faceSize = (primitive == GL_TRIANGLES) ? 3 : 2;
+        faceOffsets[objCount] = idxOffset / faceSize;
+        memcpy(faceColors + faceOffsets[objCount], geo.faceColors, geo.faceCount * sizeof(Color));
+
+        commands[objCount] = {.indicesCount = (unsigned int)geo.indexCount,
                               .copies = 1,
                               .indexOffset = (unsigned int)idxOffset,
                               .vertexOffset = vtxOffset,
@@ -80,7 +94,8 @@ struct DrawBuffer
         glCreateBuffers(1, &ebo);
         glCreateBuffers(1, &commandBuffer);
         glCreateBuffers(1, &modelBuffer);
-        glCreateBuffers(1, &colorBuffer);
+        glCreateBuffers(1, &faceColorBuffer);
+        glCreateBuffers(1, &faceOffsetBuffer);
 
         glVertexArrayVertexBuffer(vao, 0, vbo, 0, sizeof(Vec4));
         glVertexArrayElementBuffer(vao, ebo);
@@ -90,7 +105,8 @@ struct DrawBuffer
         glVertexArrayAttribBinding(vao, idxVertex, 0);
 
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, modelBuffer);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, colorBuffer);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, faceColorBuffer);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, faceOffsetBuffer);
     }
 
     void update_geometry() const
@@ -109,15 +125,24 @@ struct DrawBuffer
         glNamedBufferData(modelBuffer, objCount * sizeof(Mat4), models, GL_DYNAMIC_DRAW);
     }
 
-    void update_colors() const
+    void update_face_colors()
     {
-        glNamedBufferData(colorBuffer, objCount * sizeof(Color), colors, GL_DYNAMIC_DRAW);
+        int faceSize = (primitive == GL_TRIANGLES) ? 3 : 2;
+        int totalFaces = idxCount / faceSize;
+        glNamedBufferData(faceColorBuffer, totalFaces * sizeof(Color), faceColors, GL_DYNAMIC_DRAW);
+        glNamedBufferData(faceOffsetBuffer, objCount * sizeof(int), faceOffsets, GL_DYNAMIC_DRAW);
+    }
+
+    void set_face_color(Ref obj, int faceLocalIdx, Color c)
+    {
+        faceColors[faceOffsets[obj] + faceLocalIdx] = c;
     }
 
     void draw()
     {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, modelBuffer);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, colorBuffer);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, faceColorBuffer);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, faceOffsetBuffer);
         glBindVertexArray(vao);
         glBindBuffer(GL_DRAW_INDIRECT_BUFFER, commandBuffer);
         glMultiDrawElementsIndirect(primitive, GL_UNSIGNED_INT, 0, objCount, 0);
@@ -127,7 +152,7 @@ struct DrawBuffer
     {
         update_geometry();
         update_models();
-        update_colors();
+        update_face_colors();
         update_commands();
     }
 
@@ -138,8 +163,9 @@ struct DrawBuffer
         glDeleteBuffers(1, &ebo);
         glDeleteBuffers(1, &commandBuffer);
         glDeleteBuffers(1, &modelBuffer);
-        glDeleteBuffers(1, &colorBuffer);
-        vao = vbo = ebo = commandBuffer = modelBuffer = colorBuffer = 0;
+        glDeleteBuffers(1, &faceColorBuffer);
+        glDeleteBuffers(1, &faceOffsetBuffer);
+        vao = vbo = ebo = commandBuffer = modelBuffer = faceColorBuffer = faceOffsetBuffer = 0;
     }
 
     void transform_faces(Ref obj, int *faces, int faceCount, Mat4 t)
@@ -200,50 +226,57 @@ struct DrawBuffer
     }
 };
 
-struct AxisXGeometry
+namespace geo
 {
-    Vec4 vertices[2] = {{0, 0, 0, 1}, {1, 0, 0, 1}};
-    unsigned int indices[2] = {0, 1};
-};
+inline Vec4 axisXVertices[] = {{0, 0, 0, 1}, {2, 0, 0, 1}};
+inline unsigned int axisXIndices[] = {0, 1};
+inline Color axisXColors[] = {{1, 0, 0, 1}};
+inline Geometry axisX = {axisXVertices, 2, axisXIndices, 2, axisXColors, 1};
 
-struct AxisYGeometry
-{
-    Vec4 vertices[2] = {{0, 0, 0, 1}, {0, 1, 0, 1}};
-    unsigned int indices[2] = {0, 1};
-};
+inline Vec4 axisYVertices[] = {{0, 0, 0, 1}, {0, 2, 0, 1}};
+inline unsigned int axisYIndices[] = {0, 1};
+inline Color axisYColors[] = {{0, 1, 0, 1}};
+inline Geometry axisY = {axisYVertices, 2, axisYIndices, 2, axisYColors, 1};
 
-struct AxisZGeometry
-{
-    Vec4 vertices[2] = {{0, 0, 0, 1}, {0, 0, 1, 1}};
-    unsigned int indices[2] = {0, 1};
-};
+inline Vec4 axisZVertices[] = {{0, 0, 0, 1}, {0, 0, 2, 1}};
+inline unsigned int axisZIndices[] = {0, 1};
+inline Color axisZColors[] = {{0, 0, 1, 1}};
+inline Geometry axisZ = {axisZVertices, 2, axisZIndices, 2, axisZColors, 1};
 
-struct CubeGeometry
-{
-    Vec4 vertices[8] = {
-        {1, -1, 1, 1},   //
-        {1, 1, 1, 1},    //
-        {-1, -1, 1, 1},  //
-        {-1, 1, 1, 1},   //
-        {1, -1, -1, 1},  //
-        {1, 1, -1, 1},   //
-        {-1, -1, -1, 1}, //
-        {-1, 1, -1, 1},
-    };
-    unsigned int indices[36] = {
-        0, 1, 2, //
-        2, 1, 3, //
-        6, 7, 4, //
-        4, 7, 5, //
-        1, 5, 3, //
-        3, 5, 7, //
-        0, 2, 4, //
-        4, 2, 6, //
-        0, 4, 1, //
-        1, 4, 5, //
-        2, 3, 6, //
-        6, 3, 7,
-    };
+inline Vec4 cubeVertices[] = {
+    {1, -1, 1, 1},   //
+    {1, 1, 1, 1},    //
+    {-1, -1, 1, 1},  //
+    {-1, 1, 1, 1},   //
+    {1, -1, -1, 1},  //
+    {1, 1, -1, 1},   //
+    {-1, -1, -1, 1}, //
+    {-1, 1, -1, 1},
 };
+inline unsigned int cubeIndices[] = {
+    0, 1, 2, //
+    2, 1, 3, //
+    6, 7, 4, //
+    4, 7, 5, //
+    1, 5, 3, //
+    3, 5, 7, //
+    0, 2, 4, //
+    4, 2, 6, //
+    0, 4, 1, //
+    1, 4, 5, //
+    2, 3, 6, //
+    6, 3, 7,
+};
+inline Color cubeColors[] = {
+    {1.0f, 0.2f, 0.2f, 1}, {1.0f, 0.2f, 0.2f, 1}, // front
+    {0.2f, 1.0f, 0.2f, 1}, {0.2f, 1.0f, 0.2f, 1}, // back
+    {0.2f, 0.6f, 1.0f, 1}, {0.2f, 0.6f, 1.0f, 1}, // top
+    {1.0f, 1.0f, 0.2f, 1}, {1.0f, 1.0f, 0.2f, 1}, // bottom
+    {1.0f, 0.4f, 0.0f, 1}, {1.0f, 0.4f, 0.0f, 1}, // right
+    {0.8f, 0.2f, 1.0f, 1}, {0.8f, 0.2f, 1.0f, 1}, // left
+};
+inline Geometry cube = {cubeVertices, 8, cubeIndices, 36, cubeColors, 12};
+
+} // namespace geo
 
 #endif // GEOMETRY_H

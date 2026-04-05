@@ -24,7 +24,10 @@ Mat4 compose(const TRS &t)
 
 Mat4 translation(float tx, float ty, float tz)
 {
-    Mat4 m = mat4::IDENTITY;
+    Mat4 m;
+    m.col[0] = _mm_set_ps(0, 0, 0, 1);
+    m.col[1] = _mm_set_ps(0, 0, 1, 0);
+    m.col[2] = _mm_set_ps(0, 1, 0, 0);
     m.col[3] = _mm_set_ps(1, tz, ty, tx);
     return m;
 }
