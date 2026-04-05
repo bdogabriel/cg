@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
     CubeGeometry cubeGeo;
     TRS cubeTRS;
     cubeTRS.sx = cubeTRS.sy = cubeTRS.sz = 0.5f;
-    Ref cubeRef = triangles.add(cubeGeo.vertices, 8, cubeGeo.indices, 36, trs::compose(cubeTRS), {0.2f, 0.3f, 0.8f, 1});
+    Ref cubeRef = triangles.add(cubeGeo.vertices, 8, cubeGeo.indices, 36, cubeTRS, {0.2f, 0.3f, 0.8f, 1});
     triangles.init(IDX_VERTEX);
     triangles.update();
 
@@ -108,9 +108,9 @@ int main(int argc, char *argv[])
     AxisXGeometry axGeo;
     AxisYGeometry ayGeo;
     AxisZGeometry azGeo;
-    Ref axRef = lines.add(axGeo.vertices, 2, axGeo.indices, 2, axisMat, {1, 0, 0, 1});
-    Ref ayRef = lines.add(ayGeo.vertices, 2, ayGeo.indices, 2, axisMat, {0, 1, 0, 1});
-    Ref azRef = lines.add(azGeo.vertices, 2, azGeo.indices, 2, axisMat, {0, 0, 1, 1});
+    Ref axRef = lines.add(axGeo.vertices, 2, axGeo.indices, 2, TRS{}, {1, 0, 0, 1});
+    Ref ayRef = lines.add(ayGeo.vertices, 2, ayGeo.indices, 2, TRS{}, {0, 1, 0, 1});
+    Ref azRef = lines.add(azGeo.vertices, 2, azGeo.indices, 2, TRS{}, {0, 0, 1, 1});
     lines.init(IDX_VERTEX);
     lines.update();
 
@@ -118,27 +118,27 @@ int main(int argc, char *argv[])
     input.setup(window);
 
     EditorState state;
-    state.selected = &cubeTRS;
+    state.selectedRef = cubeRef;
 
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
-        editor::process_input(input, state);
+        editor::process_input(input, state, triangles);
         input.reset();
 
-        Mat4 cubeMat = trs::compose(cubeTRS);
+        Mat4 cubeMat = trs::compose(triangles.transforms[cubeRef]);
         axisMat = cubeMat;
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        triangles.transforms[cubeRef] = cubeMat;
-        triangles.update_transforms();
+        triangles.models[cubeRef] = cubeMat;
+        triangles.update_models();
         triangles.draw();
 
-        lines.transforms[axRef] = axisMat;
-        lines.transforms[ayRef] = axisMat;
-        lines.transforms[azRef] = axisMat;
-        lines.update_transforms();
+        lines.models[axRef] = axisMat;
+        lines.models[ayRef] = axisMat;
+        lines.models[azRef] = axisMat;
+        lines.update_models();
         lines.draw();
 
         glfwSwapBuffers(window);

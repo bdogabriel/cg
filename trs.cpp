@@ -22,7 +22,14 @@ Mat4 compose(const TRS &t)
     return m;
 }
 
-static Mat4 rotation_x(float rx)
+Mat4 translation(float tx, float ty, float tz)
+{
+    Mat4 m = mat4::IDENTITY;
+    m.col[3] = _mm_set_ps(1, tz, ty, tx);
+    return m;
+}
+
+Mat4 rotation_x(float rx)
 {
     float cos = std::cos(rx);
     float sin = std::sin(rx);
@@ -37,7 +44,7 @@ static Mat4 rotation_x(float rx)
     return r;
 }
 
-static Mat4 rotation_y(float ry)
+Mat4 rotation_y(float ry)
 {
     float cos = std::cos(ry);
     float sin = std::sin(ry);
@@ -52,7 +59,7 @@ static Mat4 rotation_y(float ry)
     return r;
 }
 
-static Mat4 rotation_z(float rz)
+Mat4 rotation_z(float rz)
 {
     float cos = std::cos(rz);
     float sin = std::sin(rz);
@@ -65,6 +72,27 @@ static Mat4 rotation_z(float rz)
     r.col[3] = _mm_set_ps(1, 0, 0, 0);
 
     return r;
+}
+
+Mat4 scaling(float sx, float sy, float sz)
+{
+    Mat4 m;
+    m.col[0] = _mm_set_ps(0, 0, 0, sx);
+    m.col[1] = _mm_set_ps(0, 0, sy, 0);
+    m.col[2] = _mm_set_ps(0, sz, 0, 0);
+    m.col[3] = _mm_set_ps(1, 0, 0, 0);
+    return m;
+}
+
+// kpq shears p along q axis
+Mat4 shearing(float kxy, float kxz, float kyx, float kyz, float kzx, float kzy)
+{
+    Mat4 m;
+    m.col[0] = _mm_set_ps(0, kzx, kyx, 1);
+    m.col[1] = _mm_set_ps(0, kzy, 1, kxy);
+    m.col[2] = _mm_set_ps(0, 1, kyz, kxz);
+    m.col[3] = _mm_set_ps(1, 0, 0, 0);
+    return m;
 }
 
 void translate(TRS &t, float tx, float ty, float tz)

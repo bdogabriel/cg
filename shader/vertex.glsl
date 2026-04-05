@@ -2,7 +2,7 @@
 
 layout(location = 0) in vec4 vertex;
 
-layout(std430, binding = 0) buffer TransformBuffer {
+layout(std430, binding = 0) buffer ModelBuffer {
     mat4 transforms[];
 };
 

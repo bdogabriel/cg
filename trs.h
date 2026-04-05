@@ -14,6 +14,14 @@ struct TRS
 namespace trs
 {
 Mat4 compose(const TRS &t);
+
+Mat4 translation(float tx, float ty, float tz);
+Mat4 rotation_x(float rx);
+Mat4 rotation_y(float ry);
+Mat4 rotation_z(float rz);
+Mat4 scaling(float sx, float sy, float sz);
+Mat4 shearing(float kxy, float kxz, float kyx, float kyz, float kzx, float kzy);
+
 void translate(TRS &t, float tx, float ty, float tz);
 void translate_local(TRS &t, float tx, float ty, float tz);
 void rotate_x(TRS &t, float rx);

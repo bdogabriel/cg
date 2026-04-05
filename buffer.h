@@ -2,6 +2,7 @@
 #define GEOMETRY_H
 
 #include "mat4.h"
+#include "trs.h"
 #include <GL/glew.h>
 #include <cstring>
 
@@ -36,17 +37,18 @@ struct DrawBuffer
 
     Vec4 vertices[MAX_VERTICES] = {};
     unsigned int indices[MAX_INDICES] = {};
-    Mat4 transforms[MAX_OBJECTS] = {};
+    TRS transforms[MAX_OBJECTS] = {};
+    Mat4 models[MAX_OBJECTS] = {};
     Color colors[MAX_OBJECTS] = {};
     DrawCommand commands[MAX_OBJECTS] = {};
 
     int vtxCount = 0;
     int idxCount = 0;
-    int objCount = 0;
+    int objCount = 1;
 
-    GLuint vao = 0, vbo = 0, ebo = 0, commandBuffer = 0, transformBuffer = 0, colorBuffer = 0;
+    GLuint vao = 0, vbo = 0, ebo = 0, commandBuffer = 0, modelBuffer = 0, colorBuffer = 0;
 
-    Ref add(Vec4 *vtx, int vtxSize, unsigned int *idx, int idxSize, Mat4 transform, Color color)
+    Ref add(Vec4 *vtx, int vtxSize, unsigned int *idx, int idxSize, TRS t, Color color)
     {
         int vtxOffset = vtxCount;
         int idxOffset = idxCount;
@@ -57,7 +59,8 @@ struct DrawBuffer
         vtxCount += vtxSize;
         idxCount += idxSize;
 
-        transforms[objCount] = transform;
+        transforms[objCount] = t;
+        models[objCount] = trs::compose(t);
         colors[objCount] = color;
 
         commands[objCount] = {.indicesCount = (unsigned int)idxSize,
@@ -76,7 +79,7 @@ struct DrawBuffer
         glCreateBuffers(1, &vbo);
         glCreateBuffers(1, &ebo);
         glCreateBuffers(1, &commandBuffer);
-        glCreateBuffers(1, &transformBuffer);
+        glCreateBuffers(1, &modelBuffer);
         glCreateBuffers(1, &colorBuffer);
 
         glVertexArrayVertexBuffer(vao, 0, vbo, 0, sizeof(Vec4));
@@ -86,7 +89,7 @@ struct DrawBuffer
         glVertexArrayAttribFormat(vao, idxVertex, 4, GL_FLOAT, GL_FALSE, 0);
         glVertexArrayAttribBinding(vao, idxVertex, 0);
 
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, transformBuffer);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, modelBuffer);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, colorBuffer);
     }
 
@@ -101,9 +104,9 @@ struct DrawBuffer
         glNamedBufferData(commandBuffer, objCount * sizeof(DrawCommand), commands, GL_DYNAMIC_DRAW);
     }
 
-    void update_transforms() const
+    void update_models() const
     {
-        glNamedBufferData(transformBuffer, objCount * sizeof(Mat4), transforms, GL_DYNAMIC_DRAW);
+        glNamedBufferData(modelBuffer, objCount * sizeof(Mat4), models, GL_DYNAMIC_DRAW);
     }
 
     void update_colors() const
@@ -113,7 +116,7 @@ struct DrawBuffer
 
     void draw()
     {
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, transformBuffer);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, modelBuffer);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, colorBuffer);
         glBindVertexArray(vao);
         glBindBuffer(GL_DRAW_INDIRECT_BUFFER, commandBuffer);
@@ -123,7 +126,7 @@ struct DrawBuffer
     void update()
     {
         update_geometry();
-        update_transforms();
+        update_models();
         update_colors();
         update_commands();
     }
@@ -134,9 +137,66 @@ struct DrawBuffer
         glDeleteBuffers(1, &vbo);
         glDeleteBuffers(1, &ebo);
         glDeleteBuffers(1, &commandBuffer);
-        glDeleteBuffers(1, &transformBuffer);
+        glDeleteBuffers(1, &modelBuffer);
         glDeleteBuffers(1, &colorBuffer);
-        vao = vbo = ebo = commandBuffer = transformBuffer = colorBuffer = 0;
+        vao = vbo = ebo = commandBuffer = modelBuffer = colorBuffer = 0;
+    }
+
+    void transform_faces(Ref obj, int *faces, int faceCount, Mat4 t)
+    {
+        if (faceCount == 0)
+        {
+            return;
+        }
+
+        DrawCommand &cmd = commands[obj];
+
+        int touched[MAX_VERTICES];
+        int touchedCount = 0;
+        for (int f = 0; f < faceCount; f++)
+        {
+            int base = cmd.indexOffset + faces[f] * 3;
+            for (int v = 0; v < 3; v++)
+            {
+                int vtx = cmd.vertexOffset + indices[base + v];
+                bool found = false;
+                for (int i = 0; i < touchedCount; i++)
+                {
+                    if (touched[i] == vtx)
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
+                {
+                    touched[touchedCount++] = vtx;
+                }
+            }
+        }
+
+        float cx = 0, cy = 0, cz = 0;
+        for (int i = 0; i < touchedCount; i++)
+        {
+            cx += vertices[touched[i]].x;
+            cy += vertices[touched[i]].y;
+            cz += vertices[touched[i]].z;
+        }
+        cx /= touchedCount;
+        cy /= touchedCount;
+        cz /= touchedCount;
+
+        const float *m = t.data();
+        for (int i = 0; i < touchedCount; i++)
+        {
+            Vec4 &vx = vertices[touched[i]];
+            float lx = vx.x - cx, ly = vx.y - cy, lz = vx.z - cz;
+            vx.x = m[0] * lx + m[4] * ly + m[8] * lz + m[12] + cx;
+            vx.y = m[1] * lx + m[5] * ly + m[9] * lz + m[13] + cy;
+            vx.z = m[2] * lx + m[6] * ly + m[10] * lz + m[14] + cz;
+        }
+
+        update_geometry();
     }
 };
 
