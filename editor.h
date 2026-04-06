@@ -57,6 +57,8 @@ enum class Mode
     SHEAR_FACE_X_VISUAL,
     SHEAR_FACE_Y_VISUAL,
     SHEAR_FACE_Z_VISUAL,
+    EXTRUDE_FACE,
+    EXTRUDE_FACE_VISUAL,
 };
 
 struct EditorConfig
@@ -117,6 +119,7 @@ struct Binding
     int key;
     int mods;
     bool oneShot;
+    bool pushesUndo;
     ActionFn action;
 };
 

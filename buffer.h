@@ -4,7 +4,16 @@
 #include "mat4.h"
 #include "trs.h"
 #include <GL/glew.h>
+#include <cmath>
 #include <cstring>
+
+// TODO: export and import .obj
+// TODO: review architecture and separate logic into more files
+// TODO: transform/extrude faces into their own local axis (normal as y)
+// TODO: shift object vertices to the end when extruding to allow more than one object in the buffer
+// TODO: use non-triangular faces for selecting/editing (selecting each triangle individually is a pain)
+// TODO: cycle faces sorted by distance to the camera (select faces that the user is "looking at")
+// TODO: "glue" two objects: parent/child or just concatenate
 
 const int MAX_VERTICES = 8000;
 const int MAX_INDICES = 24000;
@@ -169,23 +178,15 @@ struct DrawBuffer
         vao = vbo = ebo = commandBuffer = modelBuffer = faceColorBuffer = faceOffsetBuffer = 0;
     }
 
-    void transform_faces(Ref obj, int *faces, int faceCount, Mat4 t)
+    int touched_vertices(const DrawCommand &cmd, int *faces, int faceCount, int *touched, int offset) const
     {
-        if (faceCount == 0)
-        {
-            return;
-        }
-
-        DrawCommand &cmd = commands[obj];
-
-        int touched[MAX_VERTICES];
         int touchedCount = 0;
         for (int f = 0; f < faceCount; f++)
         {
             int base = cmd.indexOffset + faces[f] * 3;
             for (int v = 0; v < 3; v++)
             {
-                int vtx = cmd.vertexOffset + indices[base + v];
+                int vtx = offset + indices[base + v];
                 bool found = false;
                 for (int i = 0; i < touchedCount; i++)
                 {
@@ -201,6 +202,20 @@ struct DrawBuffer
                 }
             }
         }
+        return touchedCount;
+    }
+
+    void transform_faces(Ref obj, int *faces, int faceCount, Mat4 t)
+    {
+        if (faceCount == 0)
+        {
+            return;
+        }
+
+        DrawCommand &cmd = commands[obj];
+
+        int touched[MAX_VERTICES];
+        int touchedCount = touched_vertices(cmd, faces, faceCount, touched, cmd.vertexOffset);
 
         float cx = 0, cy = 0, cz = 0;
         for (int i = 0; i < touchedCount; i++)
@@ -225,6 +240,159 @@ struct DrawBuffer
 
         update_geometry();
     }
+
+    void extrude_faces(Ref obj, int *faces, int faceCount)
+    {
+        if (faceCount == 0)
+        {
+            return;
+        }
+
+        DrawCommand &cmd = commands[obj];
+
+        int touched[MAX_VERTICES];
+        int touchedCount = touched_vertices(cmd, faces, faceCount, touched, 0);
+
+        // averaged face normal
+        float nx = 0, ny = 0, nz = 0;
+        for (int f = 0; f < faceCount; f++)
+        {
+            int base = cmd.indexOffset + faces[f] * 3;
+            Vec4 &a = vertices[cmd.vertexOffset + indices[base + 0]];
+            Vec4 &b = vertices[cmd.vertexOffset + indices[base + 1]];
+            Vec4 &c = vertices[cmd.vertexOffset + indices[base + 2]];
+            float ex = b.x - a.x, ey = b.y - a.y, ez = b.z - a.z;
+            float fx = c.x - a.x, fy = c.y - a.y, fz = c.z - a.z;
+            nx += ey * fz - ez * fy;
+            ny += ez * fx - ex * fz;
+            nz += ex * fy - ey * fx;
+        }
+        float len = sqrtf(nx * nx + ny * ny + nz * nz);
+        if (len > 0)
+        {
+            nx /= len;
+            ny /= len;
+            nz /= len;
+        }
+
+        // directed boundary edges (appear in exactly one selected face)
+        struct Edge
+        {
+            int a, b, face;
+        };
+        Edge dirEdges[MAX_INDICES];
+        int edgeCount = 0;
+        int edgeHits[MAX_INDICES] = {};
+        for (int f = 0; f < faceCount; f++)
+        {
+            int base = cmd.indexOffset + faces[f] * 3;
+            for (int e = 0; e < 3; e++)
+            {
+                int va = indices[base + e];
+                int vb = indices[base + (e + 1) % 3];
+                int lo = va < vb ? va : vb;
+                int hi = va < vb ? vb : va;
+                bool found = false;
+                for (int i = 0; i < edgeCount; i++)
+                {
+                    int elo = dirEdges[i].a < dirEdges[i].b ? dirEdges[i].a : dirEdges[i].b;
+                    int ehi = dirEdges[i].a < dirEdges[i].b ? dirEdges[i].b : dirEdges[i].a;
+                    if (elo == lo && ehi == hi)
+                    {
+                        edgeHits[i]++;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
+                {
+                    dirEdges[edgeCount] = {va, vb, f};
+                    edgeHits[edgeCount] = 1;
+                    edgeCount++;
+                }
+            }
+        }
+
+        // duplicate touched vertices (append to global array)
+        int newLocalBase = vtxCount - cmd.vertexOffset;
+        for (int i = 0; i < touchedCount; i++)
+        {
+            vertices[vtxCount + i] = vertices[cmd.vertexOffset + touched[i]];
+        }
+
+        // remap selected face indices to new vertices
+        for (int f = 0; f < faceCount; f++)
+        {
+            int base = cmd.indexOffset + faces[f] * 3;
+            for (int v = 0; v < 3; v++)
+            {
+                int old = indices[base + v];
+                for (int i = 0; i < touchedCount; i++)
+                {
+                    if (touched[i] == old)
+                    {
+                        indices[base + v] = newLocalBase + i;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // append wall triangles and set colors (darker shade of the adjacent face)
+        int existingFaceCount = cmd.indicesCount / 3;
+        int wallFaceIdx = 0;
+        for (int e = 0; e < edgeCount; e++)
+        {
+            if (edgeHits[e] != 1)
+            {
+                continue;
+            }
+            int va = dirEdges[e].a;
+            int vb = dirEdges[e].b;
+            int newA = newLocalBase, newB = newLocalBase;
+            for (int i = 0; i < touchedCount; i++)
+            {
+                if (touched[i] == va)
+                {
+                    newA = newLocalBase + i;
+                }
+                if (touched[i] == vb)
+                {
+                    newB = newLocalBase + i;
+                }
+            }
+            int wallBase = cmd.indexOffset + cmd.indicesCount + wallFaceIdx * 6;
+            indices[wallBase + 0] = va;
+            indices[wallBase + 1] = vb;
+            indices[wallBase + 2] = newB;
+            indices[wallBase + 3] = va;
+            indices[wallBase + 4] = newB;
+            indices[wallBase + 5] = newA;
+            Color orig = faceColors[faceOffsets[obj] + faces[dirEdges[e].face]];
+            Color wallColor = {orig.r * 0.6f, orig.g * 0.6f, orig.b * 0.6f, orig.a};
+            faceColors[faceOffsets[obj] + existingFaceCount + wallFaceIdx * 2 + 0] = wallColor;
+            faceColors[faceOffsets[obj] + existingFaceCount + wallFaceIdx * 2 + 1] = wallColor;
+            wallFaceIdx++;
+        }
+
+        // displace new vertices slightly along the face normal
+        float dist = 0.05f;
+        for (int i = 0; i < touchedCount; i++)
+        {
+            vertices[vtxCount + i].x += nx * dist;
+            vertices[vtxCount + i].y += ny * dist;
+            vertices[vtxCount + i].z += nz * dist;
+        }
+
+        int added = wallFaceIdx * 6;
+        vtxCount += touchedCount;
+        idxCount += added;
+        cmd.indicesCount += added;
+
+        update_geometry();
+        update_commands();
+        update_face_colors();
+    }
 };
 
 struct UndoStack
@@ -233,6 +401,12 @@ struct UndoStack
     Color faceColors[MAX_UNDO][MAX_INDICES / 3];
     TRS transforms[MAX_UNDO][MAX_OBJECTS];
     Mat4 models[MAX_UNDO][MAX_OBJECTS];
+    unsigned int indices[MAX_UNDO][MAX_INDICES];
+    DrawCommand commands[MAX_UNDO][MAX_OBJECTS];
+    int faceOffsets[MAX_UNDO][MAX_OBJECTS];
+    int vtxCounts[MAX_UNDO];
+    int idxCounts[MAX_UNDO];
+    int objCounts[MAX_UNDO];
     int head = 0;
     int count = 0;
 
@@ -243,6 +417,12 @@ struct UndoStack
         memcpy(faceColors[i], buf.faceColors, sizeof(faceColors[i]));
         memcpy(transforms[i], buf.transforms, sizeof(transforms[i]));
         memcpy(models[i], buf.models, sizeof(models[i]));
+        memcpy(indices[i], buf.indices, sizeof(indices[i]));
+        memcpy(commands[i], buf.commands, sizeof(commands[i]));
+        memcpy(faceOffsets[i], buf.faceOffsets, sizeof(faceOffsets[i]));
+        vtxCounts[i] = buf.vtxCount;
+        idxCounts[i] = buf.idxCount;
+        objCounts[i] = buf.objCount;
         if (count == MAX_UNDO)
         {
             head = (head + 1) % MAX_UNDO;
@@ -265,6 +445,12 @@ struct UndoStack
         memcpy(buf.faceColors, faceColors[i], sizeof(faceColors[i]));
         memcpy(buf.transforms, transforms[i], sizeof(transforms[i]));
         memcpy(buf.models, models[i], sizeof(models[i]));
+        memcpy(buf.indices, indices[i], sizeof(indices[i]));
+        memcpy(buf.commands, commands[i], sizeof(commands[i]));
+        memcpy(buf.faceOffsets, faceOffsets[i], sizeof(faceOffsets[i]));
+        buf.vtxCount = vtxCounts[i];
+        buf.idxCount = idxCounts[i];
+        buf.objCount = objCounts[i];
         return true;
     }
 };
