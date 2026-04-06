@@ -125,6 +125,10 @@ int main(int argc, char *argv[])
     {
         glfwPollEvents();
         editor::process_input(input, state, triangles, undoStack);
+        if (state.shouldQuit)
+        {
+            break;
+        }
         input.reset();
 
         Mat4 cubeMat = trs::compose(triangles.transforms[cubeRef]);
@@ -142,28 +146,7 @@ int main(int argc, char *argv[])
         highlight.idxCount = 0;
         highlight.objCount = 1;
 
-        if (state.mode >= Mode::TRANSLATE_FACE)
-        {
-            DrawCommand &cmd = triangles.commands[cubeRef];
-            auto addFaceEdges = [&](int face, Color color) {
-                int base = cmd.indexOffset + face * 3;
-                Vec4 v[3] = {
-                    triangles.vertices[cmd.vertexOffset + triangles.indices[base + 0]],
-                    triangles.vertices[cmd.vertexOffset + triangles.indices[base + 1]],
-                    triangles.vertices[cmd.vertexOffset + triangles.indices[base + 2]],
-                };
-                unsigned int idx[6] = {0, 1, 1, 2, 2, 0};
-                Color c[3] = {color, color, color};
-                Ref r = highlight.add({v, 3, idx, 6, c, 3}, TRS{});
-                highlight.models[r] = cubeMat;
-            };
-
-            addFaceEdges(state.faceCursor, {1.0f, 0.8f, 0.0f, 1});
-            for (int i = 0; i < state.selectedFaceCount; i++)
-            {
-                addFaceEdges(state.selectedFaces[i], {1.0f, 0.4f, 0.0f, 1});
-            }
-        }
+        editor::build_highlights(state, triangles, cubeRef, highlight, cubeMat);
         highlight.update();
 
         triangles.draw();

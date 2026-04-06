@@ -2,11 +2,15 @@
 #include "trs.h"
 #include <GLFW/glfw3.h>
 #include <cstdio>
+#include <fstream>
+#include <iostream>
+#include <string>
 
 // TODO: review keybindings for more convinience:
 // - hold n/p to cycle selection (might require key repeat timer)
 // - review rotation to allow world rotation in any mode (it's how the user is able to see the model)
 // TODO: review keybindings architecture
+// TODO: review .obj and .mtl file logic (AI slop)
 
 static void extrude_active_faces(EditorState &s, DrawBuffer &buf)
 {
@@ -625,6 +629,227 @@ static const Binding bindings[] = {
     {Mode::EXTRUDE_FACE_VISUAL, GLFW_KEY_A, 0, true, false, [](EditorState &s, DrawBuffer &, const Input &) { s.mode = Mode::SHEAR_FACE_VISUAL; }},
 };
 
+static std::string mtl_path(const std::string &obj_path)
+{
+    size_t dot = obj_path.rfind('.');
+    if (dot == std::string::npos)
+    {
+        return obj_path + ".mtl";
+    }
+    return obj_path.substr(0, dot) + ".mtl";
+}
+
+static std::string path_basename(const std::string &path)
+{
+    size_t slash = path.rfind('/');
+    if (slash == std::string::npos)
+    {
+        return path;
+    }
+    return path.substr(slash + 1);
+}
+
+static void obj_export(const DrawBuffer &buf, Ref obj, const std::string &path)
+{
+    const DrawCommand &cmd = buf.commands[obj];
+
+    int maxVtx = -1;
+    for (unsigned int i = 0; i < cmd.indicesCount; i++)
+    {
+        int idx = (int)buf.indices[cmd.indexOffset + i];
+        if (idx > maxVtx)
+        {
+            maxVtx = idx;
+        }
+    }
+    int vtxCount = maxVtx + 1;
+    int faceCount = cmd.indicesCount / 3;
+    int faceOffset = buf.faceOffsets[obj];
+
+    std::string mpath = mtl_path(path);
+    std::ofstream mtl(mpath);
+    if (!mtl)
+    {
+        printf("E: cannot open %s for writing\n", mpath.c_str());
+        return;
+    }
+    for (int i = 0; i < faceCount; i++)
+    {
+        const Color &col = buf.faceColors[faceOffset + i];
+        mtl << "newmtl mat_" << i << "\n";
+        mtl << "Kd " << col.r << " " << col.g << " " << col.b << "\n";
+        mtl << "d " << col.a << "\n\n";
+    }
+
+    std::ofstream f(path);
+    if (!f)
+    {
+        printf("E: cannot open %s for writing\n", path.c_str());
+        return;
+    }
+
+    f << "mtllib " << path_basename(mpath) << "\no model\n";
+    for (int i = 0; i < vtxCount; i++)
+    {
+        Vec4 w = buf.models[obj] * buf.vertices[cmd.vertexOffset + i];
+        f << "v " << w.x << " " << w.y << " " << w.z << "\n";
+    }
+    for (unsigned int i = 0; i < cmd.indicesCount; i += 3)
+    {
+        f << "usemtl mat_" << i / 3 << "\n";
+        f << "f " << buf.indices[cmd.indexOffset + i + 0] + 1 << " " << buf.indices[cmd.indexOffset + i + 1] + 1 << " "
+          << buf.indices[cmd.indexOffset + i + 2] + 1 << "\n";
+    }
+
+    printf("saved %s\n", path.c_str());
+}
+
+static bool obj_import(DrawBuffer &buf, EditorState &state, const std::string &path)
+{
+    std::ifstream f(path);
+    if (!f)
+    {
+        printf("E: cannot open %s\n", path.c_str());
+        return false;
+    }
+
+    Color matColors[MAX_INDICES / 3] = {};
+    Color defaultColor = {1.0f, 0.6f, 0.2f, 1.0f};
+
+    Vec4 loadedVerts[MAX_VERTICES];
+    int loadedVtxCount = 0;
+    unsigned int loadedIndices[MAX_INDICES];
+    int loadedIdxCount = 0;
+    Color loadedColors[MAX_INDICES / 3];
+    int loadedFaceCount = 0;
+
+    Color currentColor = defaultColor;
+
+    std::string line;
+    while (std::getline(f, line))
+    {
+        if (line.size() > 7 && line[0] == 'm' && line.substr(0, 7) == "mtllib ")
+        {
+            std::string mpath = mtl_path(path);
+            std::ifstream mf(mpath);
+            if (mf)
+            {
+                int idx = -1;
+                std::string mline;
+                while (std::getline(mf, mline))
+                {
+                    if (mline.size() > 7 && mline.substr(0, 7) == "newmtl ")
+                    {
+                        sscanf(mline.c_str() + 7, "mat_%d", &idx);
+                        if (idx >= 0 && idx < MAX_INDICES / 3)
+                        {
+                            matColors[idx] = defaultColor;
+                        }
+                    }
+                    else if (mline.size() > 3 && mline[0] == 'K' && mline[1] == 'd' && mline[2] == ' ')
+                    {
+                        if (idx >= 0 && idx < MAX_INDICES / 3)
+                        {
+                            sscanf(mline.c_str() + 3, "%f %f %f", &matColors[idx].r, &matColors[idx].g,
+                                   &matColors[idx].b);
+                        }
+                    }
+                    else if (mline.size() > 2 && mline[0] == 'd' && mline[1] == ' ')
+                    {
+                        if (idx >= 0 && idx < MAX_INDICES / 3)
+                        {
+                            sscanf(mline.c_str() + 2, "%f", &matColors[idx].a);
+                        }
+                    }
+                }
+            }
+        }
+        else if (line.size() > 7 && line.substr(0, 7) == "usemtl ")
+        {
+            int idx = -1;
+            sscanf(line.c_str() + 7, "mat_%d", &idx);
+            if (idx >= 0 && idx < MAX_INDICES / 3)
+            {
+                currentColor = matColors[idx];
+            }
+        }
+        else if (line.size() >= 2 && line[0] == 'v' && line[1] == ' ')
+        {
+            if (loadedVtxCount >= MAX_VERTICES)
+            {
+                printf("E: too many vertices in %s\n", path.c_str());
+                return false;
+            }
+            float x, y, z;
+            sscanf(line.c_str() + 2, "%f %f %f", &x, &y, &z);
+            loadedVerts[loadedVtxCount++] = {x, y, z, 1.0f};
+        }
+        else if (line.size() >= 2 && line[0] == 'f' && line[1] == ' ')
+        {
+            if (loadedIdxCount + 3 > MAX_INDICES)
+            {
+                printf("E: too many faces in %s\n", path.c_str());
+                return false;
+            }
+            unsigned int a, b, c;
+            sscanf(line.c_str() + 2, "%u %u %u", &a, &b, &c);
+            loadedIndices[loadedIdxCount++] = a - 1;
+            loadedIndices[loadedIdxCount++] = b - 1;
+            loadedIndices[loadedIdxCount++] = c - 1;
+            loadedColors[loadedFaceCount++] = currentColor;
+        }
+    }
+
+    buf.vtxCount = 0;
+    buf.idxCount = 0;
+    buf.objCount = 1;
+
+    Geometry geo = {loadedVerts, loadedVtxCount, loadedIndices, loadedIdxCount, loadedColors, loadedFaceCount};
+    Ref newRef = buf.add(geo, TRS{});
+    buf.update();
+
+    state.selectedRef = newRef;
+    state.faceCursor = 0;
+    state.selectedFaceCount = 0;
+    state.mode = Mode::NORMAL;
+
+    printf("loaded %s\n", path.c_str());
+    return true;
+}
+
+static void execute_command(EditorState &state, DrawBuffer &buf, const std::string &cmd)
+{
+    if (cmd == "q")
+    {
+        state.shouldQuit = true;
+    }
+    else if (cmd == "w")
+    {
+        if (state.currentFile.empty())
+        {
+            state.currentFile = "model.obj";
+        }
+        obj_export(buf, state.selectedRef, state.currentFile);
+    }
+    else if (cmd.size() > 2 && cmd[0] == 'w' && cmd[1] == ' ')
+    {
+        state.currentFile = cmd.substr(2);
+        obj_export(buf, state.selectedRef, state.currentFile);
+    }
+    else if (cmd.size() > 2 && cmd[0] == 'e' && cmd[1] == ' ')
+    {
+        std::string path = cmd.substr(2);
+        if (obj_import(buf, state, path))
+        {
+            state.currentFile = path;
+        }
+    }
+    else
+    {
+        printf("E: unknown command: %s\n", cmd.c_str());
+    }
+}
+
 static const char *mode_name(Mode m)
 {
     switch (m)
@@ -737,8 +962,31 @@ static const char *mode_name(Mode m)
     return "?";
 }
 
+void editor::build_highlights(const EditorState &state, DrawBuffer &buf, Ref obj, DrawBuffer &highlight, Mat4 model)
+{
+    if (state.mode < Mode::TRANSLATE_FACE)
+    {
+        return;
+    }
+    buf.add_face_highlights(highlight, obj, state.faceCursor, {1.0f, 0.8f, 0.0f, 1}, model);
+    for (int i = 0; i < state.selectedFaceCount; i++)
+    {
+        buf.add_face_highlights(highlight, obj, state.selectedFaces[i], {1.0f, 0.4f, 0.0f, 1}, model);
+    }
+}
+
 void editor::process_input(const Input &in, EditorState &state, DrawBuffer &buf, UndoStack &undo)
 {
+    if (in.keys[GLFW_KEY_SEMICOLON] == KeyState::JustPressed && (in.mods & GLFW_MOD_SHIFT))
+    {
+        printf(":");
+        fflush(stdout);
+        std::string cmd;
+        std::getline(std::cin, cmd);
+        execute_command(state, buf, cmd);
+        return;
+    }
+
     if (in.keys[GLFW_KEY_U] == KeyState::Released && in.mods == 0)
     {
         if (undo.pop(buf))

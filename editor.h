@@ -4,6 +4,7 @@
 #include "buffer.h"
 #include "input.h"
 #include "trs.h"
+#include <string>
 
 enum class Mode
 {
@@ -109,6 +110,8 @@ struct EditorState
     int selectedFaces[MAX_INDICES / 3] = {};
     int selectedFaceCount = 0;
     bool wireframe = false;
+    std::string currentFile;
+    bool shouldQuit = false;
 };
 
 using ActionFn = void (*)(EditorState &, DrawBuffer &, const Input &);
@@ -126,6 +129,7 @@ struct Binding
 namespace editor
 {
 void process_input(const Input &input, EditorState &state, DrawBuffer &buf, UndoStack &undo);
-}
+void build_highlights(const EditorState &state, DrawBuffer &buf, Ref obj, DrawBuffer &highlight, Mat4 model);
+} // namespace editor
 
 #endif

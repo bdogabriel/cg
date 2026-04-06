@@ -14,16 +14,13 @@
 // TODO: use non-triangular faces for selecting/editing (selecting each triangle individually is a pain)
 // TODO: cycle faces sorted by distance to the camera (select faces that the user is "looking at")
 // TODO: "glue" two objects: parent/child or just concatenate
+// TODO: review code that creates temporary buffers with MAX_VERTICES, MAX_INDICES etc
+// TODO: review face transform and extrude (AI slop)
 
 const int MAX_VERTICES = 8000;
 const int MAX_INDICES = 24000;
 const int MAX_OBJECTS = 2000;
 const int MAX_UNDO = 32;
-
-struct Vec4
-{
-    float x, y, z, w;
-};
 
 struct Color
 {
@@ -166,6 +163,21 @@ struct DrawBuffer
         update_commands();
     }
 
+    void add_face_highlights(DrawBuffer &highlight, Ref obj, int face, Color color, Mat4 model)
+    {
+        DrawCommand &cmd = commands[obj];
+        int base = cmd.indexOffset + face * 3;
+        Vec4 v[3] = {
+            vertices[cmd.vertexOffset + indices[base + 0]],
+            vertices[cmd.vertexOffset + indices[base + 1]],
+            vertices[cmd.vertexOffset + indices[base + 2]],
+        };
+        unsigned int idx[6] = {0, 1, 1, 2, 2, 0};
+        Color c[3] = {color, color, color};
+        Ref r = highlight.add({v, 3, idx, 6, c, 3}, TRS{});
+        highlight.models[r] = model;
+    }
+
     void free()
     {
         glDeleteVertexArrays(1, &vao);
@@ -217,25 +229,21 @@ struct DrawBuffer
         int touched[MAX_VERTICES];
         int touchedCount = touched_vertices(cmd, faces, faceCount, touched, cmd.vertexOffset);
 
-        float cx = 0, cy = 0, cz = 0;
+        Vec4 centroid = {};
         for (int i = 0; i < touchedCount; i++)
         {
-            cx += vertices[touched[i]].x;
-            cy += vertices[touched[i]].y;
-            cz += vertices[touched[i]].z;
+            centroid += vertices[touched[i]];
         }
-        cx /= touchedCount;
-        cy /= touchedCount;
-        cz /= touchedCount;
+        centroid *= (1.0f / touchedCount);
 
-        const float *m = t.data();
         for (int i = 0; i < touchedCount; i++)
         {
             Vec4 &vx = vertices[touched[i]];
-            float lx = vx.x - cx, ly = vx.y - cy, lz = vx.z - cz;
-            vx.x = m[0] * lx + m[4] * ly + m[8] * lz + m[12] + cx;
-            vx.y = m[1] * lx + m[5] * ly + m[9] * lz + m[13] + cy;
-            vx.z = m[2] * lx + m[6] * ly + m[10] * lz + m[14] + cz;
+            Vec4 local = {vx.x - centroid.x, vx.y - centroid.y, vx.z - centroid.z, 1.0f};
+            Vec4 result = t * local;
+            vx.x = result.x + centroid.x;
+            vx.y = result.y + centroid.y;
+            vx.z = result.z + centroid.z;
         }
 
         update_geometry();
@@ -254,26 +262,16 @@ struct DrawBuffer
         int touchedCount = touched_vertices(cmd, faces, faceCount, touched, 0);
 
         // averaged face normal
-        float nx = 0, ny = 0, nz = 0;
+        Vec4 normal = {};
         for (int f = 0; f < faceCount; f++)
         {
             int base = cmd.indexOffset + faces[f] * 3;
             Vec4 &a = vertices[cmd.vertexOffset + indices[base + 0]];
             Vec4 &b = vertices[cmd.vertexOffset + indices[base + 1]];
             Vec4 &c = vertices[cmd.vertexOffset + indices[base + 2]];
-            float ex = b.x - a.x, ey = b.y - a.y, ez = b.z - a.z;
-            float fx = c.x - a.x, fy = c.y - a.y, fz = c.z - a.z;
-            nx += ey * fz - ez * fy;
-            ny += ez * fx - ex * fz;
-            nz += ex * fy - ey * fx;
+            normal += vec4::cross(b - a, c - a);
         }
-        float len = sqrtf(nx * nx + ny * ny + nz * nz);
-        if (len > 0)
-        {
-            nx /= len;
-            ny /= len;
-            nz /= len;
-        }
+        normal = vec4::normalize(normal);
 
         // directed boundary edges (appear in exactly one selected face)
         struct Edge
@@ -376,12 +374,10 @@ struct DrawBuffer
         }
 
         // displace new vertices slightly along the face normal
-        float dist = 0.05f;
+        Vec4 offset = normal * 0.05f;
         for (int i = 0; i < touchedCount; i++)
         {
-            vertices[vtxCount + i].x += nx * dist;
-            vertices[vtxCount + i].y += ny * dist;
-            vertices[vtxCount + i].z += nz * dist;
+            vertices[vtxCount + i] += offset;
         }
 
         int added = wallFaceIdx * 6;
