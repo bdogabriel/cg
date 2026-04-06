@@ -119,10 +119,12 @@ int main(int argc, char *argv[])
     EditorState state;
     state.selectedRef = cubeRef;
 
+    static UndoStack undoStack;
+
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
-        editor::process_input(input, state, triangles);
+        editor::process_input(input, state, triangles, undoStack);
         input.reset();
 
         Mat4 cubeMat = trs::compose(triangles.transforms[cubeRef]);

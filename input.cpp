@@ -5,7 +5,7 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action, 
     Input *inp = static_cast<Input *>(glfwGetWindowUserPointer(window));
     if (action == GLFW_PRESS)
     {
-        inp->keys[key] = KeyState::Down;
+        inp->keys[key] = KeyState::JustPressed;
     }
     else if (action == GLFW_RELEASE)
     {
@@ -28,6 +28,10 @@ void Input::reset()
         if (k == KeyState::Released)
         {
             k = KeyState::Up;
+        }
+        else if (k == KeyState::JustPressed)
+        {
+            k = KeyState::Down;
         }
     }
 }

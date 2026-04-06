@@ -9,6 +9,7 @@
 const int MAX_VERTICES = 8000;
 const int MAX_INDICES = 24000;
 const int MAX_OBJECTS = 2000;
+const int MAX_UNDO = 32;
 
 struct Vec4
 {
@@ -223,6 +224,48 @@ struct DrawBuffer
         }
 
         update_geometry();
+    }
+};
+
+struct UndoStack
+{
+    Vec4 vertices[MAX_UNDO][MAX_VERTICES];
+    Color faceColors[MAX_UNDO][MAX_INDICES / 3];
+    TRS transforms[MAX_UNDO][MAX_OBJECTS];
+    Mat4 models[MAX_UNDO][MAX_OBJECTS];
+    int head = 0;
+    int count = 0;
+
+    void push(const DrawBuffer &buf)
+    {
+        int i = (head + count) % MAX_UNDO;
+        memcpy(vertices[i], buf.vertices, sizeof(vertices[i]));
+        memcpy(faceColors[i], buf.faceColors, sizeof(faceColors[i]));
+        memcpy(transforms[i], buf.transforms, sizeof(transforms[i]));
+        memcpy(models[i], buf.models, sizeof(models[i]));
+        if (count == MAX_UNDO)
+        {
+            head = (head + 1) % MAX_UNDO;
+        }
+        else
+        {
+            ++count;
+        }
+    }
+
+    bool pop(DrawBuffer &buf)
+    {
+        if (count == 0)
+        {
+            return false;
+        }
+        --count;
+        int i = (head + count) % MAX_UNDO;
+        memcpy(buf.vertices, vertices[i], sizeof(vertices[i]));
+        memcpy(buf.faceColors, faceColors[i], sizeof(faceColors[i]));
+        memcpy(buf.transforms, transforms[i], sizeof(transforms[i]));
+        memcpy(buf.models, models[i], sizeof(models[i]));
+        return true;
     }
 };
 

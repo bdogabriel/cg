@@ -432,8 +432,8 @@ static const Binding bindings[] = {
     {Mode::TRANSLATE,   GLFW_KEY_L, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { trs::translate(buf.transforms[s.selectedRef],  s.cfg.keySensitivity, 0, 0); }},
     {Mode::TRANSLATE,   GLFW_KEY_J, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { trs::translate(buf.transforms[s.selectedRef], 0, -s.cfg.keySensitivity, 0); }},
     {Mode::TRANSLATE,   GLFW_KEY_K, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { trs::translate(buf.transforms[s.selectedRef], 0,  s.cfg.keySensitivity, 0); }},
-    {Mode::TRANSLATE,   GLFW_KEY_U, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { trs::translate(buf.transforms[s.selectedRef], 0, 0,  s.cfg.keySensitivity); }},
-    {Mode::TRANSLATE,   GLFW_KEY_D, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { trs::translate(buf.transforms[s.selectedRef], 0, 0, -s.cfg.keySensitivity); }},
+    {Mode::TRANSLATE,   GLFW_KEY_U, GLFW_MOD_CONTROL, false, [](EditorState &s, DrawBuffer &buf, const Input &) { trs::translate(buf.transforms[s.selectedRef], 0, 0,  s.cfg.keySensitivity); }},
+    {Mode::TRANSLATE,   GLFW_KEY_D, GLFW_MOD_CONTROL, false, [](EditorState &s, DrawBuffer &buf, const Input &) { trs::translate(buf.transforms[s.selectedRef], 0, 0, -s.cfg.keySensitivity); }},
     {Mode::TRANSLATE_X, GLFW_KEY_J, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { trs::translate_local(buf.transforms[s.selectedRef], -s.cfg.keySensitivity, 0, 0); }},
     {Mode::TRANSLATE_X, GLFW_KEY_K, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { trs::translate_local(buf.transforms[s.selectedRef],  s.cfg.keySensitivity, 0, 0); }},
     {Mode::TRANSLATE_Y, GLFW_KEY_J, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { trs::translate_local(buf.transforms[s.selectedRef], 0, -s.cfg.keySensitivity, 0); }},
@@ -445,8 +445,8 @@ static const Binding bindings[] = {
     {Mode::ROTATE,   GLFW_KEY_L, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { buf.transforms[s.selectedRef].r = s.cfg.rotateY    * buf.transforms[s.selectedRef].r; }},
     {Mode::ROTATE,   GLFW_KEY_J, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { buf.transforms[s.selectedRef].r = s.cfg.rotateX    * buf.transforms[s.selectedRef].r; }},
     {Mode::ROTATE,   GLFW_KEY_K, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { buf.transforms[s.selectedRef].r = s.cfg.rotateXNeg * buf.transforms[s.selectedRef].r; }},
-    {Mode::ROTATE,   GLFW_KEY_U, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { buf.transforms[s.selectedRef].r = s.cfg.rotateZ    * buf.transforms[s.selectedRef].r; }},
-    {Mode::ROTATE,   GLFW_KEY_D, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { buf.transforms[s.selectedRef].r = s.cfg.rotateZNeg * buf.transforms[s.selectedRef].r; }},
+    {Mode::ROTATE,   GLFW_KEY_U, GLFW_MOD_CONTROL, false, [](EditorState &s, DrawBuffer &buf, const Input &) { buf.transforms[s.selectedRef].r = s.cfg.rotateZ    * buf.transforms[s.selectedRef].r; }},
+    {Mode::ROTATE,   GLFW_KEY_D, GLFW_MOD_CONTROL, false, [](EditorState &s, DrawBuffer &buf, const Input &) { buf.transforms[s.selectedRef].r = s.cfg.rotateZNeg * buf.transforms[s.selectedRef].r; }},
     {Mode::ROTATE_X, GLFW_KEY_J, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { buf.transforms[s.selectedRef].r = buf.transforms[s.selectedRef].r * s.cfg.rotateXNeg; }},
     {Mode::ROTATE_X, GLFW_KEY_K, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { buf.transforms[s.selectedRef].r = buf.transforms[s.selectedRef].r * s.cfg.rotateX;    }},
     {Mode::ROTATE_Y, GLFW_KEY_J, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { buf.transforms[s.selectedRef].r = buf.transforms[s.selectedRef].r * s.cfg.rotateYNeg; }},
@@ -458,8 +458,8 @@ static const Binding bindings[] = {
     {Mode::SCALE,   GLFW_KEY_L, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { trs::scale(buf.transforms[s.selectedRef], 1.0f + s.cfg.keySensitivity, 1, 1); }},
     {Mode::SCALE,   GLFW_KEY_J, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { trs::scale(buf.transforms[s.selectedRef], 1, 1.0f - s.cfg.keySensitivity, 1); }},
     {Mode::SCALE,   GLFW_KEY_K, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { trs::scale(buf.transforms[s.selectedRef], 1, 1.0f + s.cfg.keySensitivity, 1); }},
-    {Mode::SCALE,   GLFW_KEY_U, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { trs::scale(buf.transforms[s.selectedRef], 1, 1, 1.0f + s.cfg.keySensitivity); }},
-    {Mode::SCALE,   GLFW_KEY_D, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { trs::scale(buf.transforms[s.selectedRef], 1, 1, 1.0f - s.cfg.keySensitivity); }},
+    {Mode::SCALE,   GLFW_KEY_U, GLFW_MOD_CONTROL, false, [](EditorState &s, DrawBuffer &buf, const Input &) { trs::scale(buf.transforms[s.selectedRef], 1, 1, 1.0f + s.cfg.keySensitivity); }},
+    {Mode::SCALE,   GLFW_KEY_D, GLFW_MOD_CONTROL, false, [](EditorState &s, DrawBuffer &buf, const Input &) { trs::scale(buf.transforms[s.selectedRef], 1, 1, 1.0f - s.cfg.keySensitivity); }},
     {Mode::SCALE_X, GLFW_KEY_J, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { trs::scale(buf.transforms[s.selectedRef], 1.0f - s.cfg.keySensitivity, 1, 1); }},
     {Mode::SCALE_X, GLFW_KEY_K, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { trs::scale(buf.transforms[s.selectedRef], 1.0f + s.cfg.keySensitivity, 1, 1); }},
     {Mode::SCALE_Y, GLFW_KEY_J, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { trs::scale(buf.transforms[s.selectedRef], 1, 1.0f - s.cfg.keySensitivity, 1); }},
@@ -484,8 +484,8 @@ static const Binding bindings[] = {
     {Mode::TRANSLATE_FACE,   GLFW_KEY_L, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.translateX);    }},
     {Mode::TRANSLATE_FACE,   GLFW_KEY_J, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.translateYNeg); }},
     {Mode::TRANSLATE_FACE,   GLFW_KEY_K, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.translateY);    }},
-    {Mode::TRANSLATE_FACE,   GLFW_KEY_U, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.translateZ);    }},
-    {Mode::TRANSLATE_FACE,   GLFW_KEY_D, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.translateZNeg); }},
+    {Mode::TRANSLATE_FACE,   GLFW_KEY_U, GLFW_MOD_CONTROL, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.translateZ);    }},
+    {Mode::TRANSLATE_FACE,   GLFW_KEY_D, GLFW_MOD_CONTROL, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.translateZNeg); }},
     {Mode::TRANSLATE_FACE_X, GLFW_KEY_J, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.translateXNeg); }},
     {Mode::TRANSLATE_FACE_X, GLFW_KEY_K, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.translateX);    }},
     {Mode::TRANSLATE_FACE_Y, GLFW_KEY_J, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.translateYNeg); }},
@@ -497,8 +497,8 @@ static const Binding bindings[] = {
     {Mode::ROTATE_FACE,   GLFW_KEY_L, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.rotateY);    }},
     {Mode::ROTATE_FACE,   GLFW_KEY_J, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.rotateX);    }},
     {Mode::ROTATE_FACE,   GLFW_KEY_K, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.rotateXNeg); }},
-    {Mode::ROTATE_FACE,   GLFW_KEY_U, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.rotateZ);    }},
-    {Mode::ROTATE_FACE,   GLFW_KEY_D, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.rotateZNeg); }},
+    {Mode::ROTATE_FACE,   GLFW_KEY_U, GLFW_MOD_CONTROL, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.rotateZ);    }},
+    {Mode::ROTATE_FACE,   GLFW_KEY_D, GLFW_MOD_CONTROL, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.rotateZNeg); }},
     {Mode::ROTATE_FACE_X, GLFW_KEY_J, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.rotateXNeg); }},
     {Mode::ROTATE_FACE_X, GLFW_KEY_K, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.rotateX);    }},
     {Mode::ROTATE_FACE_Y, GLFW_KEY_J, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.rotateYNeg); }},
@@ -510,8 +510,8 @@ static const Binding bindings[] = {
     {Mode::SCALE_FACE,   GLFW_KEY_L, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.scaleX);    }},
     {Mode::SCALE_FACE,   GLFW_KEY_J, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.scaleYNeg); }},
     {Mode::SCALE_FACE,   GLFW_KEY_K, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.scaleY);    }},
-    {Mode::SCALE_FACE,   GLFW_KEY_U, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.scaleZ);    }},
-    {Mode::SCALE_FACE,   GLFW_KEY_D, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.scaleZNeg); }},
+    {Mode::SCALE_FACE,   GLFW_KEY_U, GLFW_MOD_CONTROL, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.scaleZ);    }},
+    {Mode::SCALE_FACE,   GLFW_KEY_D, GLFW_MOD_CONTROL, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.scaleZNeg); }},
     {Mode::SCALE_FACE_X, GLFW_KEY_J, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.scaleXNeg); }},
     {Mode::SCALE_FACE_X, GLFW_KEY_K, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.scaleX);    }},
     {Mode::SCALE_FACE_Y, GLFW_KEY_J, 0, false, [](EditorState &s, DrawBuffer &buf, const Input &) { transform_active_faces(s, buf, s.cfg.scaleYNeg); }},
@@ -691,19 +691,32 @@ static const char *mode_name(Mode m)
     return "?";
 }
 
-void editor::process_input(const Input &in, EditorState &state, DrawBuffer &buf)
+void editor::process_input(const Input &in, EditorState &state, DrawBuffer &buf, UndoStack &undo)
 {
+    if (in.keys[GLFW_KEY_U] == KeyState::Released && in.mods == 0)
+    {
+        if (undo.pop(buf))
+        {
+            buf.update();
+        }
+    }
+
     Mode mode = state.mode;
     for (const Binding &b : bindings)
     {
-        bool triggered = in.keys[b.key] == (b.oneShot ? KeyState::Released : KeyState::Down);
+        bool triggered = b.oneShot ? in.keys[b.key] == KeyState::Released
+                                   : (in.keys[b.key] == KeyState::Down || in.keys[b.key] == KeyState::JustPressed);
         if ((b.mode == mode || b.mode == Mode::ANY) && triggered && b.mods == in.mods)
         {
+            if (!b.oneShot && in.keys[b.key] == KeyState::JustPressed)
+            {
+                undo.push(buf);
+            }
             b.action(state, buf, in);
         }
     }
     if (state.mode != mode)
     {
-        printf("mode: %s\n", mode_name(state.mode));
+        printf("%s\n", mode_name(state.mode));
     }
 }

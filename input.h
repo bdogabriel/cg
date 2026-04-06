@@ -6,6 +6,7 @@
 enum class KeyState
 {
     Up,
+    JustPressed,
     Down,
     Released
 };

@@ -122,7 +122,7 @@ struct Binding
 
 namespace editor
 {
-void process_input(const Input &input, EditorState &state, DrawBuffer &buf);
+void process_input(const Input &input, EditorState &state, DrawBuffer &buf, UndoStack &undo);
 }
 
 #endif
