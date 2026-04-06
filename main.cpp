@@ -100,9 +100,9 @@ int main(int argc, char *argv[])
     triangles.init(IDX_VERTEX);
     triangles.update();
 
-    DrawBuffer highlight;
-    highlight.primitive = GL_LINES;
-    highlight.init(IDX_VERTEX);
+    DrawBuffer highlights;
+    highlights.primitive = GL_LINES;
+    highlights.init(IDX_VERTEX);
 
     DrawBuffer lines;
     lines.primitive = GL_LINES;
@@ -131,29 +131,26 @@ int main(int argc, char *argv[])
         }
         input.reset();
 
-        Mat4 cubeMat = trs::compose(triangles.transforms[cubeRef]);
-        TRS axisTRS = triangles.transforms[cubeRef];
+        Mat4 cubeMat = trs::compose(triangles.transforms[state.selectedRef]);
+        TRS axisTRS = triangles.transforms[state.selectedRef];
         axisTRS.sx = axisTRS.sy = axisTRS.sz = 0.8f;
         axisMat = trs::compose(axisTRS);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glPolygonMode(GL_FRONT_AND_BACK, state.wireframe ? GL_LINE : GL_FILL);
 
-        triangles.models[cubeRef] = cubeMat;
+        triangles.models[state.selectedRef] = cubeMat;
         triangles.update_models();
 
-        highlight.vtxCount = 0;
-        highlight.idxCount = 0;
-        highlight.objCount = 1;
-
-        editor::build_highlights(state, triangles, cubeRef, highlight, cubeMat);
-        highlight.update();
+        highlights.reset();
+        editor::build_highlights(state, triangles, state.selectedRef, highlights, cubeMat);
+        highlights.update();
 
         triangles.draw();
 
         glLineWidth(3.0f);
         glDepthFunc(GL_LEQUAL);
-        highlight.draw();
+        highlights.draw();
         glDepthFunc(GL_LESS);
         glLineWidth(1.0f);
 
@@ -167,7 +164,7 @@ int main(int argc, char *argv[])
     }
 
     triangles.free();
-    highlight.free();
+    highlights.free();
     lines.free();
     glDeleteProgram(program);
     glfwTerminate();

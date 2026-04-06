@@ -7,15 +7,15 @@
 #include <cmath>
 #include <cstring>
 
-// TODO: export and import .obj
 // TODO: review architecture and separate logic into more files
 // TODO: transform/extrude faces into their own local axis (normal as y)
 // TODO: shift object vertices to the end when extruding to allow more than one object in the buffer
 // TODO: use non-triangular faces for selecting/editing (selecting each triangle individually is a pain)
 // TODO: cycle faces sorted by distance to the camera (select faces that the user is "looking at")
-// TODO: "glue" two objects: parent/child or just concatenate
 // TODO: review code that creates temporary buffers with MAX_VERTICES, MAX_INDICES etc
 // TODO: review face transform and extrude (AI slop)
+// TODO: use intrusive list (used slots, next vertex offset etc)
+// TODO: refactor merge_obj to allow arbitrary selection
 
 const int MAX_VERTICES = 8000;
 const int MAX_INDICES = 24000;
@@ -59,12 +59,21 @@ struct DrawBuffer
     TRS transforms[MAX_OBJECTS] = {};
     Mat4 models[MAX_OBJECTS] = {};
     DrawCommand commands[MAX_OBJECTS] = {};
+    bool usedSlots[MAX_OBJECTS] = {};
 
     int vtxCount = 0;
     int idxCount = 0;
     int objCount = 1;
 
     GLuint vao = 0, vbo = 0, ebo = 0, commandBuffer = 0, modelBuffer = 0, faceColorBuffer = 0, faceOffsetBuffer = 0;
+
+    void reset()
+    {
+        vtxCount = 0;
+        idxCount = 0;
+        objCount = 1;
+        memset(usedSlots, 0, sizeof(usedSlots));
+    }
 
     Ref add(Geometry geo, TRS t)
     {
@@ -77,20 +86,42 @@ struct DrawBuffer
         vtxCount += geo.vertexCount;
         idxCount += geo.indexCount;
 
-        transforms[objCount] = t;
-        models[objCount] = trs::compose(t);
+        // find first unused slot (slot 0 is permanently reserved)
+        int slot = 1;
+        while (slot < MAX_OBJECTS && usedSlots[slot])
+        {
+            slot++;
+        }
+        usedSlots[slot] = true;
+        if (slot >= objCount)
+        {
+            objCount = slot + 1;
+        }
+
+        transforms[slot] = t;
+        models[slot] = trs::compose(t);
 
         int faceSize = (primitive == GL_TRIANGLES) ? 3 : 2;
-        faceOffsets[objCount] = idxOffset / faceSize;
-        memcpy(faceColors + faceOffsets[objCount], geo.faceColors, geo.faceCount * sizeof(Color));
+        faceOffsets[slot] = idxOffset / faceSize;
+        memcpy(faceColors + faceOffsets[slot], geo.faceColors, geo.faceCount * sizeof(Color));
 
-        commands[objCount] = {.indicesCount = (unsigned int)geo.indexCount,
-                              .copies = 1,
-                              .indexOffset = (unsigned int)idxOffset,
-                              .vertexOffset = vtxOffset,
-                              .baseInstance = 0};
+        commands[slot] = {.indicesCount = (unsigned int)geo.indexCount,
+                          .copies = 1,
+                          .indexOffset = (unsigned int)idxOffset,
+                          .vertexOffset = vtxOffset,
+                          .baseInstance = 0};
 
-        return objCount++;
+        return slot;
+    }
+
+    void free_slot(Ref obj)
+    {
+        usedSlots[obj] = false;
+        commands[obj].indicesCount = 0;
+        while (objCount > 1 && !usedSlots[objCount - 1])
+        {
+            objCount--;
+        }
     }
 
     void init(GLuint idxVertex)
@@ -176,6 +207,126 @@ struct DrawBuffer
         Color c[3] = {color, color, color};
         Ref r = highlight.add({v, 3, idx, 6, c, 3}, TRS{});
         highlight.models[r] = model;
+    }
+
+    void move_obj_to_end(Ref obj)
+    {
+        DrawCommand &cmd = commands[obj];
+        if (cmd.indexOffset + cmd.indicesCount == (unsigned int)idxCount)
+        {
+            return;
+        }
+
+        // find smallest vertexOffset among other objects that is > cmd.vertexOffset
+        int origVtxOffset = cmd.vertexOffset;
+        int origIdxOffset = cmd.indexOffset;
+        int origFaceOffset = faceOffsets[obj];
+
+        int nextVtxOffset = vtxCount;
+        for (int j = 1; j < objCount; j++)
+        {
+            if (!usedSlots[j] || j == obj)
+            {
+                continue;
+            }
+            if (commands[j].vertexOffset > origVtxOffset && commands[j].vertexOffset < nextVtxOffset)
+            {
+                nextVtxOffset = commands[j].vertexOffset;
+            }
+        }
+
+        int movedVtxCount = nextVtxOffset - origVtxOffset;
+        int movedIdxCount = (int)cmd.indicesCount;
+        int movedFaceCount = movedIdxCount / 3;
+
+        static Vec4 savedVerts[MAX_VERTICES];
+        static unsigned int savedIndices[MAX_INDICES];
+        static Color savedColors[MAX_INDICES / 3];
+
+        memcpy(savedVerts, vertices + origVtxOffset, movedVtxCount * sizeof(Vec4));
+        memcpy(savedIndices, indices + origIdxOffset, movedIdxCount * sizeof(unsigned int));
+        memcpy(savedColors, faceColors + origFaceOffset, movedFaceCount * sizeof(Color));
+
+        // shift left
+        memmove(vertices + origVtxOffset, vertices + origVtxOffset + movedVtxCount,
+                (vtxCount - origVtxOffset - movedVtxCount) * sizeof(Vec4));
+        memmove(indices + origIdxOffset, indices + origIdxOffset + movedIdxCount,
+                (idxCount - origIdxOffset - movedIdxCount) * sizeof(unsigned int));
+        memmove(faceColors + origFaceOffset, faceColors + origFaceOffset + movedFaceCount,
+                (idxCount / 3 - origFaceOffset - movedFaceCount) * sizeof(Color));
+
+        // paste at tail
+        int newVtxOffset = vtxCount - movedVtxCount;
+        int newIdxOffset = idxCount - movedIdxCount;
+        int newFaceOffset = idxCount / 3 - movedFaceCount;
+
+        memcpy(vertices + newVtxOffset, savedVerts, movedVtxCount * sizeof(Vec4));
+        memcpy(indices + newIdxOffset, savedIndices, movedIdxCount * sizeof(unsigned int));
+        memcpy(faceColors + newFaceOffset, savedColors, movedFaceCount * sizeof(Color));
+
+        // update offsets
+        cmd.vertexOffset = newVtxOffset;
+        cmd.indexOffset = newIdxOffset;
+        faceOffsets[obj] = newFaceOffset;
+
+        for (int j = 1; j < objCount; j++)
+        {
+            if (!usedSlots[j] || j == obj)
+            {
+                continue;
+            }
+            if (commands[j].vertexOffset > origVtxOffset)
+            {
+                commands[j].vertexOffset -= movedVtxCount;
+            }
+            if ((int)commands[j].indexOffset > origIdxOffset)
+            {
+                commands[j].indexOffset -= movedIdxCount;
+            }
+            if (faceOffsets[j] > origFaceOffset)
+            {
+                faceOffsets[j] -= movedFaceCount;
+            }
+        }
+
+        update_geometry();
+        update_commands();
+        update_face_colors();
+        update_models();
+    }
+
+    Ref merge_obj(Ref dst, Ref src)
+    {
+        move_obj_to_end(dst);
+        move_obj_to_end(src);
+
+        // transform src vertices into dst's local space
+        Mat4 xform = mat4::inverse(models[dst]) * models[src];
+        int srcVtxStart = commands[src].vertexOffset;
+        int srcVtxCount = vtxCount - srcVtxStart;
+        for (int i = 0; i < srcVtxCount; i++)
+        {
+            vertices[srcVtxStart + i] = xform * vertices[srcVtxStart + i];
+        }
+
+        // move src indices
+        int vtxRelOffset = commands[src].vertexOffset - commands[dst].vertexOffset;
+        for (unsigned int i = 0; i < commands[src].indicesCount; i++)
+        {
+            indices[commands[src].indexOffset + i] += (unsigned int)vtxRelOffset;
+        }
+
+        // expand dst's command
+        commands[dst].indicesCount += commands[src].indicesCount;
+
+        free_slot(src);
+
+        update_geometry();
+        update_commands();
+        update_face_colors();
+        update_models();
+
+        return dst;
     }
 
     void free()
@@ -400,6 +551,7 @@ struct UndoStack
     unsigned int indices[MAX_UNDO][MAX_INDICES];
     DrawCommand commands[MAX_UNDO][MAX_OBJECTS];
     int faceOffsets[MAX_UNDO][MAX_OBJECTS];
+    bool usedSlots[MAX_UNDO][MAX_OBJECTS];
     int vtxCounts[MAX_UNDO];
     int idxCounts[MAX_UNDO];
     int objCounts[MAX_UNDO];
@@ -416,6 +568,7 @@ struct UndoStack
         memcpy(indices[i], buf.indices, sizeof(indices[i]));
         memcpy(commands[i], buf.commands, sizeof(commands[i]));
         memcpy(faceOffsets[i], buf.faceOffsets, sizeof(faceOffsets[i]));
+        memcpy(usedSlots[i], buf.usedSlots, sizeof(usedSlots[i]));
         vtxCounts[i] = buf.vtxCount;
         idxCounts[i] = buf.idxCount;
         objCounts[i] = buf.objCount;
@@ -444,6 +597,7 @@ struct UndoStack
         memcpy(buf.indices, indices[i], sizeof(indices[i]));
         memcpy(buf.commands, commands[i], sizeof(commands[i]));
         memcpy(buf.faceOffsets, faceOffsets[i], sizeof(faceOffsets[i]));
+        memcpy(buf.usedSlots, usedSlots[i], sizeof(usedSlots[i]));
         buf.vtxCount = vtxCounts[i];
         buf.idxCount = idxCounts[i];
         buf.objCount = objCounts[i];

@@ -11,9 +11,14 @@
 // - review rotation to allow world rotation in any mode (it's how the user is able to see the model)
 // TODO: review keybindings architecture
 // TODO: review .obj and .mtl file logic (AI slop)
+// TODO: bindings for transforming in fixed oneshot steps
+// TODO: bindings for resetting rotation
+// TODO: bindings for viewing from an axis
+// TODO: refactor command mode
 
 static void extrude_active_faces(EditorState &s, DrawBuffer &buf)
 {
+    buf.move_obj_to_end(s.selectedRef);
     if (s.selectedFaceCount > 0)
     {
         buf.extrude_faces(s.selectedRef, s.selectedFaces, s.selectedFaceCount);
@@ -34,6 +39,97 @@ static void transform_active_faces(EditorState &s, DrawBuffer &buf, Mat4 t)
     {
         buf.transform_faces(s.selectedRef, &s.faceCursor, 1, t);
     }
+}
+
+static void obj_next(EditorState &s, DrawBuffer &buf, const Input &)
+{
+    for (int j = s.selectedRef + 1;; j++)
+    {
+        if (j >= buf.objCount)
+        {
+            j = 1;
+        }
+        if (j == s.selectedRef)
+        {
+            return;
+        }
+        if (buf.usedSlots[j])
+        {
+            s.selectedRef = j;
+            s.faceCursor = 0;
+            s.selectedFaceCount = 0;
+            return;
+        }
+    }
+}
+
+static void obj_prev(EditorState &s, DrawBuffer &buf, const Input &)
+{
+    for (int j = s.selectedRef - 1;; j--)
+    {
+        if (j < 1)
+        {
+            j = buf.objCount - 1;
+        }
+        if (j == s.selectedRef)
+        {
+            return;
+        }
+        if (buf.usedSlots[j])
+        {
+            s.selectedRef = j;
+            s.faceCursor = 0;
+            s.selectedFaceCount = 0;
+            return;
+        }
+    }
+}
+
+static void obj_merge(EditorState &s, DrawBuffer &buf, const Input &)
+{
+    int usedCount = 0;
+    for (int j = 1; j < buf.objCount; j++)
+    {
+        if (buf.usedSlots[j])
+        {
+            usedCount++;
+        }
+    }
+    if (usedCount < 2)
+    {
+        return;
+    }
+    int nextRef = s.selectedRef;
+    for (int j = s.selectedRef + 1;; j++)
+    {
+        if (j >= buf.objCount)
+        {
+            j = 1;
+        }
+        if (buf.usedSlots[j])
+        {
+            nextRef = j;
+            break;
+        }
+    }
+    s.selectedRef = buf.merge_obj(s.selectedRef, nextRef);
+    s.faceCursor = 0;
+    s.selectedFaceCount = 0;
+    buf.update();
+}
+
+static void reset_rotation(EditorState &s, DrawBuffer &buf, const Input &)
+{
+    buf.transforms[s.selectedRef].r = mat4::IDENTITY;
+    buf.update_models();
+}
+
+static void reset_translation(EditorState &s, DrawBuffer &buf, const Input &)
+{
+    buf.transforms[s.selectedRef].tx = 0;
+    buf.transforms[s.selectedRef].ty = 0;
+    buf.transforms[s.selectedRef].tz = 0;
+    buf.update_models();
 }
 
 static void face_next(EditorState &s, DrawBuffer &buf, const Input &)
@@ -71,6 +167,30 @@ static const Binding bindings[] = {
         s.mode = Mode::NORMAL;
         s.selectedFaceCount = 0;
     }},
+
+    {Mode::NORMAL, GLFW_KEY_N, 0, true, false, obj_next},
+    {Mode::NORMAL, GLFW_KEY_P, 0, true, false, obj_prev},
+    {Mode::NORMAL, GLFW_KEY_M, 0, true, true,  obj_merge},
+
+    {Mode::ANY, GLFW_KEY_R, GLFW_MOD_SHIFT, true, true, reset_rotation},
+    {Mode::ANY, GLFW_KEY_T, GLFW_MOD_SHIFT, true, true, reset_translation},
+
+    {Mode::TRANSLATE,   GLFW_KEY_N, 0, true, false, obj_next}, {Mode::TRANSLATE,   GLFW_KEY_P, 0, true, false, obj_prev},
+    {Mode::TRANSLATE_X, GLFW_KEY_N, 0, true, false, obj_next}, {Mode::TRANSLATE_X, GLFW_KEY_P, 0, true, false, obj_prev},
+    {Mode::TRANSLATE_Y, GLFW_KEY_N, 0, true, false, obj_next}, {Mode::TRANSLATE_Y, GLFW_KEY_P, 0, true, false, obj_prev},
+    {Mode::TRANSLATE_Z, GLFW_KEY_N, 0, true, false, obj_next}, {Mode::TRANSLATE_Z, GLFW_KEY_P, 0, true, false, obj_prev},
+    {Mode::ROTATE,      GLFW_KEY_N, 0, true, false, obj_next}, {Mode::ROTATE,      GLFW_KEY_P, 0, true, false, obj_prev},
+    {Mode::ROTATE_X,    GLFW_KEY_N, 0, true, false, obj_next}, {Mode::ROTATE_X,    GLFW_KEY_P, 0, true, false, obj_prev},
+    {Mode::ROTATE_Y,    GLFW_KEY_N, 0, true, false, obj_next}, {Mode::ROTATE_Y,    GLFW_KEY_P, 0, true, false, obj_prev},
+    {Mode::ROTATE_Z,    GLFW_KEY_N, 0, true, false, obj_next}, {Mode::ROTATE_Z,    GLFW_KEY_P, 0, true, false, obj_prev},
+    {Mode::SCALE,       GLFW_KEY_N, 0, true, false, obj_next}, {Mode::SCALE,       GLFW_KEY_P, 0, true, false, obj_prev},
+    {Mode::SCALE_X,     GLFW_KEY_N, 0, true, false, obj_next}, {Mode::SCALE_X,     GLFW_KEY_P, 0, true, false, obj_prev},
+    {Mode::SCALE_Y,     GLFW_KEY_N, 0, true, false, obj_next}, {Mode::SCALE_Y,     GLFW_KEY_P, 0, true, false, obj_prev},
+    {Mode::SCALE_Z,     GLFW_KEY_N, 0, true, false, obj_next}, {Mode::SCALE_Z,     GLFW_KEY_P, 0, true, false, obj_prev},
+    {Mode::SHEAR,       GLFW_KEY_N, 0, true, false, obj_next}, {Mode::SHEAR,       GLFW_KEY_P, 0, true, false, obj_prev},
+    {Mode::SHEAR_X,     GLFW_KEY_N, 0, true, false, obj_next}, {Mode::SHEAR_X,     GLFW_KEY_P, 0, true, false, obj_prev},
+    {Mode::SHEAR_Y,     GLFW_KEY_N, 0, true, false, obj_next}, {Mode::SHEAR_Y,     GLFW_KEY_P, 0, true, false, obj_prev},
+    {Mode::SHEAR_Z,     GLFW_KEY_N, 0, true, false, obj_next}, {Mode::SHEAR_Z,     GLFW_KEY_P, 0, true, false, obj_prev},
 
     {Mode::ANY, GLFW_KEY_W, 0, true, false, [](EditorState &s, DrawBuffer &, const Input &) { s.wireframe = !s.wireframe; }},
     {Mode::ANY, GLFW_KEY_T, 0, true, false, [](EditorState &s, DrawBuffer &, const Input &) { s.mode = Mode::TRANSLATE; }},
@@ -704,7 +824,8 @@ static void obj_export(const DrawBuffer &buf, Ref obj, const std::string &path)
     printf("saved %s\n", path.c_str());
 }
 
-static bool obj_import(DrawBuffer &buf, EditorState &state, const std::string &path)
+static bool obj_parse(const std::string &path, Vec4 *loadedVerts, int &loadedVtxCount, unsigned int *loadedIndices,
+                      int &loadedIdxCount, Color *loadedColors, int &loadedFaceCount)
 {
     std::ifstream f(path);
     if (!f)
@@ -716,12 +837,9 @@ static bool obj_import(DrawBuffer &buf, EditorState &state, const std::string &p
     Color matColors[MAX_INDICES / 3] = {};
     Color defaultColor = {1.0f, 0.6f, 0.2f, 1.0f};
 
-    Vec4 loadedVerts[MAX_VERTICES];
-    int loadedVtxCount = 0;
-    unsigned int loadedIndices[MAX_INDICES];
-    int loadedIdxCount = 0;
-    Color loadedColors[MAX_INDICES / 3];
-    int loadedFaceCount = 0;
+    loadedVtxCount = 0;
+    loadedIdxCount = 0;
+    loadedFaceCount = 0;
 
     Color currentColor = defaultColor;
 
@@ -800,9 +918,49 @@ static bool obj_import(DrawBuffer &buf, EditorState &state, const std::string &p
         }
     }
 
-    buf.vtxCount = 0;
-    buf.idxCount = 0;
-    buf.objCount = 1;
+    return true;
+}
+
+static bool obj_load(DrawBuffer &buf, EditorState &state, const std::string &path, bool clearBuffer)
+{
+    Vec4 loadedVerts[MAX_VERTICES];
+    int loadedVtxCount;
+    unsigned int loadedIndices[MAX_INDICES];
+    int loadedIdxCount;
+    Color loadedColors[MAX_INDICES / 3];
+    int loadedFaceCount;
+
+    if (!obj_parse(path, loadedVerts, loadedVtxCount, loadedIndices, loadedIdxCount, loadedColors, loadedFaceCount))
+    {
+        return false;
+    }
+
+    if (!clearBuffer)
+    {
+        if (buf.vtxCount + loadedVtxCount > MAX_VERTICES)
+        {
+            printf("E: loading %s would exceed vertex limit (%d + %d > %d)\n", path.c_str(), buf.vtxCount,
+                   loadedVtxCount, MAX_VERTICES);
+            return false;
+        }
+
+        if (buf.idxCount + loadedIdxCount > MAX_INDICES)
+        {
+            printf("E: loading %s would exceed index limit (%d + %d > %d)\n", path.c_str(), buf.idxCount,
+                   loadedIdxCount, MAX_INDICES);
+            return false;
+        }
+
+        if (buf.objCount >= MAX_OBJECTS)
+        {
+            printf("E: loading %s would exceed object limit (%d >= %d)\n", path.c_str(), buf.objCount, MAX_OBJECTS);
+            return false;
+        }
+    }
+    else
+    {
+        buf.reset();
+    }
 
     Geometry geo = {loadedVerts, loadedVtxCount, loadedIndices, loadedIdxCount, loadedColors, loadedFaceCount};
     Ref newRef = buf.add(geo, TRS{});
@@ -813,7 +971,15 @@ static bool obj_import(DrawBuffer &buf, EditorState &state, const std::string &p
     state.selectedFaceCount = 0;
     state.mode = Mode::NORMAL;
 
-    printf("loaded %s\n", path.c_str());
+    if (clearBuffer)
+    {
+        printf("loaded %s\n", path.c_str());
+    }
+    else
+    {
+        printf("loaded %s (scene now has %d objects)\n", path.c_str(), buf.objCount - 1);
+    }
+
     return true;
 }
 
@@ -839,10 +1005,15 @@ static void execute_command(EditorState &state, DrawBuffer &buf, const std::stri
     else if (cmd.size() > 2 && cmd[0] == 'e' && cmd[1] == ' ')
     {
         std::string path = cmd.substr(2);
-        if (obj_import(buf, state, path))
+        if (obj_load(buf, state, path, true))
         {
             state.currentFile = path;
         }
+    }
+    else if (cmd.size() > 2 && cmd[0] == 'l' && cmd[1] == ' ')
+    {
+        std::string path = cmd.substr(2);
+        obj_load(buf, state, path, false);
     }
     else
     {

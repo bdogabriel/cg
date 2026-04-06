@@ -2,7 +2,10 @@
 #define MAT4_H
 
 #include <cmath>
+#include <cstring>
 #include <xmmintrin.h>
+
+// TODO: optimize inverse
 
 struct Vec4
 {
@@ -57,6 +60,15 @@ inline Vec4 cross(const Vec4 &a, const Vec4 &b) noexcept
     Vec4 r;
     _mm_storeu_ps(&r.x, _mm_sub_ps(_mm_mul_ps(a_yzx, b_zxy), _mm_mul_ps(a_zxy, b_yzx)));
     return r;
+}
+
+// all 4 components
+inline float dot(const Vec4 &a, const Vec4 &b) noexcept
+{
+    __m128 t = _mm_mul_ps(_mm_loadu_ps(&a.x), _mm_loadu_ps(&b.x));
+    t = _mm_add_ps(t, _mm_movehl_ps(t, t));     // [x+z, y+w, ...]
+    t = _mm_add_ss(t, _mm_shuffle_ps(t, t, 1)); // [x+y+z+w, ...]
+    return _mm_cvtss_f32(t);
 }
 
 // xyz only: ignores w
@@ -147,6 +159,72 @@ inline const Mat4 IDENTITY = []() noexcept {
     m.col[3] = _mm_set_ps(1, 0, 0, 0);
     return m;
 }();
+
+// Gauss-Jordan inverse
+// column-major: [row r, col c] = data[c*4+r].
+inline Mat4 inverse(const Mat4 &m) noexcept
+{
+    float a[16];
+    memcpy(a, m.data(), sizeof(a));
+    Mat4 result = IDENTITY;
+    float *b = result.data();
+
+    for (int p = 0; p < 4; p++)
+    {
+        // partial pivot: find max in column p at rows p..3
+        int pivot = p;
+        float maxVal = a[p * 4 + p] < 0 ? -a[p * 4 + p] : a[p * 4 + p];
+        for (int r = p + 1; r < 4; r++)
+        {
+            float v = a[p * 4 + r] < 0 ? -a[p * 4 + r] : a[p * 4 + r];
+            if (v > maxVal)
+            {
+                maxVal = v;
+                pivot = r;
+            }
+        }
+        if (maxVal < 1e-6f)
+        {
+            return IDENTITY; // singular
+        }
+        // swap rows p and pivot in both a and b
+        if (pivot != p)
+        {
+            for (int c = 0; c < 4; c++)
+            {
+                float tmp = a[c * 4 + p];
+                a[c * 4 + p] = a[c * 4 + pivot];
+                a[c * 4 + pivot] = tmp;
+                tmp = b[c * 4 + p];
+                b[c * 4 + p] = b[c * 4 + pivot];
+                b[c * 4 + pivot] = tmp;
+            }
+        }
+        // scale pivot row
+        float inv = 1.0f / a[p * 4 + p];
+        for (int c = 0; c < 4; c++)
+        {
+            a[c * 4 + p] *= inv;
+            b[c * 4 + p] *= inv;
+        }
+        // eliminate column p from all other rows
+        for (int r = 0; r < 4; r++)
+        {
+            if (r == p)
+            {
+                continue;
+            }
+            float factor = a[p * 4 + r];
+            for (int c = 0; c < 4; c++)
+            {
+                a[c * 4 + r] -= factor * a[c * 4 + p];
+                b[c * 4 + r] -= factor * b[c * 4 + p];
+            }
+        }
+    }
+
+    return result;
+}
 } // namespace mat4
 
 #endif // MAT4_H
