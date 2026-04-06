@@ -16,6 +16,7 @@
 // TODO: review face transform and extrude (AI slop)
 // TODO: use intrusive list (used slots, next vertex offset etc)
 // TODO: refactor merge_obj to allow arbitrary selection
+// TODO: remove color hacks when lighting is implemented
 
 const int MAX_VERTICES = 8000;
 const int MAX_INDICES = 24000;
@@ -47,6 +48,34 @@ struct Geometry
     Color *faceColors;
     int faceCount;
 };
+
+// color palette for distinguishing shapes
+namespace colorutil
+{
+inline Color palette[] = {
+    {1.0f, 0.2f, 0.2f, 1.0f}, // red
+    {0.2f, 1.0f, 0.2f, 1.0f}, // green
+    {0.2f, 0.6f, 1.0f, 1.0f}, // blue
+    {1.0f, 1.0f, 0.2f, 1.0f}, // yellow
+    {1.0f, 0.4f, 0.0f, 1.0f}, // orange
+    {0.8f, 0.2f, 1.0f, 1.0f}, // purple
+    {0.2f, 1.0f, 1.0f, 1.0f}, // cyan
+    {1.0f, 0.5f, 0.7f, 1.0f}, // pink
+};
+inline int paletteSize = sizeof(palette) / sizeof(palette[0]);
+
+inline Color getNextColor(Color current)
+{
+    for (int i = 0; i < paletteSize; i++)
+    {
+        if (palette[i].r == current.r && palette[i].g == current.g && palette[i].b == current.b)
+        {
+            return palette[(i + 1) % paletteSize];
+        }
+    }
+    return palette[0];
+}
+} // namespace colorutil
 
 struct DrawBuffer
 {
@@ -487,9 +516,18 @@ struct DrawBuffer
             }
         }
 
-        // append wall triangles and set colors (darker shade of the adjacent face)
+        // change extruded faces color
+        Color currentColor = faceColors[faceOffsets[obj] + faces[0]];
+        Color nextColor = colorutil::getNextColor(currentColor);
+        for (int f = 0; f < faceCount; f++)
+        {
+            faceColors[faceOffsets[obj] + faces[f]] = nextColor;
+        }
+
+        // append wall triangles with colors from palette
         int existingFaceCount = cmd.indicesCount / 3;
         int wallFaceIdx = 0;
+        int wallColorIdx = 0;
         for (int e = 0; e < edgeCount; e++)
         {
             if (edgeHits[e] != 1)
@@ -517,10 +555,18 @@ struct DrawBuffer
             indices[wallBase + 3] = va;
             indices[wallBase + 4] = newB;
             indices[wallBase + 5] = newA;
-            Color orig = faceColors[faceOffsets[obj] + faces[dirEdges[e].face]];
-            Color wallColor = {orig.r * 0.6f, orig.g * 0.6f, orig.b * 0.6f, orig.a};
+
+            // cycle through palette skipping the extruded face color
+            Color wallColor = colorutil::palette[wallColorIdx % colorutil::paletteSize];
+            while (wallColor.r == nextColor.r && wallColor.g == nextColor.g && wallColor.b == nextColor.b)
+            {
+                wallColorIdx++;
+                wallColor = colorutil::palette[wallColorIdx % colorutil::paletteSize];
+            }
+
             faceColors[faceOffsets[obj] + existingFaceCount + wallFaceIdx * 2 + 0] = wallColor;
             faceColors[faceOffsets[obj] + existingFaceCount + wallFaceIdx * 2 + 1] = wallColor;
+            wallColorIdx++;
             wallFaceIdx++;
         }
 
@@ -609,17 +655,17 @@ namespace geo
 {
 inline Vec4 axisXVertices[] = {{0, 0, 0, 1}, {1, 0, 0, 1}};
 inline unsigned int axisXIndices[] = {0, 1};
-inline Color axisXColors[] = {{1, 0, 0, 1}};
+inline Color axisXColors[] = {colorutil::palette[0]}; // red
 inline Geometry axisX = {axisXVertices, 2, axisXIndices, 2, axisXColors, 1};
 
 inline Vec4 axisYVertices[] = {{0, 0, 0, 1}, {0, 1, 0, 1}};
 inline unsigned int axisYIndices[] = {0, 1};
-inline Color axisYColors[] = {{0, 1, 0, 1}};
+inline Color axisYColors[] = {colorutil::palette[1]}; // green
 inline Geometry axisY = {axisYVertices, 2, axisYIndices, 2, axisYColors, 1};
 
 inline Vec4 axisZVertices[] = {{0, 0, 0, 1}, {0, 0, 1, 1}};
 inline unsigned int axisZIndices[] = {0, 1};
-inline Color axisZColors[] = {{0, 0, 1, 1}};
+inline Color axisZColors[] = {colorutil::palette[2]}; // blue
 inline Geometry axisZ = {axisZVertices, 2, axisZIndices, 2, axisZColors, 1};
 
 inline Vec4 cubeVertices[] = {
@@ -647,12 +693,12 @@ inline unsigned int cubeIndices[] = {
     6, 3, 7,
 };
 inline Color cubeColors[] = {
-    {1.0f, 0.2f, 0.2f, 1}, {1.0f, 0.2f, 0.2f, 1}, // front
-    {0.2f, 1.0f, 0.2f, 1}, {0.2f, 1.0f, 0.2f, 1}, // back
-    {0.2f, 0.6f, 1.0f, 1}, {0.2f, 0.6f, 1.0f, 1}, // top
-    {1.0f, 1.0f, 0.2f, 1}, {1.0f, 1.0f, 0.2f, 1}, // bottom
-    {1.0f, 0.4f, 0.0f, 1}, {1.0f, 0.4f, 0.0f, 1}, // right
-    {0.8f, 0.2f, 1.0f, 1}, {0.8f, 0.2f, 1.0f, 1}, // left
+    colorutil::palette[0], colorutil::palette[0], // front (red)
+    colorutil::palette[1], colorutil::palette[1], // back (green)
+    colorutil::palette[2], colorutil::palette[2], // top (blue)
+    colorutil::palette[3], colorutil::palette[3], // bottom (yellow)
+    colorutil::palette[4], colorutil::palette[4], // right (orange)
+    colorutil::palette[5], colorutil::palette[5], // left (purple)
 };
 inline Geometry cube = {cubeVertices, 8, cubeIndices, 36, cubeColors, 12};
 
