@@ -457,17 +457,17 @@ struct UndoStack
 
 namespace geo
 {
-inline Vec4 axisXVertices[] = {{0, 0, 0, 1}, {2, 0, 0, 1}};
+inline Vec4 axisXVertices[] = {{0, 0, 0, 1}, {1, 0, 0, 1}};
 inline unsigned int axisXIndices[] = {0, 1};
 inline Color axisXColors[] = {{1, 0, 0, 1}};
 inline Geometry axisX = {axisXVertices, 2, axisXIndices, 2, axisXColors, 1};
 
-inline Vec4 axisYVertices[] = {{0, 0, 0, 1}, {0, 2, 0, 1}};
+inline Vec4 axisYVertices[] = {{0, 0, 0, 1}, {0, 1, 0, 1}};
 inline unsigned int axisYIndices[] = {0, 1};
 inline Color axisYColors[] = {{0, 1, 0, 1}};
 inline Geometry axisY = {axisYVertices, 2, axisYIndices, 2, axisYColors, 1};
 
-inline Vec4 axisZVertices[] = {{0, 0, 0, 1}, {0, 0, 2, 1}};
+inline Vec4 axisZVertices[] = {{0, 0, 0, 1}, {0, 0, 1, 1}};
 inline unsigned int axisZIndices[] = {0, 1};
 inline Color axisZColors[] = {{0, 0, 1, 1}};
 inline Geometry axisZ = {axisZVertices, 2, axisZIndices, 2, axisZColors, 1};

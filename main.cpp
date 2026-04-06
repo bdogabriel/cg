@@ -50,7 +50,7 @@ GLFWwindow *setup_window()
 {
     glfwInit();
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-    GLFWwindow *window = glfwCreateWindow(800, 800, "Class 07", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(1000, 1000, "Editor", NULL, NULL);
     glfwMakeContextCurrent(window);
     glewInit();
 
@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
 
     DrawBuffer triangles;
     TRS cubeTRS;
-    cubeTRS.sx = cubeTRS.sy = cubeTRS.sz = 0.5f;
+    cubeTRS.sx = cubeTRS.sy = cubeTRS.sz = 0.3f;
     Ref cubeRef = triangles.add(geo::cube, cubeTRS);
     triangles.init(IDX_VERTEX);
     triangles.update();
@@ -128,7 +128,9 @@ int main(int argc, char *argv[])
         input.reset();
 
         Mat4 cubeMat = trs::compose(triangles.transforms[cubeRef]);
-        axisMat = cubeMat;
+        TRS axisTRS = triangles.transforms[cubeRef];
+        axisTRS.sx = axisTRS.sy = axisTRS.sz = 0.8f;
+        axisMat = trs::compose(axisTRS);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glPolygonMode(GL_FRONT_AND_BACK, state.wireframe ? GL_LINE : GL_FILL);
