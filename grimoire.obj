@@ -1,0 +1,314 @@
+mtllib grimoire.mtl
+o model
+v 0.179621 -0.248977 0.0774886
+v 0.179621 0.248977 0.0774886
+v -0.179621 -0.248977 0.0774886
+v -0.179621 0.248977 0.0774886
+v 0.179621 -0.248977 -0.0774886
+v 0.179621 0.248977 -0.0774886
+v -0.179621 -0.248977 -0.0774886
+v -0.179621 0.248977 -0.0774886
+v -0.179621 -0.248977 -0.112358
+v -0.179621 0.248977 -0.112358
+v 0.179621 -0.248977 -0.112358
+v 0.179621 0.248977 -0.112358
+v 0.179621 -0.248977 0.116233
+v 0.179621 0.248977 0.116233
+v -0.179621 -0.248977 0.116233
+v -0.179621 0.248977 0.116233
+v -0.215545 -0.248977 0.0774886
+v -0.215545 0.248977 0.0774886
+v -0.215545 -0.248977 -0.0774886
+v -0.215545 0.248977 -0.0774886
+v -0.215545 0.248977 -0.112358
+v -0.215545 -0.248977 -0.112358
+v -0.215545 -0.248977 0.116233
+v -0.215545 0.248977 0.116233
+v 0.233507 0.248977 -0.0774886
+v 0.233507 -0.248977 -0.0774886
+v 0.233507 -0.248977 -0.112358
+v 0.233507 0.248977 -0.112358
+v 0.233507 -0.248977 0.0774886
+v 0.233507 0.248977 0.0774886
+v 0.233507 0.248977 0.116233
+v 0.233507 -0.248977 0.116233
+v -0.179621 -0.286324 0.0774886
+v 0.179621 -0.286324 0.0774886
+v 0.179621 -0.286324 0.116233
+v -0.179621 -0.286324 0.116233
+v -0.179621 -0.286324 -0.0774886
+v -0.215545 -0.286324 0.0774886
+v -0.215545 -0.286324 -0.0774886
+v -0.179621 -0.286324 -0.112358
+v -0.215545 -0.286324 -0.112358
+v -0.215545 -0.286324 0.116233
+v 0.179621 -0.286324 -0.0774886
+v 0.179621 -0.286324 -0.112358
+v 0.233507 -0.286324 -0.112358
+v 0.233507 -0.286324 -0.0774886
+v 0.233507 -0.286324 0.0774886
+v 0.233507 -0.286324 0.116233
+v -0.179621 0.286324 -0.0774886
+v 0.179621 0.286324 -0.0774886
+v 0.179621 0.286324 -0.112358
+v -0.179621 0.286324 -0.112358
+v 0.179621 0.286324 0.0774886
+v -0.179621 0.286324 0.0774886
+v -0.179621 0.286324 0.116233
+v 0.179621 0.286324 0.116233
+v -0.215545 0.286324 -0.0774886
+v -0.215545 0.286324 0.0774886
+v -0.215545 0.286324 -0.112358
+v -0.215545 0.286324 0.116233
+v 0.233507 0.286324 -0.0774886
+v 0.233507 0.286324 -0.112358
+v 0.233507 0.286324 0.116233
+v 0.233507 0.286324 0.0774886
+usemtl mat_0
+f 13 14 15
+usemtl mat_1
+f 15 14 16
+usemtl mat_2
+f 9 10 11
+usemtl mat_3
+f 11 10 12
+usemtl mat_4
+f 2 6 4
+usemtl mat_5
+f 4 6 8
+usemtl mat_6
+f 1 3 5
+usemtl mat_7
+f 5 3 7
+usemtl mat_8
+f 1 5 2
+usemtl mat_9
+f 2 5 6
+usemtl mat_10
+f 17 18 19
+usemtl mat_11
+f 19 18 20
+usemtl mat_12
+f 19 20 21
+usemtl mat_13
+f 19 21 22
+usemtl mat_14
+f 43 37 40
+usemtl mat_15
+f 43 40 44
+usemtl mat_16
+f 49 50 51
+usemtl mat_17
+f 49 51 52
+usemtl mat_18
+f 25 26 27
+usemtl mat_19
+f 25 27 28
+usemtl mat_20
+f 29 30 31
+usemtl mat_21
+f 29 31 32
+usemtl mat_22
+f 33 34 35
+usemtl mat_23
+f 33 35 36
+usemtl mat_24
+f 53 54 55
+usemtl mat_25
+f 53 55 56
+usemtl mat_26
+f 18 17 23
+usemtl mat_27
+f 18 23 24
+usemtl mat_28
+f 37 33 38
+usemtl mat_29
+f 37 38 39
+usemtl mat_30
+f 54 49 57
+usemtl mat_31
+f 54 57 58
+usemtl mat_32
+f 49 52 59
+usemtl mat_33
+f 49 59 57
+usemtl mat_34
+f 10 9 22
+usemtl mat_35
+f 10 22 21
+usemtl mat_36
+f 40 37 39
+usemtl mat_37
+f 40 39 41
+usemtl mat_38
+f 33 36 42
+usemtl mat_39
+f 33 42 38
+usemtl mat_40
+f 15 16 24
+usemtl mat_41
+f 15 24 23
+usemtl mat_42
+f 55 54 58
+usemtl mat_43
+f 55 58 60
+usemtl mat_44
+f 6 5 26
+usemtl mat_45
+f 6 26 25
+usemtl mat_46
+f 43 44 45
+usemtl mat_47
+f 43 45 46
+usemtl mat_48
+f 11 12 28
+usemtl mat_49
+f 11 28 27
+usemtl mat_50
+f 51 50 61
+usemtl mat_51
+f 51 61 62
+usemtl mat_52
+f 1 2 30
+usemtl mat_53
+f 1 30 29
+usemtl mat_54
+f 53 56 63
+usemtl mat_55
+f 53 63 64
+usemtl mat_56
+f 14 13 32
+usemtl mat_57
+f 14 32 31
+usemtl mat_58
+f 35 34 47
+usemtl mat_59
+f 35 47 48
+usemtl mat_60
+f 3 1 34
+usemtl mat_61
+f 3 34 33
+usemtl mat_62
+f 13 15 36
+usemtl mat_63
+f 13 36 35
+usemtl mat_64
+f 7 3 33
+usemtl mat_65
+f 7 33 37
+usemtl mat_66
+f 17 19 39
+usemtl mat_67
+f 17 39 38
+usemtl mat_68
+f 19 22 41
+usemtl mat_69
+f 19 41 39
+usemtl mat_70
+f 22 9 40
+usemtl mat_71
+f 22 40 41
+usemtl mat_72
+f 15 23 42
+usemtl mat_73
+f 15 42 36
+usemtl mat_74
+f 23 17 38
+usemtl mat_75
+f 23 38 42
+usemtl mat_76
+f 11 27 45
+usemtl mat_77
+f 11 45 44
+usemtl mat_78
+f 27 26 46
+usemtl mat_79
+f 27 46 45
+usemtl mat_80
+f 26 5 43
+usemtl mat_81
+f 26 43 46
+usemtl mat_82
+f 1 29 47
+usemtl mat_83
+f 1 47 34
+usemtl mat_84
+f 29 32 48
+usemtl mat_85
+f 29 48 47
+usemtl mat_86
+f 32 13 35
+usemtl mat_87
+f 32 35 48
+usemtl mat_88
+f 5 7 37
+usemtl mat_89
+f 5 37 43
+usemtl mat_90
+f 9 11 44
+usemtl mat_91
+f 9 44 40
+usemtl mat_92
+f 8 6 50
+usemtl mat_93
+f 8 50 49
+usemtl mat_94
+f 12 10 52
+usemtl mat_95
+f 12 52 51
+usemtl mat_96
+f 2 4 54
+usemtl mat_97
+f 2 54 53
+usemtl mat_98
+f 16 14 56
+usemtl mat_99
+f 16 56 55
+usemtl mat_100
+f 4 8 49
+usemtl mat_101
+f 4 49 54
+usemtl mat_102
+f 20 18 58
+usemtl mat_103
+f 20 58 57
+usemtl mat_104
+f 10 21 59
+usemtl mat_105
+f 10 59 52
+usemtl mat_106
+f 21 20 57
+usemtl mat_107
+f 21 57 59
+usemtl mat_108
+f 18 24 60
+usemtl mat_109
+f 18 60 58
+usemtl mat_110
+f 24 16 55
+usemtl mat_111
+f 24 55 60
+usemtl mat_112
+f 6 25 61
+usemtl mat_113
+f 6 61 50
+usemtl mat_114
+f 25 28 62
+usemtl mat_115
+f 25 62 61
+usemtl mat_116
+f 28 12 51
+usemtl mat_117
+f 28 51 62
+usemtl mat_118
+f 14 31 63
+usemtl mat_119
+f 14 63 56
+usemtl mat_120
+f 31 30 64
+usemtl mat_121
+f 31 64 63
+usemtl mat_122
+f 30 2 53
+usemtl mat_123
+f 30 53 64
