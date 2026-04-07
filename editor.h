@@ -65,6 +65,7 @@ enum class Mode
 struct EditorConfig
 {
     float keySensitivity = 0.05f;
+    float defaultGeometryScale = 0.3f;
 
     Mat4 rotateX = trs::rotation_x(keySensitivity);
     Mat4 rotateXNeg = trs::rotation_x(-keySensitivity);

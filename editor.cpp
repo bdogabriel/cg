@@ -9,12 +9,13 @@
 // TODO: review keybindings for more convinience:
 // - hold n/p to cycle selection (might require key repeat timer)
 // - review rotation to allow world rotation in any mode (it's how the user is able to see the model)
-// TODO: review keybindings architecture
-// TODO: review .obj and .mtl file logic (AI slop)
+// TODO: review architecture and separate into more files
+// TODO: review .obj and .mtl file logic
 // TODO: bindings for transforming in fixed oneshot steps
-// TODO: bindings for resetting rotation
 // TODO: bindings for viewing from an axis
-// TODO: refactor command mode
+// TODO: refactor command mode and implement actual ui
+// TODO: "." repeat
+// TODO: keybinding to scale in all directions
 
 static void extrude_active_faces(EditorState &s, DrawBuffer &buf)
 {
@@ -45,7 +46,7 @@ static void obj_next(EditorState &s, DrawBuffer &buf, const Input &)
 {
     for (int j = s.selectedRef + 1;; j++)
     {
-        if (j >= buf.objCount)
+        if (j >= buf.slotCount)
         {
             j = 1;
         }
@@ -69,7 +70,7 @@ static void obj_prev(EditorState &s, DrawBuffer &buf, const Input &)
     {
         if (j < 1)
         {
-            j = buf.objCount - 1;
+            j = buf.slotCount - 1;
         }
         if (j == s.selectedRef)
         {
@@ -85,10 +86,49 @@ static void obj_prev(EditorState &s, DrawBuffer &buf, const Input &)
     }
 }
 
+static bool can_add_geometry(const DrawBuffer &buf, const Geometry &geo, const char *shapeName)
+{
+    if (buf.slotCount >= MAX_OBJECTS)
+    {
+        printf("E: cannot add object, MAX_OBJECTS limit reached (%d)\n", MAX_OBJECTS);
+        return false;
+    }
+    if (buf.vtxCount + geo.vertexCount > MAX_VERTICES)
+    {
+        printf("E: cannot add %s, would exceed MAX_VERTICES (%d + %d > %d)\n", shapeName, buf.vtxCount, geo.vertexCount,
+               MAX_VERTICES);
+        return false;
+    }
+    if (buf.idxCount + geo.indexCount > MAX_INDICES)
+    {
+        printf("E: cannot add %s, would exceed MAX_INDICES (%d + %d > %d)\n", shapeName, buf.idxCount, geo.indexCount,
+               MAX_INDICES);
+        return false;
+    }
+    return true;
+}
+
+static void obj_delete(EditorState &s, DrawBuffer &buf, const Input &)
+{
+    if (!buf.usedSlots[s.selectedRef])
+    {
+        return;
+    }
+
+    Ref toDelete = s.selectedRef;
+
+    obj_next(s, buf, Input{});
+
+    buf.free_slot(toDelete);
+    s.faceCursor = 0;
+    s.selectedFaceCount = 0;
+    buf.update();
+}
+
 static void obj_merge(EditorState &s, DrawBuffer &buf, const Input &)
 {
     int usedCount = 0;
-    for (int j = 1; j < buf.objCount; j++)
+    for (int j = 1; j < buf.slotCount; j++)
     {
         if (buf.usedSlots[j])
         {
@@ -102,7 +142,7 @@ static void obj_merge(EditorState &s, DrawBuffer &buf, const Input &)
     int nextRef = s.selectedRef;
     for (int j = s.selectedRef + 1;; j++)
     {
-        if (j >= buf.objCount)
+        if (j >= buf.slotCount)
         {
             j = 1;
         }
@@ -171,6 +211,7 @@ static const Binding bindings[] = {
     {Mode::NORMAL, GLFW_KEY_N, 0, true, false, obj_next},
     {Mode::NORMAL, GLFW_KEY_P, 0, true, false, obj_prev},
     {Mode::NORMAL, GLFW_KEY_M, 0, true, true,  obj_merge},
+    {Mode::NORMAL, GLFW_KEY_D, 0, true, true,  obj_delete},
 
     {Mode::ANY, GLFW_KEY_R, GLFW_MOD_SHIFT, true, true, reset_rotation},
     {Mode::ANY, GLFW_KEY_T, GLFW_MOD_SHIFT, true, true, reset_translation},
@@ -935,34 +976,18 @@ static bool obj_load(DrawBuffer &buf, EditorState &state, const std::string &pat
         return false;
     }
 
-    if (!clearBuffer)
-    {
-        if (buf.vtxCount + loadedVtxCount > MAX_VERTICES)
-        {
-            printf("E: loading %s would exceed vertex limit (%d + %d > %d)\n", path.c_str(), buf.vtxCount,
-                   loadedVtxCount, MAX_VERTICES);
-            return false;
-        }
+    Geometry geo = {loadedVerts, loadedVtxCount, loadedIndices, loadedIdxCount, loadedColors, loadedFaceCount};
 
-        if (buf.idxCount + loadedIdxCount > MAX_INDICES)
-        {
-            printf("E: loading %s would exceed index limit (%d + %d > %d)\n", path.c_str(), buf.idxCount,
-                   loadedIdxCount, MAX_INDICES);
-            return false;
-        }
-
-        if (buf.objCount >= MAX_OBJECTS)
-        {
-            printf("E: loading %s would exceed object limit (%d >= %d)\n", path.c_str(), buf.objCount, MAX_OBJECTS);
-            return false;
-        }
-    }
-    else
+    if (clearBuffer)
     {
         buf.reset();
     }
 
-    Geometry geo = {loadedVerts, loadedVtxCount, loadedIndices, loadedIdxCount, loadedColors, loadedFaceCount};
+    if (!can_add_geometry(buf, geo, path.c_str()))
+    {
+        return false;
+    }
+
     Ref newRef = buf.add(geo, TRS{});
     buf.update();
 
@@ -971,53 +996,113 @@ static bool obj_load(DrawBuffer &buf, EditorState &state, const std::string &pat
     state.selectedFaceCount = 0;
     state.mode = Mode::NORMAL;
 
-    if (clearBuffer)
-    {
-        printf("loaded %s\n", path.c_str());
-    }
-    else
-    {
-        printf("loaded %s (scene now has %d objects)\n", path.c_str(), buf.objCount - 1);
-    }
+    printf("loaded %s\n", path.c_str());
 
     return true;
 }
 
-static void execute_command(EditorState &state, DrawBuffer &buf, const std::string &cmd)
+static bool parse_command(const std::string &input, std::string &cmd, std::string &args)
 {
+    size_t spacePos = input.find(' ');
+    if (spacePos != std::string::npos)
+    {
+        cmd = input.substr(0, spacePos);
+        args = input.substr(spacePos + 1);
+        return true;
+    }
+    else
+    {
+        cmd = input;
+        args = "";
+        return false;
+    }
+}
+
+static void cmd_add_shape(EditorState &state, DrawBuffer &buf, const std::string &args)
+{
+    std::string shapeName, shapeArgs;
+    parse_command(args, shapeName, shapeArgs);
+    int param = shapeArgs.empty() ? -1 : std::atoi(shapeArgs.c_str());
+
+    Geometry geo;
+    const char *shapeNameCStr = shapeName.c_str();
+
+    if (shapeName == "cube")
+    {
+        geo = geo::cube;
+    }
+    else if (shapeName == "pyramid")
+    {
+        int sides = (param > 0) ? param : 4;
+        geo = geo::make_pyramid(sides);
+    }
+    else if (shapeName == "cylinder")
+    {
+        int segments = (param > 0) ? param : 8;
+        geo = geo::make_cylinder(segments);
+    }
+    else
+    {
+        printf("E: unknown shape: %s (valid: cube, pyramid, cylinder)\n", shapeNameCStr);
+        return;
+    }
+
+    if (!can_add_geometry(buf, geo, shapeNameCStr))
+    {
+        return;
+    }
+
+    TRS trs;
+    trs.sx = trs.sy = trs.sz = state.cfg.defaultGeometryScale;
+    Ref newRef = buf.add(geo, trs);
+    buf.update();
+
+    state.selectedRef = newRef;
+    state.faceCursor = 0;
+    state.selectedFaceCount = 0;
+
+    printf("added %s (object %d)\n", shapeNameCStr, newRef);
+}
+
+static void execute_command(EditorState &state, DrawBuffer &buf, UndoStack &undo, const std::string &input)
+{
+    std::string cmd, args;
+    parse_command(input, cmd, args);
+
     if (cmd == "q")
     {
         state.shouldQuit = true;
     }
     else if (cmd == "w")
     {
-        if (state.currentFile.empty())
+        if (!args.empty())
         {
-            state.currentFile = "model.obj";
+            state.currentFile = args;
+        }
+        else if (state.currentFile.empty())
+        {
+            state.currentFile = "handmade.obj";
         }
         obj_export(buf, state.selectedRef, state.currentFile);
     }
-    else if (cmd.size() > 2 && cmd[0] == 'w' && cmd[1] == ' ')
+    else if (cmd == "e")
     {
-        state.currentFile = cmd.substr(2);
-        obj_export(buf, state.selectedRef, state.currentFile);
-    }
-    else if (cmd.size() > 2 && cmd[0] == 'e' && cmd[1] == ' ')
-    {
-        std::string path = cmd.substr(2);
-        if (obj_load(buf, state, path, true))
+        if (obj_load(buf, state, args, true))
         {
-            state.currentFile = path;
+            state.currentFile = args;
         }
     }
-    else if (cmd.size() > 2 && cmd[0] == 'l' && cmd[1] == ' ')
+    else if (cmd == "l")
     {
-        std::string path = cmd.substr(2);
-        obj_load(buf, state, path, false);
+        obj_load(buf, state, args, false);
+    }
+    else if (cmd == "a")
+    {
+        cmd_add_shape(state, buf, args);
     }
     else
     {
-        printf("E: unknown command: %s\n", cmd.c_str());
+        printf("E: unknown command: %s\n", input.c_str());
     }
 }
 
@@ -1154,7 +1239,7 @@ void editor::process_input(const Input &in, EditorState &state, DrawBuffer &buf,
         fflush(stdout);
         std::string cmd;
         std::getline(std::cin, cmd);
-        execute_command(state, buf, cmd);
+        execute_command(state, buf, undo, cmd);
         return;
     }
 

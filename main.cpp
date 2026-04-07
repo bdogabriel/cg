@@ -50,7 +50,7 @@ GLFWwindow *setup_window()
 {
     glfwInit();
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-    GLFWwindow *window = glfwCreateWindow(1000, 1000, "Editor", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(1000, 1000, "Handmade", NULL, NULL);
     glfwMakeContextCurrent(window);
     glewInit();
 
@@ -94,9 +94,6 @@ int main(int argc, char *argv[])
     setup_graphics();
 
     DrawBuffer triangles;
-    TRS cubeTRS;
-    cubeTRS.sx = cubeTRS.sy = cubeTRS.sz = 0.3f;
-    Ref cubeRef = triangles.add(geo::cube, cubeTRS);
     triangles.init(IDX_VERTEX);
     triangles.update();
 
@@ -117,7 +114,7 @@ int main(int argc, char *argv[])
     input.setup(window);
 
     EditorState state;
-    state.selectedRef = cubeRef;
+    state.selectedRef = 0;
 
     static UndoStack undoStack;
 
@@ -131,23 +128,37 @@ int main(int argc, char *argv[])
         }
         input.reset();
 
-        Mat4 cubeMat = trs::compose(triangles.transforms[state.selectedRef]);
-        TRS axisTRS = triangles.transforms[state.selectedRef];
-        axisTRS.sx = axisTRS.sy = axisTRS.sz = 0.8f;
-        axisMat = trs::compose(axisTRS);
+        bool hasObj = triangles.usedSlots[state.selectedRef];
+        Mat4 objMat;
+
+        if (hasObj)
+        {
+            objMat = trs::compose(triangles.transforms[state.selectedRef]);
+            TRS axisTRS = triangles.transforms[state.selectedRef];
+            axisTRS.sx = axisTRS.sy = axisTRS.sz = 0.8f;
+            axisMat = trs::compose(axisTRS);
+        }
+        else
+        {
+            axisMat = mat4::IDENTITY;
+        }
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glPolygonMode(GL_FRONT_AND_BACK, state.wireframe ? GL_LINE : GL_FILL);
 
-        triangles.models[state.selectedRef] = cubeMat;
-        triangles.update_models();
+        if (hasObj)
+        {
+            triangles.models[state.selectedRef] = objMat;
+            triangles.update_models();
 
-        highlights.reset();
-        editor::build_highlights(state, triangles, state.selectedRef, highlights, cubeMat);
-        highlights.update();
+            highlights.reset();
+            editor::build_highlights(state, triangles, state.selectedRef, highlights, objMat);
+            highlights.update();
+        }
 
         triangles.draw();
 
+        // change depth func to render highlights on top
         glLineWidth(3.0f);
         glDepthFunc(GL_LEQUAL);
         highlights.draw();

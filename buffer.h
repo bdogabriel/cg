@@ -8,15 +8,16 @@
 #include <cstring>
 
 // TODO: review architecture and separate logic into more files
+// TODO: review face transform and extrude
 // TODO: transform/extrude faces into their own local axis (normal as y)
-// TODO: shift object vertices to the end when extruding to allow more than one object in the buffer
 // TODO: use non-triangular faces for selecting/editing (selecting each triangle individually is a pain)
-// TODO: cycle faces sorted by distance to the camera (select faces that the user is "looking at")
-// TODO: review code that creates temporary buffers with MAX_VERTICES, MAX_INDICES etc
-// TODO: review face transform and extrude (AI slop)
-// TODO: use intrusive list (used slots, next vertex offset etc)
+// TODO: cycle faces sorted by distance to the camera (when camera is implemented)
+// TODO: review code that creates temporary buffers with MAX_VERTICES, MAX_INDICES etc (waste of memory)
+// TODO: use intrusive list for buffer (used slots, next vertex offset etc)
 // TODO: refactor merge_obj to allow arbitrary selection
 // TODO: remove color hacks when lighting is implemented
+// TODO: review make_cylinder and make_pyramid (there must be a cleaner way)
+// maybe extract the extrude and use it
 
 const int MAX_VERTICES = 8000;
 const int MAX_INDICES = 24000;
@@ -64,7 +65,7 @@ inline Color palette[] = {
 };
 inline int paletteSize = sizeof(palette) / sizeof(palette[0]);
 
-inline Color getNextColor(Color current)
+inline Color next_color(Color current)
 {
     for (int i = 0; i < paletteSize; i++)
     {
@@ -92,7 +93,7 @@ struct DrawBuffer
 
     int vtxCount = 0;
     int idxCount = 0;
-    int objCount = 1;
+    int slotCount = 1;
 
     GLuint vao = 0, vbo = 0, ebo = 0, commandBuffer = 0, modelBuffer = 0, faceColorBuffer = 0, faceOffsetBuffer = 0;
 
@@ -100,7 +101,7 @@ struct DrawBuffer
     {
         vtxCount = 0;
         idxCount = 0;
-        objCount = 1;
+        slotCount = 1;
         memset(usedSlots, 0, sizeof(usedSlots));
     }
 
@@ -122,9 +123,9 @@ struct DrawBuffer
             slot++;
         }
         usedSlots[slot] = true;
-        if (slot >= objCount)
+        if (slot >= slotCount)
         {
-            objCount = slot + 1;
+            slotCount = slot + 1;
         }
 
         transforms[slot] = t;
@@ -147,9 +148,9 @@ struct DrawBuffer
     {
         usedSlots[obj] = false;
         commands[obj].indicesCount = 0;
-        while (objCount > 1 && !usedSlots[objCount - 1])
+        while (slotCount > 1 && !usedSlots[slotCount - 1])
         {
-            objCount--;
+            slotCount--;
         }
     }
 
@@ -184,12 +185,12 @@ struct DrawBuffer
 
     void update_commands() const
     {
-        glNamedBufferData(commandBuffer, objCount * sizeof(DrawCommand), commands, GL_DYNAMIC_DRAW);
+        glNamedBufferData(commandBuffer, slotCount * sizeof(DrawCommand), commands, GL_DYNAMIC_DRAW);
     }
 
     void update_models() const
     {
-        glNamedBufferData(modelBuffer, objCount * sizeof(Mat4), models, GL_DYNAMIC_DRAW);
+        glNamedBufferData(modelBuffer, slotCount * sizeof(Mat4), models, GL_DYNAMIC_DRAW);
     }
 
     void update_face_colors()
@@ -197,7 +198,7 @@ struct DrawBuffer
         int faceSize = (primitive == GL_TRIANGLES) ? 3 : 2;
         int totalFaces = idxCount / faceSize;
         glNamedBufferData(faceColorBuffer, totalFaces * sizeof(Color), faceColors, GL_DYNAMIC_DRAW);
-        glNamedBufferData(faceOffsetBuffer, objCount * sizeof(int), faceOffsets, GL_DYNAMIC_DRAW);
+        glNamedBufferData(faceOffsetBuffer, slotCount * sizeof(int), faceOffsets, GL_DYNAMIC_DRAW);
     }
 
     void set_face_color(Ref obj, int faceLocalIdx, Color c)
@@ -212,7 +213,7 @@ struct DrawBuffer
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, faceOffsetBuffer);
         glBindVertexArray(vao);
         glBindBuffer(GL_DRAW_INDIRECT_BUFFER, commandBuffer);
-        glMultiDrawElementsIndirect(primitive, GL_UNSIGNED_INT, 0, objCount, 0);
+        glMultiDrawElementsIndirect(primitive, GL_UNSIGNED_INT, 0, slotCount, 0);
     }
 
     void update()
@@ -252,7 +253,7 @@ struct DrawBuffer
         int origFaceOffset = faceOffsets[obj];
 
         int nextVtxOffset = vtxCount;
-        for (int j = 1; j < objCount; j++)
+        for (int j = 1; j < slotCount; j++)
         {
             if (!usedSlots[j] || j == obj)
             {
@@ -298,7 +299,7 @@ struct DrawBuffer
         cmd.indexOffset = newIdxOffset;
         faceOffsets[obj] = newFaceOffset;
 
-        for (int j = 1; j < objCount; j++)
+        for (int j = 1; j < slotCount; j++)
         {
             if (!usedSlots[j] || j == obj)
             {
@@ -518,7 +519,7 @@ struct DrawBuffer
 
         // change extruded faces color
         Color currentColor = faceColors[faceOffsets[obj] + faces[0]];
-        Color nextColor = colorutil::getNextColor(currentColor);
+        Color nextColor = colorutil::next_color(currentColor);
         for (int f = 0; f < faceCount; f++)
         {
             faceColors[faceOffsets[obj] + faces[f]] = nextColor;
@@ -600,7 +601,7 @@ struct UndoStack
     bool usedSlots[MAX_UNDO][MAX_OBJECTS];
     int vtxCounts[MAX_UNDO];
     int idxCounts[MAX_UNDO];
-    int objCounts[MAX_UNDO];
+    int slotCounts[MAX_UNDO];
     int head = 0;
     int count = 0;
 
@@ -617,7 +618,7 @@ struct UndoStack
         memcpy(usedSlots[i], buf.usedSlots, sizeof(usedSlots[i]));
         vtxCounts[i] = buf.vtxCount;
         idxCounts[i] = buf.idxCount;
-        objCounts[i] = buf.objCount;
+        slotCounts[i] = buf.slotCount;
         if (count == MAX_UNDO)
         {
             head = (head + 1) % MAX_UNDO;
@@ -646,26 +647,28 @@ struct UndoStack
         memcpy(buf.usedSlots, usedSlots[i], sizeof(usedSlots[i]));
         buf.vtxCount = vtxCounts[i];
         buf.idxCount = idxCounts[i];
-        buf.objCount = objCounts[i];
+        buf.slotCount = slotCounts[i];
         return true;
     }
 };
 
 namespace geo
 {
+const float PI = 3.14159265359f;
+
 inline Vec4 axisXVertices[] = {{0, 0, 0, 1}, {1, 0, 0, 1}};
 inline unsigned int axisXIndices[] = {0, 1};
-inline Color axisXColors[] = {colorutil::palette[0]}; // red
+inline Color axisXColors[] = {colorutil::palette[0]};
 inline Geometry axisX = {axisXVertices, 2, axisXIndices, 2, axisXColors, 1};
 
 inline Vec4 axisYVertices[] = {{0, 0, 0, 1}, {0, 1, 0, 1}};
 inline unsigned int axisYIndices[] = {0, 1};
-inline Color axisYColors[] = {colorutil::palette[1]}; // green
+inline Color axisYColors[] = {colorutil::palette[1]};
 inline Geometry axisY = {axisYVertices, 2, axisYIndices, 2, axisYColors, 1};
 
 inline Vec4 axisZVertices[] = {{0, 0, 0, 1}, {0, 0, 1, 1}};
 inline unsigned int axisZIndices[] = {0, 1};
-inline Color axisZColors[] = {colorutil::palette[2]}; // blue
+inline Color axisZColors[] = {colorutil::palette[2]};
 inline Geometry axisZ = {axisZVertices, 2, axisZIndices, 2, axisZColors, 1};
 
 inline Vec4 cubeVertices[] = {
@@ -693,14 +696,152 @@ inline unsigned int cubeIndices[] = {
     6, 3, 7,
 };
 inline Color cubeColors[] = {
-    colorutil::palette[0], colorutil::palette[0], // front (red)
-    colorutil::palette[1], colorutil::palette[1], // back (green)
-    colorutil::palette[2], colorutil::palette[2], // top (blue)
-    colorutil::palette[3], colorutil::palette[3], // bottom (yellow)
-    colorutil::palette[4], colorutil::palette[4], // right (orange)
-    colorutil::palette[5], colorutil::palette[5], // left (purple)
+    colorutil::palette[0], colorutil::palette[0], // front
+    colorutil::palette[1], colorutil::palette[1], // back
+    colorutil::palette[2], colorutil::palette[2], // top
+    colorutil::palette[3], colorutil::palette[3], // bottom
+    colorutil::palette[4], colorutil::palette[4], // right
+    colorutil::palette[5], colorutil::palette[5], // left
 };
 inline Geometry cube = {cubeVertices, 8, cubeIndices, 36, cubeColors, 12};
+
+inline void generate_polygon_vertices(Vec4 *vertices, int count, float y, int start_idx)
+{
+    for (int i = 0; i < count; i++)
+    {
+        float angle = (2.0f * PI * i) / count;
+        vertices[start_idx + i] = {std::cos(angle), y, std::sin(angle), 1};
+    }
+}
+
+// pyramid generator with configurable base sides
+const int MAX_PYRAMID_SIDES = 32;
+inline Vec4 pyramidVertices[MAX_PYRAMID_SIDES + 2];
+inline unsigned int pyramidIndices[MAX_PYRAMID_SIDES * 6];
+inline Color pyramidColors[MAX_PYRAMID_SIDES * 2];
+
+inline Geometry make_pyramid(int sides)
+{
+    if (sides < 3)
+    {
+        sides = 3;
+    }
+    if (sides > MAX_PYRAMID_SIDES)
+    {
+        sides = MAX_PYRAMID_SIDES;
+    }
+
+    int vtxIdx = 0;
+    int idxIdx = 0;
+    int colorIdx = 0;
+
+    // base center and apex
+    pyramidVertices[vtxIdx++] = {0, 0, 0, 1};
+    pyramidVertices[vtxIdx++] = {0, 2, 0, 1};
+
+    generate_polygon_vertices(pyramidVertices, sides, 0, vtxIdx);
+    vtxIdx += sides;
+
+    // base triangles
+    for (int i = 0; i < sides; i++)
+    {
+        int next = (i + 1) % sides;
+        pyramidIndices[idxIdx++] = 0;        // base center
+        pyramidIndices[idxIdx++] = 2 + next; // next vertex
+        pyramidIndices[idxIdx++] = 2 + i;    // current vertex
+        pyramidColors[colorIdx++] = colorutil::palette[0];
+    }
+
+    // side triangles
+    for (int i = 0; i < sides; i++)
+    {
+        int next = (i + 1) % sides;
+        pyramidIndices[idxIdx++] = 2 + i;    // base current
+        pyramidIndices[idxIdx++] = 2 + next; // base next
+        pyramidIndices[idxIdx++] = 1;        // apex
+        pyramidColors[colorIdx++] = colorutil::palette[(i % (colorutil::paletteSize - 1)) + 1];
+    }
+
+    return {pyramidVertices, vtxIdx, pyramidIndices, idxIdx, pyramidColors, colorIdx};
+}
+
+// cylinder generator with configurable segments
+const int MAX_CYLINDER_SEGMENTS = 32;
+inline Vec4 cylinderVertices[MAX_CYLINDER_SEGMENTS * 2 + 2];
+inline unsigned int cylinderIndices[MAX_CYLINDER_SEGMENTS * 12];
+inline Color cylinderColors[MAX_CYLINDER_SEGMENTS * 4];
+
+inline Geometry make_cylinder(int segments)
+{
+    if (segments < 3)
+    {
+        segments = 3;
+    }
+    if (segments > MAX_CYLINDER_SEGMENTS)
+    {
+        segments = MAX_CYLINDER_SEGMENTS;
+    }
+
+    int vtxIdx = 0;
+    int idxIdx = 0;
+    int colorIdx = 0;
+
+    // center vertices for caps
+    cylinderVertices[vtxIdx++] = {0, 1, 0, 1};
+    cylinderVertices[vtxIdx++] = {0, -1, 0, 1};
+
+    // generate circle vertices (top and bottom)
+    for (int i = 0; i < segments; i++)
+    {
+        float angle = (2.0f * PI * i) / segments;
+        cylinderVertices[vtxIdx++] = {std::cos(angle), 1, std::sin(angle), 1};
+        cylinderVertices[vtxIdx++] = {std::cos(angle), -1, std::sin(angle), 1};
+    }
+
+    // top cap triangles
+    for (int i = 0; i < segments; i++)
+    {
+        int next = (i + 1) % segments;
+        cylinderIndices[idxIdx++] = 0;            // top center
+        cylinderIndices[idxIdx++] = 2 + i * 2;    // current top
+        cylinderIndices[idxIdx++] = 2 + next * 2; // next top
+        cylinderColors[colorIdx++] = colorutil::palette[0];
+    }
+
+    // bottom cap triangles
+    for (int i = 0; i < segments; i++)
+    {
+        int next = (i + 1) % segments;
+        cylinderIndices[idxIdx++] = 1;                // bottom center
+        cylinderIndices[idxIdx++] = 2 + next * 2 + 1; // next bottom
+        cylinderIndices[idxIdx++] = 2 + i * 2 + 1;    // current bottom
+        cylinderColors[colorIdx++] = colorutil::palette[1];
+    }
+
+    // side triangles (2 per segment)
+    for (int i = 0; i < segments; i++)
+    {
+        int next = (i + 1) % segments;
+        int topCurr = 2 + i * 2;
+        int botCurr = 2 + i * 2 + 1;
+        int topNext = 2 + next * 2;
+        int botNext = 2 + next * 2 + 1;
+
+        // first triangle
+        cylinderIndices[idxIdx++] = topCurr;
+        cylinderIndices[idxIdx++] = botCurr;
+        cylinderIndices[idxIdx++] = topNext;
+        cylinderColors[colorIdx++] = colorutil::palette[(i % (colorutil::paletteSize - 2)) + 2];
+
+        // second triangle
+        cylinderIndices[idxIdx++] = topNext;
+        cylinderIndices[idxIdx++] = botCurr;
+        cylinderIndices[idxIdx++] = botNext;
+        cylinderColors[colorIdx++] = colorutil::palette[(i % (colorutil::paletteSize - 2)) + 2];
+    }
+
+    return {cylinderVertices, vtxIdx, cylinderIndices, idxIdx, cylinderColors, colorIdx};
+}
 
 } // namespace geo
 
