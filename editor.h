@@ -133,4 +133,6 @@ void process_input(const Input &input, EditorState &state, DrawBuffer &buf, Undo
 void build_highlights(const EditorState &state, DrawBuffer &buf, Ref obj, DrawBuffer &highlight, Mat4 model);
 } // namespace editor
 
+bool obj_load(DrawBuffer &buf, EditorState &state, const std::string &path, bool clearBuffer);
+
 #endif

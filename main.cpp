@@ -2,6 +2,7 @@
 #include "editor.h"
 #include "input.h"
 #include "mat4.h"
+#include "scene.h"
 #include "trs.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -117,6 +118,13 @@ int main(int argc, char *argv[])
     state.selectedRef = 0;
 
     static UndoStack undoStack;
+
+    std::filesystem::path modelsDir = exePath.parent_path() / "models";
+    if (!scene::load_models(triangles, state, modelsDir))
+    {
+        printf("Failed to load scene\n");
+        return 1;
+    }
 
     while (!glfwWindowShouldClose(window))
     {

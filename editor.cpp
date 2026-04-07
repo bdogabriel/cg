@@ -962,7 +962,7 @@ static bool obj_parse(const std::string &path, Vec4 *loadedVerts, int &loadedVtx
     return true;
 }
 
-static bool obj_load(DrawBuffer &buf, EditorState &state, const std::string &path, bool clearBuffer)
+bool obj_load(DrawBuffer &buf, EditorState &state, const std::string &path, bool clearBuffer)
 {
     Vec4 loadedVerts[MAX_VERTICES];
     int loadedVtxCount;
