@@ -4,6 +4,7 @@
 
 // NOTE: rotation accumulates float error -> axes lose orthogonality and unit length
 // TODO: re-orthogonalize periodically via Gram-Schmidt or use quaternions
+// TODO: uniform scaling (scale in all directions at the same time)
 
 namespace trs
 {
