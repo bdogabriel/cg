@@ -1,5 +1,5 @@
 all:
-	g++ -o exe *.cpp -lGL -lGLEW -lglfw
+	g++ -o exe src/*.cpp -lGL -lGLEW -lglfw
 
 run: all
 	./exe
