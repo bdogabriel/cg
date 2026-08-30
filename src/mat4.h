@@ -1,15 +1,15 @@
 #ifndef MAT4_H
 #define MAT4_H
 
-#include <cmath>
-#include <cstring>
+#include <math.h>
+#include <string.h>
 #include <xmmintrin.h>
 
 // TODO: optimize inverse
 
 struct Vec4
 {
-    float x, y, z, w;
+    float x = 0, y = 0, z = 0, w = 0;
 
     Vec4 operator+(const Vec4 &o) const noexcept
     {
@@ -93,7 +93,13 @@ struct alignas(16) Mat4
 {
     __m128 col[4];
 
-    Mat4() noexcept = default;
+    Mat4() noexcept
+    {
+        col[0] = _mm_set_ps(0, 0, 0, 1);
+        col[1] = _mm_set_ps(0, 0, 1, 0);
+        col[2] = _mm_set_ps(0, 1, 0, 0);
+        col[3] = _mm_set_ps(1, 0, 0, 0);
+    }
 
     [[nodiscard]] float *data() noexcept
     {
@@ -151,14 +157,7 @@ struct alignas(16) Mat4
 
 namespace mat4
 {
-inline const Mat4 IDENTITY = []() noexcept {
-    Mat4 m;
-    m.col[0] = _mm_set_ps(0, 0, 0, 1);
-    m.col[1] = _mm_set_ps(0, 0, 1, 0);
-    m.col[2] = _mm_set_ps(0, 1, 0, 0);
-    m.col[3] = _mm_set_ps(1, 0, 0, 0);
-    return m;
-}();
+inline const Mat4 IDENTITY{};
 
 // Gauss-Jordan inverse
 // column-major: [row r, col c] = data[c*4+r].

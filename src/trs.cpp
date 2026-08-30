@@ -1,6 +1,4 @@
 #include "trs.h"
-#include "mat4.h"
-#include <cmath>
 
 // NOTE: rotation accumulates float error -> axes lose orthogonality and unit length
 // TODO: re-orthogonalize periodically via Gram-Schmidt or use quaternions
@@ -35,8 +33,8 @@ Mat4 translation(float tx, float ty, float tz)
 
 Mat4 rotation_x(float rx)
 {
-    float cos = std::cos(rx);
-    float sin = std::sin(rx);
+    float cos = cosf(rx);
+    float sin = sinf(rx);
 
     Mat4 r;
 
@@ -50,8 +48,8 @@ Mat4 rotation_x(float rx)
 
 Mat4 rotation_y(float ry)
 {
-    float cos = std::cos(ry);
-    float sin = std::sin(ry);
+    float cos = cosf(ry);
+    float sin = sinf(ry);
 
     Mat4 r;
 
@@ -65,8 +63,8 @@ Mat4 rotation_y(float ry)
 
 Mat4 rotation_z(float rz)
 {
-    float cos = std::cos(rz);
-    float sin = std::sin(rz);
+    float cos = cosf(rz);
+    float sin = sinf(rz);
 
     Mat4 r;
 

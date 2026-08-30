@@ -1,38 +1,17 @@
-#include "buffer.h"
-#include "editor.h"
-#include "input.h"
-#include "mat4.h"
+#include "buffer.h" // has to be included first
+
+#include "binding.h"
+#include "renderer.h"
 #include "scene.h"
-#include "trs.h"
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-#include <filesystem>
-#include <fstream>
+#include "ui.h"
 
-// TODO: track ball with quaternions
+constexpr GLuint IDX_VERTEX = 0;
 
-const GLuint IDX_VERTEX = 0;
-
-std::string str_from_file(const std::filesystem::path &path)
-{
-    std::ifstream file(path);
-    if (!file)
-    {
-        throw std::runtime_error(std::string("Failed to open file: ") + path.string());
-    }
-
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-
-    return buffer.str();
-}
-
-void load_shader(GLuint program, const std::string &code, GLenum type)
+void load_shader(GLuint program, const char *code, GLenum type)
 {
     GLuint shader = glCreateShader(type);
-    const char *codeCStr = code.c_str();
 
-    glShaderSource(shader, 1, &codeCStr, NULL);
+    glShaderSource(shader, 1, &code, nullptr);
     glCompileShader(shader);
 
     GLint success;
@@ -40,8 +19,9 @@ void load_shader(GLuint program, const std::string &code, GLenum type)
     glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
     if (!success)
     {
-        glGetShaderInfoLog(shader, 512, NULL, infoLog);
-        throw std::runtime_error("Shader compilation failed: " + std::string(infoLog));
+        glGetShaderInfoLog(shader, 512, nullptr, infoLog);
+        printf("E: shader compilation failed: %s\n", infoLog);
+        exit(1);
     }
 
     glAttachShader(program, shader);
@@ -51,7 +31,7 @@ GLFWwindow *setup_window()
 {
     glfwInit();
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-    GLFWwindow *window = glfwCreateWindow(1000, 1000, "Handmade", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(1000, 1000, "Handmade", nullptr, nullptr);
     glfwMakeContextCurrent(window);
     glewInit();
 
@@ -60,15 +40,33 @@ GLFWwindow *setup_window()
     return window;
 }
 
-GLuint setup_program(const std::filesystem::path &exePath)
+static bool read_file(const char *path, char *out, size_t outSize)
+{
+    FILE *f = fopen(path, "rb");
+    if (!f)
+    {
+        printf("E: cannot open %s\n", path);
+        return false;
+    }
+    size_t n = fread(out, 1, outSize - 1, f);
+    out[n] = '\0';
+    fclose(f);
+    return true;
+}
+
+GLuint setup_program()
 {
     GLuint program = glCreateProgram();
 
-    std::string vCode = str_from_file(exePath.parent_path() / "shader/vertex.glsl");
-    std::string fCode = str_from_file(exePath.parent_path() / "shader/fragment.glsl");
+    char vSrc[4096];
+    char fSrc[4096];
+    if (!read_file("shader/vertex.glsl", vSrc, sizeof(vSrc)) || !read_file("shader/fragment.glsl", fSrc, sizeof(fSrc)))
+    {
+        exit(1);
+    }
 
-    load_shader(program, vCode, GL_VERTEX_SHADER);
-    load_shader(program, fCode, GL_FRAGMENT_SHADER);
+    load_shader(program, vSrc, GL_VERTEX_SHADER);
+    load_shader(program, fSrc, GL_FRAGMENT_SHADER);
 
     glLinkProgram(program);
     glUseProgram(program);
@@ -87,40 +85,70 @@ void setup_graphics()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
+void setup_bindings()
+{
+    binding::bind(Key::ESC, mods::NONE, true, "set_cmd", "op=none");
+    binding::bind(Key::T, mods::NONE, true, "set_cmd", "op=translate");
+    binding::bind(Key::R, mods::NONE, true, "set_cmd", "op=rotate");
+    binding::bind(Key::S, mods::NONE, true, "set_cmd", "op=scale");
+    binding::bind(Key::A, mods::NONE, true, "set_cmd", "op=shear");
+    binding::bind(Key::E, mods::NONE, true, "set_cmd", "op=extrude");
+    binding::bind(Key::D, mods::NONE, true, "set_cmd", "op=delete");
+    binding::bind(Key::M, mods::NONE, true, "set_cmd", "op=merge");
+    binding::bind(Key::F, mods::NONE, true, "set_target", "t=face");
+    binding::bind(Key::O, mods::NONE, true, "set_target", "t=object");
+    binding::bind(Key::X, mods::NONE, true, "set_lock", "axis=x");
+    binding::bind(Key::Y, mods::NONE, true, "set_lock", "axis=y");
+    binding::bind(Key::Z, mods::NONE, true, "set_lock", "axis=z");
+    binding::bind(Key::H, mods::NONE, false, "set_args", "axis=x step=-1");
+    binding::bind(Key::L, mods::NONE, false, "set_args", "axis=x step=1");
+    binding::bind(Key::J, mods::NONE, false, "set_args", "axis=y step=-1");
+    binding::bind(Key::K, mods::NONE, false, "set_args", "axis=y step=1");
+    binding::bind(Key::U, mods::CTRL, false, "set_args", "axis=z step=1");
+    binding::bind(Key::D, mods::CTRL, false, "set_args", "axis=z step=-1");
+    binding::bind(Key::SPACE, mods::NONE, true, "toggle_selection", "");
+    binding::bind(Key::C, mods::NONE, true, "clear_selection", "");
+    binding::bind(Key::N, mods::NONE, true, "cycle", "step=1");
+    binding::bind(Key::P, mods::NONE, true, "cycle", "step=-1");
+    binding::bind(Key::W, mods::NONE, true, "wireframe_toggle", "");
+    binding::bind(Key::U, mods::NONE, true, "undo", "");
+    binding::bind(Key::R, mods::SHIFT, true, "reset", "property=rotation");
+    binding::bind(Key::T, mods::SHIFT, true, "reset", "property=translation");
+}
+
 int main(int argc, char *argv[])
 {
+    (void)argc;
+    (void)argv;
+
     GLFWwindow *window = setup_window();
-    std::filesystem::path exePath = argv[0];
-    GLuint program = setup_program(exePath);
+    GLuint program = setup_program();
     setup_graphics();
 
-    DrawBuffer triangles;
-    triangles.init(IDX_VERTEX);
-    triangles.update();
+    // holds the undo history (~25 MB); static so it lives in BSS, not the stack
+    static Editor editor;
 
-    DrawBuffer highlights;
-    highlights.primitive = GL_LINES;
-    highlights.init(IDX_VERTEX);
+    Buffer meshes;
+    Buffer highlights;
+    Buffer axes;
 
-    DrawBuffer lines;
-    lines.primitive = GL_LINES;
-    Mat4 axisMat = mat4::IDENTITY;
-    Ref axRef = lines.add(geo::axisX, TRS{});
-    Ref ayRef = lines.add(geo::axisY, TRS{});
-    Ref azRef = lines.add(geo::axisZ, TRS{});
-    lines.init(IDX_VERTEX);
-    lines.update();
+    Renderer meshRenderer;
+    Renderer highlightRenderer;
+    highlightRenderer.primitive = GL_LINES;
+    Renderer axesRenderer;
+    axesRenderer.primitive = GL_LINES;
+
+    render::init(meshRenderer, IDX_VERTEX);
+    render::init(highlightRenderer, IDX_VERTEX);
+    render::init(axesRenderer, IDX_VERTEX);
 
     Input input;
-    input.setup(window);
+    input::setup(input, window);
+    editor::setup(editor, input);
 
-    EditorState state;
-    state.selectedRef = 0;
+    setup_bindings();
 
-    static UndoStack undoStack;
-
-    std::filesystem::path modelsDir = exePath.parent_path() / "models";
-    if (!scene::load_models(triangles, state, modelsDir))
+    if (!scene::load_models(editor.buffer, editor))
     {
         printf("Failed to load scene\n");
         return 1;
@@ -129,62 +157,57 @@ int main(int argc, char *argv[])
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
-        editor::process_input(input, state, triangles, undoStack);
-        if (state.shouldQuit)
+        editor::process_input(editor);
+        if (editor.shouldQuit)
         {
             break;
         }
-        input.reset();
+        input::reset(input);
 
-        bool hasObj = triangles.usedSlots[state.selectedRef];
-        Mat4 objMat;
+        if (editor.buffer.meshDirty)
+        {
+            render::upload_mesh(meshRenderer, editor.buffer);
+            render::upload_commands(meshRenderer, editor.buffer);
+            render::upload_face_colors(meshRenderer, editor.buffer, 3);
+            editor.buffer.meshDirty = false;
+        }
+        if (editor.buffer.modelsDirty)
+        {
+            render::upload_models(meshRenderer, editor.buffer);
+            editor.buffer.modelsDirty = false;
+        }
 
-        if (hasObj)
-        {
-            objMat = trs::compose(triangles.transforms[state.selectedRef]);
-            TRS axisTRS = triangles.transforms[state.selectedRef];
-            axisTRS.sx = axisTRS.sy = axisTRS.sz = 0.8f;
-            axisMat = trs::compose(axisTRS);
-        }
-        else
-        {
-            axisMat = mat4::IDENTITY;
-        }
+        ui::build_overlays(editor, highlights, axes);
+
+        render::upload_mesh(highlightRenderer, highlights);
+        render::upload_commands(highlightRenderer, highlights);
+        render::upload_models(highlightRenderer, highlights);
+        render::upload_face_colors(highlightRenderer, highlights, 2);
+
+        render::upload_mesh(axesRenderer, axes);
+        render::upload_commands(axesRenderer, axes);
+        render::upload_models(axesRenderer, axes);
+        render::upload_face_colors(axesRenderer, axes, 2);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glPolygonMode(GL_FRONT_AND_BACK, state.wireframe ? GL_LINE : GL_FILL);
+        glPolygonMode(GL_FRONT_AND_BACK, editor.wireframe ? GL_LINE : GL_FILL);
 
-        if (hasObj)
-        {
-            triangles.models[state.selectedRef] = objMat;
-            triangles.update_models();
+        render::draw(meshRenderer);
 
-            highlights.reset();
-            editor::build_highlights(state, triangles, state.selectedRef, highlights, objMat);
-            highlights.update();
-        }
-
-        triangles.draw();
-
-        // change depth func to render highlights on top
         glLineWidth(3.0f);
         glDepthFunc(GL_LEQUAL);
-        highlights.draw();
+        render::draw(highlightRenderer);
         glDepthFunc(GL_LESS);
         glLineWidth(1.0f);
 
-        lines.models[axRef] = axisMat;
-        lines.models[ayRef] = axisMat;
-        lines.models[azRef] = axisMat;
-        lines.update_models();
-        lines.draw();
+        render::draw(axesRenderer);
 
         glfwSwapBuffers(window);
     }
 
-    triangles.free();
-    highlights.free();
-    lines.free();
+    render::free(meshRenderer);
+    render::free(highlightRenderer);
+    render::free(axesRenderer);
     glDeleteProgram(program);
     glfwTerminate();
 
