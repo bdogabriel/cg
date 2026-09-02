@@ -1,4 +1,4 @@
 **/**.o
 exe
-.omo/
 third-party
+compile_commands.json
