@@ -11,7 +11,6 @@ namespace cmd
 {
 
 static const char *const reset_choices[] = {"rotation", "translation", nullptr};
-static const char *const shape_choices[] = {"cube", "pyramid", "cylinder", nullptr};
 static const char *const clear_choices[] = {"true", "false", nullptr};
 
 const ParamSpec params_cycle[] = {
@@ -24,9 +23,26 @@ const ParamSpec params_reset[] = {
     {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
 };
 
-const ParamSpec params_add_shape[] = {
-    {"name", ParamType::STRING, shape_choices, "primitive shape", true, nullptr},
-    {"param", ParamType::INT, nullptr, "shape parameter (sides/segments), -1 = default", false, "-1"},
+const ParamSpec params_add_pyramid[] = {
+    {"sides", ParamType::INT, nullptr, "number of base sides", false, "4"},
+    {"color", ParamType::STRING, nullptr, "hex color (#RRGGBB or #RRGGBBAA)", false, "ffffff"},
+    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
+};
+
+const ParamSpec params_add_cylinder[] = {
+    {"segments", ParamType::INT, nullptr, "number of side segments", false, "8"},
+    {"color", ParamType::STRING, nullptr, "hex color (#RRGGBB or #RRGGBBAA)", false, "ffffff"},
+    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
+};
+
+const ParamSpec params_add_polyhedron[] = {
+    {"faces", ParamType::INT, nullptr, "face count (4, 6, 8, 12, 20)", false, "6"},
+    {"color", ParamType::STRING, nullptr, "hex color (#RRGGBB or #RRGGBBAA)", false, "ffffff"},
+    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
+};
+
+const ParamSpec params_add_sphere[] = {
+    {"segments", ParamType::INT, nullptr, "segments (slices and stacks)", false, "16"},
     {"color", ParamType::STRING, nullptr, "hex color (#RRGGBB or #RRGGBBAA)", false, "ffffff"},
     {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
 };
@@ -213,38 +229,20 @@ void do_extrude(Editor &e, Session &s, const Args &, bool snapshot)
     s.cmd = get(CommandId::none);
 }
 
-// TODO: add polyhedron and sphere.
-void do_add_shape(Editor &e, Session &, const Args &a, bool snapshot)
+static void add_mesh(Editor &e, const Mesh &mesh, const char *colorStr, const char *name)
 {
-    if (snapshot)
-    {
-        editor::push_undo(e);
-    }
-    const char *name = a.get("name");
-    int param = a.getInt("param");
-
-    if (strcmp(name, "cube") != 0 && strcmp(name, "pyramid") != 0 && strcmp(name, "cylinder") != 0)
-    {
-        printf("E: unknown shape: %s (valid: cube, pyramid, cylinder)\n", name);
-        return;
-    }
-
-    Mesh mesh = (strcmp(name, "cube") == 0)      ? draw3d::polyhedron(6)
-                : (strcmp(name, "pyramid") == 0) ? draw3d::pyramid(param > 0 ? param : 4)
-                                                 : draw3d::cylinder(param > 0 ? param : 8);
-
     if (!mesh::can_add(e.meshBatch, mesh))
     {
         return;
     }
 
+    Mesh m = mesh;
     TRS t;
     t.sx = t.sy = t.sz = e.defaultMeshScale;
-    mesh.model = trs::compose(t);
-    Ref newRef = mesh::add(e.meshBatch, mesh);
+    m.model = trs::compose(t);
+    Ref newRef = mesh::add(e.meshBatch, m);
     e.transforms[newRef] = t;
 
-    const char *colorStr = a.get("color");
     Color color;
     if (color::from_hex(colorStr, color))
     {
@@ -262,6 +260,48 @@ void do_add_shape(Editor &e, Session &, const Args &a, bool snapshot)
     e.selectedFaceCount = 0;
 
     printf("added %s (object %d)\n", name, newRef);
+}
+
+void do_add_pyramid(Editor &e, Session &, const Args &a, bool snapshot)
+{
+    if (snapshot)
+    {
+        editor::push_undo(e);
+    }
+    add_mesh(e, draw3d::pyramid(a.getInt("sides")), a.get("color"), "pyramid");
+}
+
+void do_add_cylinder(Editor &e, Session &, const Args &a, bool snapshot)
+{
+    if (snapshot)
+    {
+        editor::push_undo(e);
+    }
+    add_mesh(e, draw3d::cylinder(a.getInt("segments")), a.get("color"), "cylinder");
+}
+
+void do_add_polyhedron(Editor &e, Session &, const Args &a, bool snapshot)
+{
+    if (snapshot)
+    {
+        editor::push_undo(e);
+    }
+    int faces = a.getInt("faces");
+    if (faces != 4 && faces != 6 && faces != 8 && faces != 12 && faces != 20)
+    {
+        printf("E: invalid face count %d (valid: 4, 6, 8, 12, 20)\n", faces);
+        return;
+    }
+    add_mesh(e, draw3d::polyhedron(faces), a.get("color"), "polyhedron");
+}
+
+void do_add_sphere(Editor &e, Session &, const Args &a, bool snapshot)
+{
+    if (snapshot)
+    {
+        editor::push_undo(e);
+    }
+    add_mesh(e, draw3d::sphere(a.getInt("segments")), a.get("color"), "sphere");
 }
 
 void do_save_obj(Editor &e, Session &s, const Args &a, bool)

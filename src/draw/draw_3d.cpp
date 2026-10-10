@@ -148,6 +148,15 @@ static unsigned int cylinderFaceCorners[MAX_CYLINDER_SEGMENTS * 12];
 static int cylinderFaceCornerCounts[MAX_CYLINDER_SEGMENTS * 4];
 static Color cylinderColors[MAX_CYLINDER_SEGMENTS * 4];
 
+static constexpr int MAX_SPHERE_VERTICES = 2 + (MAX_SPHERE_SEGMENTS - 1) * MAX_SPHERE_SEGMENTS;
+static constexpr int MAX_SPHERE_FACES = MAX_SPHERE_SEGMENTS * MAX_SPHERE_SEGMENTS;
+static constexpr int MAX_SPHERE_CORNERS = 4 * MAX_SPHERE_SEGMENTS * MAX_SPHERE_SEGMENTS - 2 * MAX_SPHERE_SEGMENTS;
+
+static Vec4 sphereVertices[MAX_SPHERE_VERTICES];
+static unsigned int sphereFaceCorners[MAX_SPHERE_CORNERS];
+static int sphereFaceCornerCounts[MAX_SPHERE_FACES];
+static Color sphereColors[MAX_SPHERE_FACES];
+
 static Color defaultColors[20];
 static bool defaultColorsInit = false;
 
@@ -308,6 +317,83 @@ Mesh cylinder(int segments)
     }
 
     return {cylinderVertices, vtxIdx, cylinderFaceCorners, cylinderFaceCornerCounts, faceIdx, cylinderColors};
+}
+
+Mesh sphere(int segments)
+{
+    if (segments < 3)
+    {
+        segments = 3;
+    }
+    if (segments > MAX_SPHERE_SEGMENTS)
+    {
+        segments = MAX_SPHERE_SEGMENTS;
+    }
+
+    int slices = segments;
+    int stacks = segments;
+
+    int vtxIdx = 0;
+    int cornerIdx = 0;
+    int faceIdx = 0;
+    int colorIdx = 0;
+
+    // north and south poles
+    sphereVertices[vtxIdx++] = {0, 1, 0, 1};
+    sphereVertices[vtxIdx++] = {0, -1, 0, 1};
+
+    // intermediate latitude rings (ring 1 .. stacks-1)
+    for (int i = 1; i < stacks; i++)
+    {
+        float theta = (mesh::PI * i) / stacks;
+        float y = cosf(theta);
+        float r = sinf(theta);
+        for (int j = 0; j < slices; j++)
+        {
+            float phi = (2.0f * mesh::PI * j) / slices;
+            sphereVertices[vtxIdx++] = {r * cosf(phi), y, r * sinf(phi), 1};
+        }
+    }
+
+    // ring i base vertex index (ring 0 = north pole, ring stacks = south pole)
+    auto ringBase = [&](int ring) { return 2 + (ring - 1) * slices; };
+
+    // top cap: triangle fans from the north pole to ring 1
+    for (int j = 0; j < slices; j++)
+    {
+        sphereFaceCorners[cornerIdx++] = 0;
+        sphereFaceCorners[cornerIdx++] = ringBase(1) + j;
+        sphereFaceCorners[cornerIdx++] = ringBase(1) + (j + 1) % slices;
+        sphereFaceCornerCounts[faceIdx++] = 3;
+        sphereColors[colorIdx++] = {255, 255, 255, 255};
+    }
+
+    // body: quads between consecutive rings
+    for (int i = 1; i < stacks - 1; i++)
+    {
+        for (int j = 0; j < slices; j++)
+        {
+            int next = (j + 1) % slices;
+            sphereFaceCorners[cornerIdx++] = ringBase(i) + j;
+            sphereFaceCorners[cornerIdx++] = ringBase(i) + next;
+            sphereFaceCorners[cornerIdx++] = ringBase(i + 1) + next;
+            sphereFaceCorners[cornerIdx++] = ringBase(i + 1) + j;
+            sphereFaceCornerCounts[faceIdx++] = 4;
+            sphereColors[colorIdx++] = {255, 255, 255, 255};
+        }
+    }
+
+    // bottom cap: triangle fans from the south pole to ring stacks-1
+    for (int j = 0; j < slices; j++)
+    {
+        sphereFaceCorners[cornerIdx++] = 1;
+        sphereFaceCorners[cornerIdx++] = ringBase(stacks - 1) + (j + 1) % slices;
+        sphereFaceCorners[cornerIdx++] = ringBase(stacks - 1) + j;
+        sphereFaceCornerCounts[faceIdx++] = 3;
+        sphereColors[colorIdx++] = {255, 255, 255, 255};
+    }
+
+    return {sphereVertices, vtxIdx, sphereFaceCorners, sphereFaceCornerCounts, faceIdx, sphereColors};
 }
 
 } // namespace draw3d
