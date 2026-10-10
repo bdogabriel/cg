@@ -3,12 +3,12 @@
 layout(location = 0) in vec4 position;
 layout(location = 1) in vec4 color;
 
+uniform mat4 u_viewProj;
+
 out vec4 vColor;
 
 void main()
 {
-    vec4 p = position;
-    p.z = -p.z * 0.1;
-    gl_Position = p;
+    gl_Position = u_viewProj * position;
     vColor = color;
 }

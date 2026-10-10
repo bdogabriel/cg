@@ -3,6 +3,7 @@
 #include "render_1d.h"
 
 #include "binding.h"
+#include "camera.h"
 #include "font.h"
 #include "render_2d.h"
 #include "render_3d.h"
@@ -49,7 +50,7 @@ void setup_graphics()
 
 void setup_bindings()
 {
-    binding::bind(Key::ESC, mods::NONE, true, "set_cmd", "op=none");
+    binding::bind(Key::ESC, mods::NONE, true, "set_cmd", "op=camera");
     binding::bind(Key::T, mods::NONE, true, "set_cmd", "op=translate");
     binding::bind(Key::R, mods::NONE, true, "set_cmd", "op=rotate");
     binding::bind(Key::S, mods::NONE, true, "set_cmd", "op=scale");
@@ -85,13 +86,16 @@ int main(int argc, char *argv[])
     GLFWwindow *window = setup_window();
     GLuint meshProgram = glutil::make_program("shader/mesh_vertex.glsl", "shader/mesh_fragment.glsl");
     glUseProgram(meshProgram);
-    GLuint quadTexturedR8Program = glutil::make_program("shader/quad_textured_r8_vertex.glsl", "shader/quad_textured_r8_fragment.glsl");
+    GLuint quadTexturedR8Program =
+        glutil::make_program("shader/quad_textured_r8_vertex.glsl", "shader/quad_textured_r8_fragment.glsl");
     GLint u_quadTexturedR8FbSize = glGetUniformLocation(quadTexturedR8Program, "fbSize");
     GLint u_quadTexturedR8Sampler = glGetUniformLocation(quadTexturedR8Program, "tex");
     glProgramUniform1i(quadTexturedR8Program, u_quadTexturedR8Sampler, 0);
     GLuint quadProgram = glutil::make_program("shader/quad_vertex.glsl", "shader/quad_fragment.glsl");
     GLint u_quadFbSize = glGetUniformLocation(quadProgram, "fbSize");
     GLuint lineProgram = glutil::make_program("shader/line_vertex.glsl", "shader/line_fragment.glsl");
+    GLint u_meshViewProj = glGetUniformLocation(meshProgram, "u_viewProj");
+    GLint u_lineViewProj = glGetUniformLocation(lineProgram, "u_viewProj");
     setup_graphics();
 
     static Editor editor;
@@ -154,10 +158,15 @@ int main(int argc, char *argv[])
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glPolygonMode(GL_FRONT_AND_BACK, editor.wireframe ? GL_LINE : GL_FILL);
 
+        float aspect = (g_fbH > 0) ? (float)g_fbW / (float)g_fbH : 1.0f;
+        Mat4 viewProj = camera::projection(editor.camera, aspect) * camera::view(editor.camera);
+
         glUseProgram(meshProgram);
+        glUniformMatrix4fv(u_meshViewProj, 1, GL_FALSE, viewProj.data());
         render3d::draw(meshRenderer);
 
         glUseProgram(lineProgram);
+        glUniformMatrix4fv(u_lineViewProj, 1, GL_FALSE, viewProj.data());
         glLineWidth(3.0f);
         glDepthFunc(GL_LEQUAL);
         render1d::draw(lineRenderer, highlightLines);

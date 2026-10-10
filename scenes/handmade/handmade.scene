@@ -1,6 +1,7 @@
 scene 1
 bg 20 25 38 255
 selected 5
+camera 0 0 2.5 0 0 0.785398 0.1 100
 o handmade_1.obj
   t 0 0 0
   r 0 0 0 1

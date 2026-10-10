@@ -50,13 +50,19 @@ Or use `make run` to build and run.
 - `c` - apply color
 - `;` - toggle local/world transform lock
 
+**Camera** (default mode):
+- `h/l` - strafe left/right
+- `j/k` - move backward/forward
+- `u/d` - move up/down
+- `;` - toggle move/look (while in camera mode)
+
 **Other**:
 - `w` - toggle wireframe
 - `ctrl+u` - undo
 - `shift+r` - reset rotation
 - `shift+t` - reset translation
 - `shift+;` - open command prompt
-- `esc` - cancel current command
+- `esc` - return to camera mode
 
 ## Commands
 
@@ -70,6 +76,7 @@ Open the prompt with `shift+;` and type commands:
 - `add_cylinder [segments] [color]` - add a cylinder primitive
 - `add_polyhedron [faces] [color]` - add a polyhedron (4, 6, 8, 12, 20 faces; 6 = cube)
 - `add_sphere [segments] [color]` - add a sphere primitive
+- `camera <axis> <step>` - move/look the camera
 - `merge_coplanar <angle>` - merge coplanar faces (angle tolerance in degrees)
 - `set_color <#RRGGBB>` - set current color
 - `set_bg_color <#RRGGBB>` - set background color

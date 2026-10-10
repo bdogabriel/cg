@@ -11,7 +11,7 @@ struct Keyboard;
 struct Session
 {
     Keyboard *keyboard = nullptr;
-    const Command *cmd = cmd::get(CommandId::none);
+    const Command *cmd = cmd::get(CommandId::camera);
     Args args;
     Prompt prompt;
     bool shouldQuit = false;

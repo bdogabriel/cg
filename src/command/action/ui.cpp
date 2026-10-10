@@ -36,7 +36,7 @@ void do_execute(Editor &e, Session &s, const Args &, bool snapshot)
     {
         return;
     }
-    s.cmd = get(CommandId::none);
+    s.cmd = get(CommandId::camera);
 
     char buf[512];
     strncpy(buf, s.prompt.buffer, sizeof(buf) - 1);

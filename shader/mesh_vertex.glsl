@@ -2,6 +2,8 @@
 
 layout(location = 0) in vec4 vertex;
 
+uniform mat4 u_viewProj;
+
 layout(std430, binding = 0) buffer ModelBuffer {
     mat4 transforms[];
 };
@@ -15,7 +17,5 @@ flat out int faceOffset;
 void main()
 {
     faceOffset = faceOffsets[gl_DrawID];
-    vec4 pos = transforms[gl_DrawID] * vertex;
-    pos.z = -pos.z * 0.1; // flip z axis because there is no view matrix (already in clip space); scale down to expand near/far range
-    gl_Position = pos;
+    gl_Position = u_viewProj * transforms[gl_DrawID] * vertex;
 }

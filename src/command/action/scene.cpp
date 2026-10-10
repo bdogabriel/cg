@@ -226,7 +226,7 @@ void do_extrude(Editor &e, Session &s, const Args &, bool snapshot)
         editor::push_undo(e);
     }
     faceedit::extrude(e.meshBatch, e.selectedRef, e.selectedFaces, e.selectedFaceCount);
-    s.cmd = get(CommandId::none);
+    s.cmd = get(CommandId::camera);
 }
 
 static void add_mesh(Editor &e, const Mesh &mesh, const char *colorStr, const char *name)
@@ -324,7 +324,7 @@ void do_save(Editor &e, Session &s, const Args &a, bool)
 {
     const char *name = a.get("name");
     scene::save(e, name);
-    s.cmd = get(CommandId::none);
+    s.cmd = get(CommandId::camera);
 }
 
 void do_load(Editor &e, Session &s, const Args &a, bool)
@@ -333,7 +333,7 @@ void do_load(Editor &e, Session &s, const Args &a, bool)
     bool clear = (strcmp(a.get("clear"), "true") == 0);
     if (scene::load(e, name, clear))
     {
-        s.cmd = get(CommandId::none);
+        s.cmd = get(CommandId::camera);
         e.target = Target::Object;
         e.locked = false;
     }
@@ -347,13 +347,13 @@ void do_load_obj(Editor &e, Session &s, const Args &a, bool)
     {
         strncpy(s.currentFile, file, sizeof(s.currentFile) - 1);
         s.currentFile[sizeof(s.currentFile) - 1] = '\0';
-        s.cmd = get(CommandId::none);
+        s.cmd = get(CommandId::camera);
         e.target = Target::Object;
         e.locked = false;
     }
 }
 
-void do_del(Editor &e, Session &s, const Args &, bool snapshot)
+void do_delete(Editor &e, Session &s, const Args &, bool snapshot)
 {
     (void)s;
     if (!e.meshBatch.usedSlots[e.selectedRef])
@@ -386,7 +386,7 @@ void do_del(Editor &e, Session &s, const Args &, bool snapshot)
     mesh::remove(e.meshBatch, oldRef);
     e.faceCursor = 0;
     e.selectedFaceCount = 0;
-    s.cmd = get(CommandId::none);
+    s.cmd = get(CommandId::camera);
     e.meshBatch.meshDirty = true;
 }
 
@@ -427,7 +427,7 @@ void do_merge(Editor &e, Session &s, const Args &, bool snapshot)
     e.selectedRef = meshedit::merge(e.meshBatch, e.selectedRef, nextUsedSlot);
     e.faceCursor = 0;
     e.selectedFaceCount = 0;
-    s.cmd = get(CommandId::none);
+    s.cmd = get(CommandId::camera);
 }
 
 void do_merge_coplanar(Editor &e, Session &s, const Args &a, bool snapshot)
@@ -462,7 +462,7 @@ void do_merge_coplanar(Editor &e, Session &s, const Args &a, bool snapshot)
     }
     e.faceCursor = 0;
     e.selectedFaceCount = 0;
-    s.cmd = get(CommandId::none);
+    s.cmd = get(CommandId::camera);
 }
 
 } // namespace cmd

@@ -17,7 +17,7 @@ void process_input(Editor &e, Session &s)
     {
         if (kb.keyStates[(int)Key::ESC] == KeyState::JUST_PRESSED)
         {
-            s.cmd = cmd::get(CommandId::none);
+            s.cmd = cmd::get(CommandId::camera);
             return;
         }
         prompt::handle_input(s.prompt, kb);

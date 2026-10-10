@@ -63,6 +63,9 @@ bool save(Editor &e, const char *name)
     }
     fprintf(f, "selected %d\n", selOrdinal >= 0 ? selOrdinal : 0);
 
+    fprintf(f, "camera %g %g %g %g %g %g %g %g\n", e.camera.position.x, e.camera.position.y, e.camera.position.z,
+            e.camera.yaw, e.camera.pitch, e.camera.fovY, e.camera.near, e.camera.far);
+
     for (int i = 1; i < e.meshBatch.slotCount; i++)
     {
         if (!e.meshBatch.usedSlots[i])
@@ -116,6 +119,8 @@ bool load(Editor &e, const char *name, bool clear)
     TRS curTRS = {};
     char curObj[256] = {};
     bool hasObj = false;
+    float cam[8] = {};
+    bool hasCam = false;
 
     auto flush = [&]() {
         if (!hasObj)
@@ -143,6 +148,12 @@ bool load(Editor &e, const char *name, bool clear)
         else if (strncmp(line, "selected ", 9) == 0)
         {
             sscanf(line + 9, "%d", &savedSel);
+        }
+        else if (strncmp(line, "camera ", 7) == 0)
+        {
+            sscanf(line + 7, "%f %f %f %f %f %f %f %f", &cam[0], &cam[1], &cam[2], &cam[3], &cam[4], &cam[5], &cam[6],
+                   &cam[7]);
+            hasCam = true;
         }
         else if (line[0] == 'o' && line[1] == ' ')
         {
@@ -197,6 +208,16 @@ bool load(Editor &e, const char *name, bool clear)
     fclose(f);
 
     e.bgColor = {(uint8_t)savedBg[0], (uint8_t)savedBg[1], (uint8_t)savedBg[2], (uint8_t)savedBg[3]};
+
+    if (hasCam)
+    {
+        e.camera.position = {cam[0], cam[1], cam[2], 1};
+        e.camera.yaw = cam[3];
+        e.camera.pitch = cam[4];
+        e.camera.fovY = cam[5];
+        e.camera.near = cam[6];
+        e.camera.far = cam[7];
+    }
 
     int ordinal = 0;
     for (int i = 1; i < e.meshBatch.slotCount; i++)

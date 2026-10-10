@@ -1,6 +1,7 @@
 #ifndef EDITOR_H
 #define EDITOR_H
 
+#include "camera.h"
 #include "mesh_batch.h"
 #include "trs.h"
 
@@ -24,6 +25,7 @@ struct Editor
 {
     MeshBatch meshBatch;
     TRS transforms[mesh::MAX_REFS] = {};
+    Camera camera;
 
     MeshBatch undoBatches[MAX_UNDO];
     TRS undoTransforms[MAX_UNDO][mesh::MAX_REFS];
