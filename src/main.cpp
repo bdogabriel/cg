@@ -83,14 +83,14 @@ int main(int argc, char *argv[])
     (void)argv;
 
     GLFWwindow *window = setup_window();
-    GLuint program = glutil::make_program("shader/mesh_vertex.glsl", "shader/mesh_fragment.glsl");
-    glUseProgram(program);
-    GLuint texturedProgram = glutil::make_program("shader/textured_vertex.glsl", "shader/textured_fragment.glsl");
-    GLint u_texturedFbSize = glGetUniformLocation(texturedProgram, "fbSize");
-    GLint sampler = glGetUniformLocation(texturedProgram, "tex");
-    glProgramUniform1i(texturedProgram, sampler, 0);
-    GLuint solidProgram = glutil::make_program("shader/solid_vertex.glsl", "shader/solid_fragment.glsl");
-    GLint u_solidFbSize = glGetUniformLocation(solidProgram, "fbSize");
+    GLuint meshProgram = glutil::make_program("shader/mesh_vertex.glsl", "shader/mesh_fragment.glsl");
+    glUseProgram(meshProgram);
+    GLuint quadTexturedR8Program = glutil::make_program("shader/quad_textured_r8_vertex.glsl", "shader/quad_textured_r8_fragment.glsl");
+    GLint u_quadTexturedR8FbSize = glGetUniformLocation(quadTexturedR8Program, "fbSize");
+    GLint u_quadTexturedR8Sampler = glGetUniformLocation(quadTexturedR8Program, "tex");
+    glProgramUniform1i(quadTexturedR8Program, u_quadTexturedR8Sampler, 0);
+    GLuint quadProgram = glutil::make_program("shader/quad_vertex.glsl", "shader/quad_fragment.glsl");
+    GLint u_quadFbSize = glGetUniformLocation(quadProgram, "fbSize");
     GLuint lineProgram = glutil::make_program("shader/line_vertex.glsl", "shader/line_fragment.glsl");
     setup_graphics();
 
@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glPolygonMode(GL_FRONT_AND_BACK, editor.wireframe ? GL_LINE : GL_FILL);
 
-        glUseProgram(program);
+        glUseProgram(meshProgram);
         render3d::draw(meshRenderer);
 
         glUseProgram(lineProgram);
@@ -174,11 +174,11 @@ int main(int argc, char *argv[])
         {
             ui2d::build_prompt(session, g_fbW, g_fbH, textBatch, solidBatch);
         }
-        glUseProgram(solidProgram);
-        glUniform2f(u_solidFbSize, (float)g_fbW, (float)g_fbH);
+        glUseProgram(quadProgram);
+        glUniform2f(u_quadFbSize, (float)g_fbW, (float)g_fbH);
         render2d::draw(hudRenderer, solidBatch);
-        glUseProgram(texturedProgram);
-        glUniform2f(u_texturedFbSize, (float)g_fbW, (float)g_fbH);
+        glUseProgram(quadTexturedR8Program);
+        glUniform2f(u_quadTexturedR8FbSize, (float)g_fbW, (float)g_fbH);
         glBindTextureUnit(0, atlasTexture);
         render2d::draw(hudRenderer, textBatch);
         glEnable(GL_DEPTH_TEST);
@@ -189,9 +189,9 @@ int main(int argc, char *argv[])
     render3d::free(meshRenderer);
     render1d::free(lineRenderer);
     render2d::free(hudRenderer);
-    glDeleteProgram(program);
-    glDeleteProgram(texturedProgram);
-    glDeleteProgram(solidProgram);
+    glDeleteProgram(meshProgram);
+    glDeleteProgram(quadTexturedR8Program);
+    glDeleteProgram(quadProgram);
     glDeleteProgram(lineProgram);
     glDeleteTextures(1, &atlasTexture);
     glfwTerminate();
