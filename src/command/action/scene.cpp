@@ -1,8 +1,8 @@
-#include "action.h"
-#include "editor.h"
-#include "face_edit.h"
-#include "mesh_batch.h"
 #include "scene.h"
+#include "action.h"
+#include "draw_3d.h"
+#include "face_edit.h"
+#include "mesh_edit.h"
 #include "session.h"
 #include "wavefront.h"
 #include <stdio.h>
@@ -209,7 +209,7 @@ void do_extrude(Editor &e, Session &s, const Args &, bool snapshot)
     {
         editor::push_undo(e);
     }
-    face::extrude(e.meshBatch, e.selectedRef, e.selectedFaces, e.selectedFaceCount);
+    faceedit::extrude(e.meshBatch, e.selectedRef, e.selectedFaces, e.selectedFaceCount);
     s.cmd = get(CommandId::none);
 }
 
@@ -229,9 +229,9 @@ void do_add_shape(Editor &e, Session &, const Args &a, bool snapshot)
         return;
     }
 
-    Mesh mesh = (strcmp(name, "cube") == 0)      ? mesh::make_polyhedron(6)
-                : (strcmp(name, "pyramid") == 0) ? mesh::make_pyramid(param > 0 ? param : 4)
-                                                 : mesh::make_cylinder(param > 0 ? param : 8);
+    Mesh mesh = (strcmp(name, "cube") == 0)      ? draw3d::polyhedron(6)
+                : (strcmp(name, "pyramid") == 0) ? draw3d::pyramid(param > 0 ? param : 4)
+                                                 : draw3d::cylinder(param > 0 ? param : 8);
 
     if (!mesh::can_add(e.meshBatch, mesh))
     {
@@ -384,7 +384,7 @@ void do_merge(Editor &e, Session &s, const Args &, bool snapshot)
         }
     }
 
-    e.selectedRef = mesh::merge(e.meshBatch, e.selectedRef, nextUsedSlot);
+    e.selectedRef = meshedit::merge(e.meshBatch, e.selectedRef, nextUsedSlot);
     e.faceCursor = 0;
     e.selectedFaceCount = 0;
     s.cmd = get(CommandId::none);
@@ -414,12 +414,11 @@ void do_merge_coplanar(Editor &e, Session &s, const Args &a, bool snapshot)
     }
     if (isFace)
     {
-        mesh::merge_coplanar(e.meshBatch, e.selectedRef, (float)angle,
-                             e.selectedFaces, e.selectedFaceCount);
+        meshedit::merge_coplanar(e.meshBatch, e.selectedRef, (float)angle, e.selectedFaces, e.selectedFaceCount);
     }
     else
     {
-        mesh::merge_coplanar(e.meshBatch, e.selectedRef, (float)angle);
+        meshedit::merge_coplanar(e.meshBatch, e.selectedRef, (float)angle);
     }
     e.faceCursor = 0;
     e.selectedFaceCount = 0;

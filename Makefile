@@ -1,4 +1,4 @@
-DIRS := math mesh render ui input command core io
+DIRS := math render draw edit ui input command core io
 SRC  := src/main.cpp $(foreach d,$(DIRS),$(wildcard src/$d/*.cpp) $(wildcard src/$d/*/*.cpp))
 INC  := $(foreach d,$(DIRS),-Isrc/$d)
 

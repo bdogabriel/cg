@@ -25,14 +25,7 @@ struct Mesh
 namespace mesh
 {
 
-Mesh make_polyhedron(int faceCount);
-Mesh make_pyramid(int sides);
-Mesh make_cylinder(int segments);
-
 constexpr float PI = 3.14159265359f;
-
-constexpr int MAX_PYRAMID_SIDES = 32;
-constexpr int MAX_CYLINDER_SEGMENTS = 32;
 
 constexpr int MAX_VERTICES = 8000;
 constexpr int MAX_INDICES = 24000;

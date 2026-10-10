@@ -20,7 +20,6 @@ enum class AxisLock
     Z
 };
 
-// TODO: decouple god struct
 struct Editor
 {
     MeshBatch meshBatch;

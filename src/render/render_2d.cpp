@@ -1,6 +1,6 @@
 #include "render_2d.h"
 
-void render2d::init(Render2D &r, const Font &font, const uint8_t *atlas)
+void render2d::init(Render2D &r)
 {
     glCreateVertexArrays(1, &r.vao);
     glCreateBuffers(1, &r.posVbo);
@@ -29,14 +29,6 @@ void render2d::init(Render2D &r, const Font &font, const uint8_t *atlas)
     glEnableVertexArrayAttrib(r.vao, 2);
     glVertexArrayAttribFormat(r.vao, 2, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0);
     glVertexArrayAttribBinding(r.vao, 2, 2);
-
-    glCreateTextures(GL_TEXTURE_2D, 1, &r.atlas);
-    glTextureParameteri(r.atlas, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTextureParameteri(r.atlas, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTextureParameteri(r.atlas, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTextureParameteri(r.atlas, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTextureStorage2D(r.atlas, 1, GL_R8, font.atlasWidth, font.atlasHeight);
-    glTextureSubImage2D(r.atlas, 0, 0, 0, font.atlasWidth, font.atlasHeight, GL_RED, GL_UNSIGNED_BYTE, atlas);
 }
 
 void render2d::draw(const Render2D &r, const QuadBatch &batch)
@@ -51,7 +43,6 @@ void render2d::draw(const Render2D &r, const QuadBatch &batch)
     glNamedBufferSubData(r.ebo, 0, batch.indexCount * sizeof(unsigned int), batch.indices);
 
     glBindVertexArray(r.vao);
-    glBindTextureUnit(0, r.atlas);
     glDrawElements(GL_TRIANGLES, batch.indexCount, GL_UNSIGNED_INT, nullptr);
 }
 
@@ -62,6 +53,5 @@ void render2d::free(Render2D &r)
     glDeleteBuffers(1, &r.uvVbo);
     glDeleteBuffers(1, &r.colVbo);
     glDeleteBuffers(1, &r.ebo);
-    glDeleteTextures(1, &r.atlas);
     r = {};
 }

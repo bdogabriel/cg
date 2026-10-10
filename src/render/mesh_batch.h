@@ -52,12 +52,8 @@ void reset(MeshBatch &buf);
 bool can_add(const MeshBatch &buf, const Mesh &mesh);
 Ref add(MeshBatch &buf, const Mesh &mesh);
 void remove(MeshBatch &buf, Ref ref);
-void move_to_end(MeshBatch &buf, Ref ref);
-Ref merge(MeshBatch &buf, Ref dst, Ref src);
 void compose_model(MeshBatch &buf, Ref ref, const Mat4 &model);
 void triangulate(MeshBatch &buf);
-int merge_coplanar(MeshBatch &buf, Ref ref, float angleTolDeg,
-                   const int *faces = nullptr, int selFaceCount = 0);
 
 } // namespace mesh
 

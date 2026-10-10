@@ -77,7 +77,7 @@ static void run_transform(Editor &e, const Args &a, bool snapshot, FaceDeltaFn f
     float amount = step * e.keySensitivity;
     if (isFace)
     {
-        face::transform(e.meshBatch, e.selectedRef, e.selectedFaces, e.selectedFaceCount, faceFn(axis, amount));
+        faceedit::transform(e.meshBatch, e.selectedRef, e.selectedFaces, e.selectedFaceCount, faceFn(axis, amount));
     }
     else
     {

@@ -2,8 +2,8 @@
 
 // TODO: think about a better desing
 
+#include "draw_2d.h"
 #include "font.h"
-#include "text.h"
 #include <cstdio>
 
 namespace ui2d
@@ -17,15 +17,15 @@ constexpr Color border_color = {128, 128, 153, 204};
 constexpr Color text_color = {245, 245, 255, 255};
 constexpr Color accent_color = {77, 204, 230, 255};
 
-static void draw_bar(QuadBatch &batch, const Font &font, float x, float y, float w, float h, const Color &bg)
+static void draw_bar(QuadBatch &solid, float x, float y, float w, float h, const Color &bg)
 {
-    text::fill_rect(batch, font, x, y, w, h, bg);
-    text::outline_rect(batch, font, x, y, w, h, border_color);
+    draw2d::rect(solid, x, y, w, h, bg);
+    draw2d::rect_outline(solid, x, y, w, h, border_color);
 }
 
-static void draw_text_line(QuadBatch &batch, const Font &font, float x, float y, const char *text, const Color &color)
+static void draw_text_line(QuadBatch &text, const Font &font, float x, float y, const char *str, const Color &color)
 {
-    text::append_text(batch, font, text, x, y, color, TEXT_SCALE);
+    draw2d::text(text, font, str, x, y, color, TEXT_SCALE);
 }
 
 static void append_upper(char *dst, size_t cap, const char *src)
@@ -49,13 +49,13 @@ static const char *target_name(Target t)
     return (t == Target::Face) ? "face" : "object";
 }
 
-void build_statusline(const Editor &e, const Session &s, int fbW, int fbH, QuadBatch &batch)
+void build_statusline(const Editor &e, const Session &s, int fbW, int fbH, QuadBatch &text, QuadBatch &solid)
 {
     const Font &font = baked_font();
     float lineHeight = font.lineHeight * TEXT_SCALE;
     float barHeight = lineHeight + BAR_PADDING;
     float statusY = fbH - barHeight;
-    draw_bar(batch, font, 0.0f, statusY, fbW, barHeight, status_bg);
+    draw_bar(solid, 0.0f, statusY, fbW, barHeight, status_bg);
     char status[256];
     status[0] = '\0';
     const char *cmdName = s.cmd ? s.cmd->name : "none";
@@ -76,20 +76,20 @@ void build_statusline(const Editor &e, const Session &s, int fbW, int fbH, QuadB
         append_upper(status, sizeof(status), " ");
         append_upper(status, sizeof(status), "LOCKED");
     }
-    draw_text_line(batch, font, 8.0f, statusY + BAR_PADDING / 2.0f, status, text_color);
+    draw_text_line(text, font, 8.0f, statusY + BAR_PADDING / 2.0f, status, text_color);
 }
 
-void build_prompt(const Session &s, int fbW, int fbH, QuadBatch &batch)
+void build_prompt(const Session &s, int fbW, int fbH, QuadBatch &text, QuadBatch &solid)
 {
     const Font &font = baked_font();
     float lineHeight = font.lineHeight * TEXT_SCALE;
     float barHeight = lineHeight + BAR_PADDING;
     float statusY = fbH - barHeight;
     float promptY = statusY - barHeight;
-    draw_bar(batch, font, 0.0f, promptY, fbW, barHeight, prompt_bg);
+    draw_bar(solid, 0.0f, promptY, fbW, barHeight, prompt_bg);
     char promptText[1024];
     snprintf(promptText, sizeof(promptText), ":%s", s.prompt.buffer);
-    draw_text_line(batch, font, 8.0f, promptY + BAR_PADDING / 2.0f, promptText, accent_color);
+    draw_text_line(text, font, 8.0f, promptY + BAR_PADDING / 2.0f, promptText, accent_color);
 }
 
 } // namespace ui2d

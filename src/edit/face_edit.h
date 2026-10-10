@@ -3,11 +3,10 @@
 
 #include "mesh_batch.h"
 
-namespace face
+namespace faceedit
 {
 void transform(MeshBatch &buf, Ref ref, int *faces, int faceCount, Mat4 t);
 void extrude(MeshBatch &buf, Ref ref, int *faces, int faceCount);
-int triangulate(const Vec4 *loop, int count, int *outTris);
-} // namespace face
+} // namespace faceedit
 
-#endif // FACE_EDIT_H
+#endif

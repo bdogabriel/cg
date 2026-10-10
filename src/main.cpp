@@ -85,10 +85,12 @@ int main(int argc, char *argv[])
     GLFWwindow *window = setup_window();
     GLuint program = glutil::make_program("shader/mesh_vertex.glsl", "shader/mesh_fragment.glsl");
     glUseProgram(program);
-    GLuint textProgram = glutil::make_program("shader/text_vertex.glsl", "shader/text_fragment.glsl");
-    GLint u_fbSize = glGetUniformLocation(textProgram, "fbSize");
-    GLint sampler = glGetUniformLocation(textProgram, "atlas");
-    glProgramUniform1i(textProgram, sampler, 0);
+    GLuint texturedProgram = glutil::make_program("shader/textured_vertex.glsl", "shader/textured_fragment.glsl");
+    GLint u_texturedFbSize = glGetUniformLocation(texturedProgram, "fbSize");
+    GLint sampler = glGetUniformLocation(texturedProgram, "tex");
+    glProgramUniform1i(texturedProgram, sampler, 0);
+    GLuint solidProgram = glutil::make_program("shader/solid_vertex.glsl", "shader/solid_fragment.glsl");
+    GLint u_solidFbSize = glGetUniformLocation(solidProgram, "fbSize");
     GLuint lineProgram = glutil::make_program("shader/line_vertex.glsl", "shader/line_fragment.glsl");
     setup_graphics();
 
@@ -97,14 +99,18 @@ int main(int argc, char *argv[])
 
     Render3D meshRenderer;
     Render2D hudRenderer;
-    QuadBatch hudBatch;
+    QuadBatch textBatch;
+    QuadBatch solidBatch;
 
     LineBatch highlightLines;
     LineBatch axesLines;
     Render1D lineRenderer;
 
+    const Font &font = baked_font();
+    GLuint atlasTexture = glutil::make_texture(font.atlasWidth, font.atlasHeight, baked_atlas(), GL_R8, GL_RED);
+
     render3d::init(meshRenderer, IDX_VERTEX);
-    render2d::init(hudRenderer, baked_font(), baked_atlas());
+    render2d::init(hudRenderer);
     render1d::init(lineRenderer);
 
     Keyboard keyboard;
@@ -161,15 +167,20 @@ int main(int argc, char *argv[])
 
         glDisable(GL_DEPTH_TEST);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        quad::reset(hudBatch);
-        ui2d::build_statusline(editor, session, g_fbW, g_fbH, hudBatch);
+        quad::reset(textBatch);
+        quad::reset(solidBatch);
+        ui2d::build_statusline(editor, session, g_fbW, g_fbH, textBatch, solidBatch);
         if (session::is_cmd_exec(session))
         {
-            ui2d::build_prompt(session, g_fbW, g_fbH, hudBatch);
+            ui2d::build_prompt(session, g_fbW, g_fbH, textBatch, solidBatch);
         }
-        glUseProgram(textProgram);
-        glUniform2f(u_fbSize, (float)g_fbW, (float)g_fbH);
-        render2d::draw(hudRenderer, hudBatch);
+        glUseProgram(solidProgram);
+        glUniform2f(u_solidFbSize, (float)g_fbW, (float)g_fbH);
+        render2d::draw(hudRenderer, solidBatch);
+        glUseProgram(texturedProgram);
+        glUniform2f(u_texturedFbSize, (float)g_fbW, (float)g_fbH);
+        glBindTextureUnit(0, atlasTexture);
+        render2d::draw(hudRenderer, textBatch);
         glEnable(GL_DEPTH_TEST);
 
         glfwSwapBuffers(window);
@@ -179,8 +190,10 @@ int main(int argc, char *argv[])
     render1d::free(lineRenderer);
     render2d::free(hudRenderer);
     glDeleteProgram(program);
-    glDeleteProgram(textProgram);
+    glDeleteProgram(texturedProgram);
+    glDeleteProgram(solidProgram);
     glDeleteProgram(lineProgram);
+    glDeleteTextures(1, &atlasTexture);
     glfwTerminate();
 
     return 0;
