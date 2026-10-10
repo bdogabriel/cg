@@ -80,4 +80,36 @@ int resolve(const Keyboard &kb, CommandCall *out, int maxOut)
     return count;
 }
 
+int count()
+{
+    return bindingCount;
+}
+
+const Binding *at(int i)
+{
+    if (i < 0 || i >= bindingCount)
+    {
+        return nullptr;
+    }
+    return &bindings[i];
+}
+
+void chord_name(const Binding &b, char *buf, int cap)
+{
+    int n = 0;
+    if (b.mods & mods::CTRL)
+    {
+        n += snprintf(buf + n, cap - n, "%s+", keyboard::mod_name(mods::CTRL));
+    }
+    if (b.mods & mods::SHIFT)
+    {
+        n += snprintf(buf + n, cap - n, "%s+", keyboard::mod_name(mods::SHIFT));
+    }
+    if (b.mods & mods::ALT)
+    {
+        n += snprintf(buf + n, cap - n, "%s+", keyboard::mod_name(mods::ALT));
+    }
+    snprintf(buf + n, cap - n, "%s", keyboard::key_name(b.key));
+}
+
 } // namespace binding

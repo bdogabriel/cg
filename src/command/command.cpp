@@ -36,12 +36,18 @@ const Command *get(CommandId id)
     return &registry[(int)id];
 }
 
-void do_list(Editor &, Session &, const Args &, bool)
+int count()
 {
-    for (int i = 0; i < (int)CommandId::COUNT; i++)
+    return (int)CommandId::COUNT;
+}
+
+const Command *at(int i)
+{
+    if (i < 0 || i >= (int)CommandId::COUNT)
     {
-        printf("%s - %s\n", registry[i].name, registry[i].help);
+        return nullptr;
     }
+    return &registry[i];
 }
 
 static char tokenbuf[512];
@@ -256,6 +262,7 @@ void run(Editor &e, Session &s, const Command *c, const char *argsStr, bool snap
 {
     if (!parse_args(argsStr, c->params, s.args))
     {
+        print_command_help(*c);
         return;
     }
     c->action(e, s, s.args, snapshot);

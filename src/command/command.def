@@ -28,4 +28,4 @@ CMD(save_obj,         "save_obj",         "save selected object to an .obj file"
 CMD(save,             "save",             "save the scene to a file",                       params_save,        do_save)
 CMD(load,             "load",             "load a scene from a file",                       params_load,        do_load)
 CMD(load_obj,         "load_obj",         "load a single .obj object",                      params_load_obj,    do_load_obj)
-CMD(list,             "list",             "list all registered commands",                   nullptr,            do_list)
+CMD(help,             "help",             "show help on a topic",                           params_help,        do_help)

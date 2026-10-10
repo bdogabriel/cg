@@ -40,7 +40,7 @@ void do_save_obj(Editor &, Session &, const Args &, bool);
 void do_save(Editor &, Session &, const Args &, bool);
 void do_load_obj(Editor &, Session &, const Args &, bool);
 void do_load(Editor &, Session &, const Args &, bool);
-void do_list(Editor &, Session &, const Args &, bool);
+void do_help(Editor &, Session &, const Args &, bool);
 
 extern const ParamSpec params_set_cmd[];
 extern const ParamSpec params_axis_step[];
@@ -54,6 +54,7 @@ extern const ParamSpec params_save_obj[];
 extern const ParamSpec params_save[];
 extern const ParamSpec params_load_obj[];
 extern const ParamSpec params_load[];
+extern const ParamSpec params_help[];
 
 extern const char *const axis_choices[];
 extern const char *const cmd_choices[];

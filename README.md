@@ -70,7 +70,7 @@ Open the prompt with `shift+;` and type commands:
 - `merge_coplanar <angle>` - merge coplanar faces (angle tolerance in degrees)
 - `set_color <#RRGGBB>` - set current color
 - `set_bg_color <#RRGGBB>` - set background color
-- `list` - show all available commands
+- `help [commands|bindings]` - show help on a topic (default: the `help` command itself)
 
 ## Scene Format
 

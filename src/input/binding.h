@@ -23,6 +23,9 @@ constexpr int MAX_BINDINGS = 64;
 const Binding *find(Key key, uint8_t mods);
 void bind(Key key, uint8_t mods, bool oneShot, const char *cmdName, const char *args);
 int resolve(const Keyboard &kb, CommandCall *out, int maxOut);
+int count();
+const Binding *at(int i);
+void chord_name(const Binding &b, char *buf, int cap);
 
 } // namespace binding
 

@@ -65,6 +65,8 @@ namespace keyboard
 {
 void setup(Keyboard &kb, GLFWwindow *window);
 void reset(Keyboard &kb);
+const char *key_name(Key k);
+const char *mod_name(uint8_t mod);
 } // namespace keyboard
 
 #endif // KEYBOARD_H

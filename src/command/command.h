@@ -89,6 +89,9 @@ namespace cmd
 {
 const Command *find(const char *name);
 const Command *get(CommandId id);
+int count();
+const Command *at(int i);
+void print_command_help(const Command &c);
 bool parse_args(const char *argsStr, const ParamSpec *params, Args &out);
 void run(Editor &, Session &, const Command *, const char *argsStr, bool snapshot);
 } // namespace cmd
