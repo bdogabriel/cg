@@ -1,4 +1,4 @@
-#include "command_actions.h"
+#include "action.h"
 #include "editor.h"
 #include "prompt.h"
 #include "session.h"

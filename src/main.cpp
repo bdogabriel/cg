@@ -1,15 +1,14 @@
 #include "gl_util.h"
-#include "meshbatch.h"
-#include "render1d.h"
+#include "mesh_batch.h"
+#include "render_1d.h"
 
 #include "binding.h"
 #include "font.h"
-#include "render2d.h"
-#include "render3d.h"
+#include "render_2d.h"
+#include "render_3d.h"
 #include "session.h"
-#include "ui2d.h"
-#include "ui3d.h"
-#include <cstdio>
+#include "ui_2d.h"
+#include "ui_3d.h"
 
 constexpr GLuint IDX_VERTEX = 0;
 static int g_fbW = 1000;
@@ -96,13 +95,13 @@ int main(int argc, char *argv[])
     static Editor editor;
     static Session session;
 
-    Render3d meshRenderer;
-    Render2d hudRenderer;
+    Render3D meshRenderer;
+    Render2D hudRenderer;
     QuadBatch hudBatch;
 
     LineBatch highlightLines;
     LineBatch axesLines;
-    Render1d lineRenderer;
+    Render1D lineRenderer;
 
     render3d::init(meshRenderer, IDX_VERTEX);
     render2d::init(hudRenderer, baked_font(), baked_atlas());
@@ -144,8 +143,8 @@ int main(int argc, char *argv[])
         ui3d::build_axes(editor, axesLines);
         ui3d::build_face_highlights(editor, highlightLines);
 
-        glClearColor(editor.bgColor.r / 255.0f, editor.bgColor.g / 255.0f,
-                     editor.bgColor.b / 255.0f, editor.bgColor.a / 255.0f);
+        glClearColor(editor.bgColor.r / 255.0f, editor.bgColor.g / 255.0f, editor.bgColor.b / 255.0f,
+                     editor.bgColor.a / 255.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glPolygonMode(GL_FRONT_AND_BACK, editor.wireframe ? GL_LINE : GL_FILL);
 

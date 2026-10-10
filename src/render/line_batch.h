@@ -1,5 +1,5 @@
-#ifndef LINEBATCH_H
-#define LINEBATCH_H
+#ifndef LINE_BATCH_H
+#define LINE_BATCH_H
 
 #include "color.h"
 #include "mat4.h"

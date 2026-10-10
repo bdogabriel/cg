@@ -1,5 +1,5 @@
 #include "command.h"
-#include "command_actions.h"
+#include "action.h"
 #include "editor.h"
 #include "session.h"
 #include <cstdio>

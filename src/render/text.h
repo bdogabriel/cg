@@ -2,7 +2,7 @@
 #define TEXT_H
 
 #include "font.h"
-#include "quadbatch.h"
+#include "quad_batch.h"
 
 namespace text
 {

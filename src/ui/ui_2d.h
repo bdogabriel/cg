@@ -1,9 +1,9 @@
-#ifndef UI2D_H
-#define UI2D_H
+#ifndef UI_2D_H
+#define UI_2D_H
 
 #include "editor.h"
 #include "session.h"
-#include "quadbatch.h"
+#include "quad_batch.h"
 
 namespace ui2d
 {

@@ -1,5 +1,5 @@
-#ifndef COMMAND_INTERNAL_H
-#define COMMAND_INTERNAL_H
+#ifndef ACTION_H
+#define ACTION_H
 
 #include "command.h"
 #include "editor.h"

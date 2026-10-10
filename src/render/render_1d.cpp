@@ -1,8 +1,8 @@
-#include "render1d.h"
+#include "render_1d.h"
 
 namespace render1d
 {
-void init(Render1d &r)
+void init(Render1D &r)
 {
     glCreateVertexArrays(1, &r.vao);
     glCreateBuffers(1, &r.posVbo);
@@ -23,7 +23,7 @@ void init(Render1d &r)
     glVertexArrayAttribBinding(r.vao, 1, 1);
 }
 
-void draw(Render1d &r, const LineBatch &batch)
+void draw(Render1D &r, const LineBatch &batch)
 {
     if (batch.vtxCount == 0)
     {
@@ -35,7 +35,7 @@ void draw(Render1d &r, const LineBatch &batch)
     glDrawArrays(GL_LINES, 0, batch.vtxCount);
 }
 
-void free(Render1d &r)
+void free(Render1D &r)
 {
     glDeleteVertexArrays(1, &r.vao);
     glDeleteBuffers(1, &r.posVbo);

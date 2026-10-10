@@ -4,8 +4,6 @@
 #include "command.h"
 #include "keyboard.h"
 
-// FIX: visual mode
-
 struct Binding
 {
     Key key;

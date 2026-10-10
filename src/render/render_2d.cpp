@@ -1,6 +1,6 @@
-#include "render2d.h"
+#include "render_2d.h"
 
-void render2d::init(Render2d &r, const Font &font, const uint8_t *atlas)
+void render2d::init(Render2D &r, const Font &font, const uint8_t *atlas)
 {
     glCreateVertexArrays(1, &r.vao);
     glCreateBuffers(1, &r.posVbo);
@@ -39,7 +39,7 @@ void render2d::init(Render2d &r, const Font &font, const uint8_t *atlas)
     glTextureSubImage2D(r.atlas, 0, 0, 0, font.atlasWidth, font.atlasHeight, GL_RED, GL_UNSIGNED_BYTE, atlas);
 }
 
-void render2d::draw(const Render2d &r, const QuadBatch &batch)
+void render2d::draw(const Render2D &r, const QuadBatch &batch)
 {
     if (batch.indexCount == 0)
     {
@@ -55,7 +55,7 @@ void render2d::draw(const Render2d &r, const QuadBatch &batch)
     glDrawElements(GL_TRIANGLES, batch.indexCount, GL_UNSIGNED_INT, nullptr);
 }
 
-void render2d::free(Render2d &r)
+void render2d::free(Render2D &r)
 {
     glDeleteVertexArrays(1, &r.vao);
     glDeleteBuffers(1, &r.posVbo);

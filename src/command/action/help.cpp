@@ -1,5 +1,5 @@
 #include "binding.h"
-#include "command_actions.h"
+#include "action.h"
 #include <cstdio>
 
 namespace cmd

@@ -1,5 +1,5 @@
-#ifndef MESHBATCH_H
-#define MESHBATCH_H
+#ifndef MESH_BATCH_H
+#define MESH_BATCH_H
 
 #include "face_batch.h"
 #include "mesh.h"

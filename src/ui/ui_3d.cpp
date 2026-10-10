@@ -1,6 +1,6 @@
-#include "ui3d.h"
+#include "ui_3d.h"
 #include "color.h"
-#include "linebatch.h"
+#include "line_batch.h"
 #include "trs.h"
 
 namespace ui3d

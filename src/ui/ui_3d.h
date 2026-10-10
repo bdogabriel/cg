@@ -1,8 +1,8 @@
-#ifndef UI3D_H
-#define UI3D_H
+#ifndef UI_3D_H
+#define UI_3D_H
 
 #include "editor.h"
-#include "linebatch.h"
+#include "line_batch.h"
 
 namespace ui3d
 {

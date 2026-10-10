@@ -1,7 +1,7 @@
 #ifndef FACE_EDIT_H
 #define FACE_EDIT_H
 
-#include "meshbatch.h"
+#include "mesh_batch.h"
 
 namespace face
 {

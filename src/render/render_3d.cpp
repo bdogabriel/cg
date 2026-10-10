@@ -1,9 +1,9 @@
-#include "render3d.h"
+#include "render_3d.h"
 
 namespace render3d
 {
 
-void init(Render3d &r, GLuint idxVertex)
+void init(Render3D &r, GLuint idxVertex)
 {
     glCreateVertexArrays(1, &r.vao);
 
@@ -26,30 +26,30 @@ void init(Render3d &r, GLuint idxVertex)
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, r.faceOffsetBuffer);
 }
 
-void upload_mesh(const Render3d &r, const MeshBatch &buf)
+void upload_mesh(const Render3D &r, const MeshBatch &buf)
 {
     glNamedBufferData(r.vbo, buf.vtxCount * sizeof(Vec4), buf.vertices, GL_DYNAMIC_DRAW);
     glNamedBufferData(r.ebo, buf.idxCount * sizeof(unsigned int), buf.indices, GL_DYNAMIC_DRAW);
 }
 
-void upload_commands(Render3d &r, const MeshBatch &buf)
+void upload_commands(Render3D &r, const MeshBatch &buf)
 {
     glNamedBufferData(r.commandBuffer, buf.slotCount * sizeof(DrawCommand), buf.drawCmds, GL_DYNAMIC_DRAW);
     r.slotCount = buf.slotCount;
 }
 
-void upload_models(const Render3d &r, const MeshBatch &buf)
+void upload_models(const Render3D &r, const MeshBatch &buf)
 {
     glNamedBufferData(r.modelBuffer, buf.slotCount * sizeof(Mat4), buf.models, GL_DYNAMIC_DRAW);
 }
 
-void upload_face_colors(const Render3d &r, const MeshBatch &buf)
+void upload_face_colors(const Render3D &r, const MeshBatch &buf)
 {
     glNamedBufferData(r.faceColorBuffer, buf.primCount * sizeof(Color), buf.primColors, GL_DYNAMIC_DRAW);
     glNamedBufferData(r.faceOffsetBuffer, buf.slotCount * sizeof(int), buf.primOffsets, GL_DYNAMIC_DRAW);
 }
 
-void draw(const Render3d &r)
+void draw(const Render3D &r)
 {
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, r.modelBuffer);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, r.faceColorBuffer);
@@ -59,7 +59,7 @@ void draw(const Render3d &r)
     glMultiDrawElementsIndirect(r.primitive, GL_UNSIGNED_INT, 0, r.slotCount, 0);
 }
 
-void free(Render3d &r)
+void free(Render3D &r)
 {
     glDeleteVertexArrays(1, &r.vao);
     glDeleteBuffers(1, &r.vbo);

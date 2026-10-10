@@ -1,4 +1,4 @@
-#include "quadbatch.h"
+#include "quad_batch.h"
 
 namespace quad
 {

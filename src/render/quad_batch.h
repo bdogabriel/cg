@@ -1,5 +1,5 @@
-#ifndef QUADBATCH_H
-#define QUADBATCH_H
+#ifndef QUAD_BATCH_H
+#define QUAD_BATCH_H
 
 #include "color.h"
 

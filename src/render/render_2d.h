@@ -1,12 +1,12 @@
-#ifndef RENDER2D_H
-#define RENDER2D_H
+#ifndef RENDER_2D_H
+#define RENDER_2D_H
 
 #include "font.h"
-#include "quadbatch.h"
+#include "quad_batch.h"
 
 #include <GL/glew.h>
 
-struct Render2d
+struct Render2D
 {
     GLuint vao = 0;
     GLuint posVbo = 0;
@@ -18,9 +18,9 @@ struct Render2d
 
 namespace render2d
 {
-void init(Render2d &r, const Font &font, const uint8_t *atlas);
-void draw(const Render2d &r, const QuadBatch &batch);
-void free(Render2d &r);
+void init(Render2D &r, const Font &font, const uint8_t *atlas);
+void draw(const Render2D &r, const QuadBatch &batch);
+void free(Render2D &r);
 } // namespace render2d
 
 #endif // RENDER2D_H

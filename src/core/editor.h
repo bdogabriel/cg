@@ -1,7 +1,7 @@
 #ifndef EDITOR_H
 #define EDITOR_H
 
-#include "meshbatch.h"
+#include "mesh_batch.h"
 #include "trs.h"
 
 constexpr int MAX_UNDO = 32;
