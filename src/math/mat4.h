@@ -45,6 +45,11 @@ struct Vec4
     }
 };
 
+struct Vec2
+{
+    float x = 0, y = 0;
+};
+
 namespace vec4
 {
 // xyz only: w = 0

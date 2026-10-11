@@ -16,6 +16,6 @@ flat out int faceOffset;
 
 void main()
 {
-    faceOffset = faceOffsets[gl_DrawID];
-    gl_Position = u_viewProj * transforms[gl_DrawID] * vertex;
+    faceOffset = faceOffsets[gl_BaseInstance];
+    gl_Position = u_viewProj * transforms[gl_BaseInstance] * vertex;
 }

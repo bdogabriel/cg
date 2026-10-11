@@ -6,8 +6,8 @@
 
 namespace face
 {
-constexpr int MAX_FACES = 8000;
-constexpr int MAX_CORNERS = 24000;
+constexpr int MAX_FACES = 100000;
+constexpr int MAX_CORNERS = 500000;
 } // namespace face
 
 struct FaceBatch
@@ -16,6 +16,7 @@ struct FaceBatch
     int faceCornerStarts[face::MAX_FACES] = {};
     int faceCornerCounts[face::MAX_FACES] = {};
     Color faceColors[face::MAX_FACES] = {};
+    int faceMaterialIds[face::MAX_FACES] = {};
     int cornerCount = 0;
     int faceCount = 0;
     int faceOffsets[mesh::MAX_REFS] = {};

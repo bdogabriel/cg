@@ -3,6 +3,7 @@
 
 #include "camera.h"
 #include "mesh_batch.h"
+#include "model_texture_cache.h"
 #include "trs.h"
 
 constexpr int MAX_UNDO = 32;
@@ -24,10 +25,11 @@ enum class AxisLock
 struct Editor
 {
     MeshBatch meshBatch;
+    ModelTextureCache modelTextureCache;
     TRS transforms[mesh::MAX_REFS] = {};
     Camera camera;
 
-    MeshBatch undoBatches[MAX_UNDO];
+    MeshBatch undoMeshBatches[MAX_UNDO];
     TRS undoTransforms[MAX_UNDO][mesh::MAX_REFS];
     int undoHead = 0;
     int undoCount = 0;

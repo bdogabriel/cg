@@ -85,6 +85,8 @@ int main(int argc, char *argv[])
 
     GLFWwindow *window = setup_window();
     GLuint meshProgram = glutil::make_program("shader/mesh_vertex.glsl", "shader/mesh_fragment.glsl");
+    GLuint meshTexturedProgram =
+        glutil::make_program("shader/mesh_textured_vertex.glsl", "shader/mesh_textured_fragment.glsl");
     glUseProgram(meshProgram);
     GLuint quadTexturedR8Program =
         glutil::make_program("shader/quad_textured_r8_vertex.glsl", "shader/quad_textured_r8_fragment.glsl");
@@ -95,6 +97,9 @@ int main(int argc, char *argv[])
     GLint u_quadFbSize = glGetUniformLocation(quadProgram, "fbSize");
     GLuint lineProgram = glutil::make_program("shader/line_vertex.glsl", "shader/line_fragment.glsl");
     GLint u_meshViewProj = glGetUniformLocation(meshProgram, "u_viewProj");
+    GLint u_meshTexturedViewProj = glGetUniformLocation(meshTexturedProgram, "u_viewProj");
+    GLint u_meshTexturedSampler = glGetUniformLocation(meshTexturedProgram, "u_tex");
+    glProgramUniform1i(meshTexturedProgram, u_meshTexturedSampler, 0);
     GLint u_lineViewProj = glGetUniformLocation(lineProgram, "u_viewProj");
     setup_graphics();
 
@@ -136,6 +141,7 @@ int main(int argc, char *argv[])
         if (editor.meshBatch.meshDirty)
         {
             mesh::triangulate(editor.meshBatch);
+            mesh::build_commands(editor.meshBatch, modeltexture::count(editor.modelTextureCache));
             render3d::upload_mesh(meshRenderer, editor.meshBatch);
             render3d::upload_commands(meshRenderer, editor.meshBatch);
             render3d::upload_face_colors(meshRenderer, editor.meshBatch);
@@ -163,7 +169,11 @@ int main(int argc, char *argv[])
 
         glUseProgram(meshProgram);
         glUniformMatrix4fv(u_meshViewProj, 1, GL_FALSE, viewProj.data());
-        render3d::draw(meshRenderer);
+        render3d::draw_flat(meshRenderer, editor.meshBatch);
+
+        glUseProgram(meshTexturedProgram);
+        glUniformMatrix4fv(u_meshTexturedViewProj, 1, GL_FALSE, viewProj.data());
+        render3d::draw_textured(meshRenderer, editor.meshBatch, editor.modelTextureCache);
 
         glUseProgram(lineProgram);
         glUniformMatrix4fv(u_lineViewProj, 1, GL_FALSE, viewProj.data());
@@ -199,6 +209,7 @@ int main(int argc, char *argv[])
     render1d::free(lineRenderer);
     render2d::free(hudRenderer);
     glDeleteProgram(meshProgram);
+    glDeleteProgram(meshTexturedProgram);
     glDeleteProgram(quadTexturedR8Program);
     glDeleteProgram(quadProgram);
     glDeleteProgram(lineProgram);

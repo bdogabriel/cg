@@ -6,7 +6,7 @@ namespace editor
 void push_undo(Editor &e)
 {
     int i = (e.undoHead + e.undoCount) % MAX_UNDO;
-    e.undoBatches[i] = e.meshBatch;
+    e.undoMeshBatches[i] = e.meshBatch;
     memcpy(e.undoTransforms[i], e.transforms, sizeof(e.transforms));
     if (e.undoCount == MAX_UNDO)
     {
@@ -26,7 +26,7 @@ void pop_undo(Editor &e)
     }
     --e.undoCount;
     int i = (e.undoHead + e.undoCount) % MAX_UNDO;
-    e.meshBatch = e.undoBatches[i];
+    e.meshBatch = e.undoMeshBatches[i];
     memcpy(e.transforms, e.undoTransforms[i], sizeof(e.transforms));
 
     e.meshBatch.meshDirty = true;

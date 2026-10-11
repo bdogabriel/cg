@@ -4,11 +4,13 @@
 #include <GL/glew.h>
 
 #include "mesh_batch.h"
+#include "model_texture_cache.h"
 
 struct Render3D
 {
     GLuint vao = 0;
     GLuint vbo = 0;
+    GLuint uvVbo = 0;
     GLuint ebo = 0;
     GLuint commandBuffer = 0;
     GLuint modelBuffer = 0;
@@ -16,7 +18,6 @@ struct Render3D
     GLuint faceOffsetBuffer = 0;
 
     GLenum primitive = GL_TRIANGLES;
-    int slotCount = 0;
 };
 
 namespace render3d
@@ -28,9 +29,10 @@ void upload_commands(Render3D &r, const MeshBatch &buf);
 void upload_models(const Render3D &r, const MeshBatch &buf);
 void upload_face_colors(const Render3D &r, const MeshBatch &buf);
 
-void draw(const Render3D &r);
+void draw_flat(const Render3D &r, const MeshBatch &buf);
+void draw_textured(const Render3D &r, const MeshBatch &buf, const ModelTextureCache &modelTexCache);
 void free(Render3D &r);
 
 } // namespace render3d
 
-#endif // RENDER3D_H
+#endif // RENDER_3D_H

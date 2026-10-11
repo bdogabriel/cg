@@ -18,6 +18,8 @@ struct Mesh
     const int *faceCornerCounts = nullptr;
     int faceCount = 0;
     const Color *faceColors = nullptr;
+    const Vec2 *uvs = nullptr;
+    const int *faceMaterialIds = nullptr;
     Mat4 model = mat4::IDENTITY;
     const char *name = nullptr;
 };
@@ -27,8 +29,8 @@ namespace mesh
 
 constexpr float PI = 3.14159265359f;
 
-constexpr int MAX_VERTICES = 8000;
-constexpr int MAX_INDICES = 24000;
+constexpr int MAX_VERTICES = 200000;
+constexpr int MAX_INDICES = 500000;
 constexpr int MAX_REFS = 2000;
 
 } // namespace mesh

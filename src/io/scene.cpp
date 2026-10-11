@@ -74,7 +74,7 @@ bool save(Editor &e, const char *name)
         }
         char objPath[512];
         snprintf(objPath, sizeof(objPath), "%s/%s_%d.obj", dir, name, i);
-        wfront::save(e.meshBatch, i, objPath);
+        wfront::save(e.meshBatch, e.modelTextureCache, i, objPath);
         const char *objBase = file::basename(objPath);
         const TRS &t = e.transforms[i];
         fprintf(f, "o %s\n", objBase);

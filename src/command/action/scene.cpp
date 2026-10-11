@@ -317,7 +317,7 @@ void do_save_obj(Editor &e, Session &s, const Args &a, bool)
         strncpy(s.currentFile, "handmade.obj", sizeof(s.currentFile) - 1);
         s.currentFile[sizeof(s.currentFile) - 1] = '\0';
     }
-    wfront::save(e.meshBatch, e.selectedRef, s.currentFile);
+    wfront::save(e.meshBatch, e.modelTextureCache, e.selectedRef, s.currentFile);
 }
 
 void do_save(Editor &e, Session &s, const Args &a, bool)
@@ -327,6 +327,7 @@ void do_save(Editor &e, Session &s, const Args &a, bool)
     s.cmd = get(CommandId::camera);
 }
 
+// TODO: rename load to load_scene
 void do_load(Editor &e, Session &s, const Args &a, bool)
 {
     const char *name = a.get("name");
