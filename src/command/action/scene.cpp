@@ -10,8 +10,13 @@
 namespace cmd
 {
 
-static const char *const reset_choices[] = {"rotation", "translation", nullptr};
-static const char *const clear_choices[] = {"true", "false", nullptr};
+namespace
+{
+
+const char *const reset_choices[] = {"rotation", "translation", nullptr};
+const char *const clear_choices[] = {"true", "false", nullptr};
+
+} // namespace
 
 const ParamSpec params_cycle[] = {
     {"step", ParamType::INT, nullptr, "+1 next, anything <=0 prev", true, nullptr},
@@ -229,7 +234,10 @@ void do_extrude(Editor &e, Session &s, const Args &, bool snapshot)
     s.cmd = get(CommandId::camera);
 }
 
-static void add_mesh(Editor &e, const Mesh &mesh, const char *colorStr, const char *name)
+namespace
+{
+
+void add_mesh(Editor &e, const Mesh &mesh, const char *colorStr, const char *name)
 {
     if (!mesh::can_add(e.meshBatch, mesh))
     {
@@ -261,6 +269,8 @@ static void add_mesh(Editor &e, const Mesh &mesh, const char *colorStr, const ch
 
     printf("added %s (object %d)\n", name, newRef);
 }
+
+} // namespace
 
 void do_add_pyramid(Editor &e, Session &, const Args &a, bool snapshot)
 {

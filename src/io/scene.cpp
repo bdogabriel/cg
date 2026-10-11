@@ -5,7 +5,10 @@
 namespace scene
 {
 
-static void get_dir(const char *path, char *out, size_t outSize)
+namespace
+{
+
+void get_dir(const char *path, char *out, size_t outSize)
 {
     const char *slash = strrchr(path, '/');
     if (slash)
@@ -23,6 +26,8 @@ static void get_dir(const char *path, char *out, size_t outSize)
         out[0] = '\0';
     }
 }
+
+} // namespace
 
 bool save(Editor &e, const char *name)
 {

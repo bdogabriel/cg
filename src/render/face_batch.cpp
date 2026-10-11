@@ -14,7 +14,10 @@ void update_corner_starts(FaceBatch &batch)
     }
 }
 
-static Vec4 compute_normal(const Vec4 *loop, int count)
+namespace
+{
+
+Vec4 compute_normal(const Vec4 *loop, int count)
 {
     Vec4 normal = {0, 0, 0, 1};
     for (int i = 0; i < count; i++)
@@ -27,7 +30,7 @@ static Vec4 compute_normal(const Vec4 *loop, int count)
     return normal;
 }
 
-static void drop_dominant_axis(const Vec4 *loop, int count, float *out2d, int &axis_x, int &axis_y)
+void drop_dominant_axis(const Vec4 *loop, int count, float *out2d, int &axis_x, int &axis_y)
 {
     Vec4 normal = compute_normal(loop, count);
     float abs_x = std::abs(normal.x);
@@ -57,7 +60,7 @@ static void drop_dominant_axis(const Vec4 *loop, int count, float *out2d, int &a
     }
 }
 
-static float compute_signed_area_2d(const float *poly2d, int count)
+float compute_signed_area_2d(const float *poly2d, int count)
 {
     float area = 0;
     for (int i = 0; i < count; i++)
@@ -69,7 +72,7 @@ static float compute_signed_area_2d(const float *poly2d, int count)
     return area * 0.5f;
 }
 
-static bool is_point_in_triangle_2d(float px, float py, float ax, float ay, float bx, float by, float cx, float cy)
+bool is_point_in_triangle_2d(float px, float py, float ax, float ay, float bx, float by, float cx, float cy)
 {
     float d1 = (px - bx) * (ay - by) - (ax - bx) * (py - by);
     float d2 = (px - cx) * (by - cy) - (bx - cx) * (py - cy);
@@ -81,7 +84,7 @@ static bool is_point_in_triangle_2d(float px, float py, float ax, float ay, floa
     return !(has_neg && has_pos);
 }
 
-static bool is_ear(const float *poly2d, int count, const int *remaining, int i)
+bool is_ear(const float *poly2d, int count, const int *remaining, int i)
 {
     int prev = (i + count - 1) % count;
     int next = (i + 1) % count;
@@ -112,6 +115,8 @@ static bool is_ear(const float *poly2d, int count, const int *remaining, int i)
 
     return true;
 }
+
+} // namespace
 
 int triangulate(const Vec4 *loop, int count, int *outTris)
 {

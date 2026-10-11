@@ -8,7 +8,10 @@
 namespace modeltexture
 {
 
-static int find_by_path(const ModelTextureCache &modelTexCache, const char *path)
+namespace
+{
+
+int find_by_path(const ModelTextureCache &modelTexCache, const char *path)
 {
     for (int i = 0; i < modelTexCache.count; i++)
     {
@@ -19,6 +22,8 @@ static int find_by_path(const ModelTextureCache &modelTexCache, const char *path
     }
     return -1;
 }
+
+} // namespace
 
 int add(ModelTextureCache &modelTexCache, const char *path)
 {

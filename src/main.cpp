@@ -12,16 +12,22 @@
 #include "ui_3d.h"
 
 constexpr GLuint IDX_VERTEX = 0;
-static int g_fbW = 1000;
-static int g_fbH = 1000;
 
-static void framebuffer_size_callback(GLFWwindow *window, int width, int height)
+namespace
+{
+
+int g_fbW = 1000;
+int g_fbH = 1000;
+
+void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
     (void)window;
     g_fbW = width;
     g_fbH = height;
     glViewport(0, 0, width, height);
 }
+
+} // namespace
 
 GLFWwindow *setup_window()
 {

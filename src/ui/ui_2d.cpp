@@ -8,8 +8,13 @@
 
 namespace ui2d
 {
-static const float TEXT_SCALE = 0.75f;
-static const int BAR_PADDING = 4;
+namespace
+{
+
+const float TEXT_SCALE = 0.75f;
+const int BAR_PADDING = 4;
+
+} // namespace
 
 constexpr Color status_bg = {41, 46, 61, 255};
 constexpr Color prompt_bg = {15, 15, 20, 242};
@@ -17,19 +22,21 @@ constexpr Color border_color = {128, 128, 153, 204};
 constexpr Color text_color = {245, 245, 255, 255};
 constexpr Color accent_color = {77, 204, 230, 255};
 
-static void draw_bar(QuadBatch &solidBatch, float x, float y, float w, float h, const Color &bg)
+namespace
+{
+
+void draw_bar(QuadBatch &solidBatch, float x, float y, float w, float h, const Color &bg)
 {
     draw2d::rect(solidBatch, x, y, w, h, bg);
     draw2d::rect_outline(solidBatch, x, y, w, h, border_color);
 }
 
-static void draw_text_line(QuadBatch &textBatch, const Font &font, float x, float y, const char *str,
-                           const Color &color)
+void draw_text_line(QuadBatch &textBatch, const Font &font, float x, float y, const char *str, const Color &color)
 {
     draw2d::text(textBatch, font, str, x, y, color, TEXT_SCALE);
 }
 
-static void append_upper(char *dst, size_t cap, const char *src)
+void append_upper(char *dst, size_t cap, const char *src)
 {
     size_t len = strlen(dst);
     while (len + 1 < cap && *src)
@@ -45,10 +52,12 @@ static void append_upper(char *dst, size_t cap, const char *src)
     dst[len] = '\0';
 }
 
-static const char *target_name(Target t)
+const char *target_name(Target t)
 {
     return (t == Target::Face) ? "face" : "object";
 }
+
+} // namespace
 
 void build_statusline(const Editor &e, const Session &s, int fbW, int fbH, QuadBatch &textBatch, QuadBatch &solidBatch)
 {

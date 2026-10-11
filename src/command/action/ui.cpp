@@ -7,7 +7,12 @@
 namespace cmd
 {
 
-static const char *const target_choices[] = {"object", "face", nullptr};
+namespace
+{
+
+const char *const target_choices[] = {"object", "face", nullptr};
+
+} // namespace
 
 const ParamSpec params_set_cmd[] = {
     {"op", ParamType::STRING, cmd_choices, "command to switch into", true, nullptr},

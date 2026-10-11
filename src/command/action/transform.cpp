@@ -37,7 +37,10 @@ const ParamSpec params_axis_step[] = {
     {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
 };
 
-static bool transform_prepare(const Editor &e, const Args &a, AxisLock &axis, int &step, bool &isFace)
+namespace
+{
+
+bool transform_prepare(const Editor &e, const Args &a, AxisLock &axis, int &step, bool &isFace)
 {
     const char *ax = a.get("axis");
     if (!ax)
@@ -61,7 +64,7 @@ static bool transform_prepare(const Editor &e, const Args &a, AxisLock &axis, in
 using FaceDeltaFn = Mat4 (*)(AxisLock, float);
 using ObjectApplyFn = void (*)(Editor &, AxisLock, float);
 
-static void run_transform(Editor &e, const Args &a, bool snapshot, FaceDeltaFn faceFn, ObjectApplyFn objFn)
+void run_transform(Editor &e, const Args &a, bool snapshot, FaceDeltaFn faceFn, ObjectApplyFn objFn)
 {
     AxisLock axis;
     int step;
@@ -86,7 +89,7 @@ static void run_transform(Editor &e, const Args &a, bool snapshot, FaceDeltaFn f
     }
 }
 
-static Mat4 translate_face_delta(AxisLock axis, float amount)
+Mat4 translate_face_delta(AxisLock axis, float amount)
 {
     switch (axis)
     {
@@ -101,7 +104,7 @@ static Mat4 translate_face_delta(AxisLock axis, float amount)
     }
 }
 
-static void translate_object_apply(Editor &e, AxisLock axis, float amount)
+void translate_object_apply(Editor &e, AxisLock axis, float amount)
 {
     TRS &t = e.transforms[e.selectedRef];
     if (!e.locked)
@@ -140,13 +143,18 @@ static void translate_object_apply(Editor &e, AxisLock axis, float amount)
     }
 }
 
+} // namespace
+
 void do_translate(Editor &e, Session &s, const Args &a, bool snapshot)
 {
     (void)s;
     run_transform(e, a, snapshot, translate_face_delta, translate_object_apply);
 }
 
-static Mat4 rotate_face_delta(AxisLock axis, float amount)
+namespace
+{
+
+Mat4 rotate_face_delta(AxisLock axis, float amount)
 {
     switch (axis)
     {
@@ -161,7 +169,7 @@ static Mat4 rotate_face_delta(AxisLock axis, float amount)
     }
 }
 
-static void rotate_object_apply(Editor &e, AxisLock axis, float amount)
+void rotate_object_apply(Editor &e, AxisLock axis, float amount)
 {
     TRS &t = e.transforms[e.selectedRef];
     if (!e.locked)
@@ -201,13 +209,18 @@ static void rotate_object_apply(Editor &e, AxisLock axis, float amount)
     }
 }
 
+} // namespace
+
 void do_rotate(Editor &e, Session &s, const Args &a, bool snapshot)
 {
     (void)s;
     run_transform(e, a, snapshot, rotate_face_delta, rotate_object_apply);
 }
 
-static Mat4 scale_face_delta(AxisLock axis, float amount)
+namespace
+{
+
+Mat4 scale_face_delta(AxisLock axis, float amount)
 {
     float s = 1.0f + amount;
     switch (axis)
@@ -223,7 +236,7 @@ static Mat4 scale_face_delta(AxisLock axis, float amount)
     }
 }
 
-static void scale_object_apply(Editor &e, AxisLock axis, float amount)
+void scale_object_apply(Editor &e, AxisLock axis, float amount)
 {
     TRS &t = e.transforms[e.selectedRef];
     float s = 1.0f + amount;
@@ -243,13 +256,18 @@ static void scale_object_apply(Editor &e, AxisLock axis, float amount)
     }
 }
 
+} // namespace
+
 void do_scale(Editor &e, Session &s, const Args &a, bool snapshot)
 {
     (void)s;
     run_transform(e, a, snapshot, scale_face_delta, scale_object_apply);
 }
 
-static Mat4 shear_face_delta(AxisLock axis, float amount)
+namespace
+{
+
+Mat4 shear_face_delta(AxisLock axis, float amount)
 {
     switch (axis)
     {
@@ -264,7 +282,7 @@ static Mat4 shear_face_delta(AxisLock axis, float amount)
     }
 }
 
-static void shear_object_apply(Editor &e, AxisLock axis, float amount)
+void shear_object_apply(Editor &e, AxisLock axis, float amount)
 {
     TRS &t = e.transforms[e.selectedRef];
     switch (axis)
@@ -282,6 +300,8 @@ static void shear_object_apply(Editor &e, AxisLock axis, float amount)
         break;
     }
 }
+
+} // namespace
 
 void do_shear(Editor &e, Session &s, const Args &a, bool snapshot)
 {

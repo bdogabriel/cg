@@ -7,11 +7,16 @@
 namespace cmd
 {
 
-static const Command registry[] = {
+namespace
+{
+
+const Command registry[] = {
 #define CMD(id, name, help, params, action) {name, help, params, action},
 #include "command.def"
 #undef CMD
 };
+
+} // namespace
 
 const char *const cmd_choices[] = {
 #define CMD(id, name, help, params, action) name,
@@ -50,7 +55,12 @@ const Command *at(int i)
     return &registry[i];
 }
 
-static char tokenbuf[512];
+namespace
+{
+
+char tokenbuf[512];
+
+} // namespace
 
 // TODO: extract/split
 bool parse_args(const char *argsStr, const ParamSpec *params, Args &out)

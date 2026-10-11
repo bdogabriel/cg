@@ -1,5 +1,5 @@
-#include "binding.h"
 #include "action.h"
+#include "binding.h"
 #include <cstdio>
 
 namespace cmd
@@ -10,7 +10,10 @@ const ParamSpec params_help[] = {
     {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
 };
 
-static void print_param(const ParamSpec &ps)
+namespace
+{
+
+void print_param(const ParamSpec &ps)
 {
     printf("    %-8s <%s>", ps.name, ps.type == ParamType::INT ? "int" : "string");
     if (ps.required)
@@ -41,7 +44,7 @@ static void print_param(const ParamSpec &ps)
     printf("\n");
 }
 
-static void print_usage(const Command &c)
+void print_usage(const Command &c)
 {
     printf("usage: %s", c.name);
     if (c.params)
@@ -53,6 +56,8 @@ static void print_usage(const Command &c)
     }
     printf("\n");
 }
+
+} // namespace
 
 void print_command_help(const Command &c)
 {
@@ -67,7 +72,10 @@ void print_command_help(const Command &c)
     }
 }
 
-static void print_all_commands_help()
+namespace
+{
+
+void print_all_commands_help()
 {
     for (int i = 0; i < count(); i++)
     {
@@ -76,7 +84,7 @@ static void print_all_commands_help()
     }
 }
 
-static void print_all_bindings_help()
+void print_all_bindings_help()
 {
     for (int i = 0; i < binding::count(); i++)
     {
@@ -96,6 +104,8 @@ static void print_all_bindings_help()
         printf("\n");
     }
 }
+
+} // namespace
 
 void do_help(Editor &, Session &, const Args &a, bool)
 {

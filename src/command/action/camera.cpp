@@ -6,7 +6,10 @@
 namespace cmd
 {
 
-static void camera_move(Editor &e, AxisLock axis, float step)
+namespace
+{
+
+void camera_move(Editor &e, AxisLock axis, float step)
 {
     constexpr float MOVE_SPEED = 0.1f;
     Vec4 dir;
@@ -29,7 +32,7 @@ static void camera_move(Editor &e, AxisLock axis, float step)
     e.camera.position += dir * (step * MOVE_SPEED);
 }
 
-static void camera_rotate(Editor &e, AxisLock axis, float step)
+void camera_rotate(Editor &e, AxisLock axis, float step)
 {
     float rotSpeed = e.keySensitivity;
     switch (axis)
@@ -45,6 +48,8 @@ static void camera_rotate(Editor &e, AxisLock axis, float step)
         break;
     }
 }
+
+} // namespace
 
 void do_camera(Editor &e, Session &s, const Args &a, bool)
 {

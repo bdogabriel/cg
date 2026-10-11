@@ -166,11 +166,11 @@ struct BakeSlot
     int idx; // -1 = empty
 };
 
-static Vec4 rawVerts[mesh::MAX_VERTICES];
-static Vec2 rawUVs[mesh::MAX_VERTICES];
-static BakeSlot bake[BAKE_SIZE];
+Vec4 rawVerts[mesh::MAX_VERTICES];
+Vec2 rawUVs[mesh::MAX_VERTICES];
+BakeSlot bake[BAKE_SIZE];
 
-static void dir_of(const char *path, char *out, size_t outSize)
+void dir_of(const char *path, char *out, size_t outSize)
 {
     const char *slash = strrchr(path, '/');
     if (slash)
@@ -189,7 +189,7 @@ static void dir_of(const char *path, char *out, size_t outSize)
     }
 }
 
-static int find_material(const MtlDef *materials, int count, const char *name)
+int find_material(const MtlDef *materials, int count, const char *name)
 {
     for (int i = 0; i < count; i++)
     {
@@ -201,7 +201,7 @@ static int find_material(const MtlDef *materials, int count, const char *name)
     return -1;
 }
 
-static int bake_lookup(int v, int vt, int *bakedCount, Vec4 *verts, Vec2 *uvs)
+int bake_lookup(int v, int vt, int *bakedCount, Vec4 *verts, Vec2 *uvs)
 {
     unsigned int h = ((unsigned int)v * 104729u + (unsigned int)vt * 40507u) & (BAKE_SIZE - 1);
     for (int probe = 0; probe < BAKE_SIZE; probe++)

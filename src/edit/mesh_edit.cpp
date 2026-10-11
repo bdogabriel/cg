@@ -169,7 +169,10 @@ Ref merge(MeshBatch &batch, Ref dst, Ref src)
     return dst;
 }
 
-static Vec4 newell_normal(const Vec4 *verts, int count)
+namespace
+{
+
+Vec4 newell_normal(const Vec4 *verts, int count)
 {
     Vec4 n = {0, 0, 0, 0};
     for (int i = 0; i < count; i++)
@@ -190,9 +193,9 @@ struct HalfEdge
     int face;
 };
 
-static HalfEdge halfEdges[face::MAX_CORNERS];
+HalfEdge halfEdges[face::MAX_CORNERS];
 
-static int he_compare(const void *a, const void *b)
+int he_compare(const void *a, const void *b)
 {
     const HalfEdge *ha = (const HalfEdge *)a;
     const HalfEdge *hb = (const HalfEdge *)b;
@@ -207,13 +210,13 @@ static int he_compare(const void *a, const void *b)
     return 0;
 }
 
-static int he_order_compare(const void *a, const void *b)
+int he_order_compare(const void *a, const void *b)
 {
     int ia = *(const int *)a, ib = *(const int *)b;
     return he_compare(&halfEdges[ia], &halfEdges[ib]);
 }
 
-static bool he_same_canonical(const HalfEdge &a, const HalfEdge &b)
+bool he_same_canonical(const HalfEdge &a, const HalfEdge &b)
 {
     unsigned int a_lo = a.a < a.b ? a.a : a.b;
     unsigned int a_hi = a.a < a.b ? a.b : a.a;
@@ -221,6 +224,8 @@ static bool he_same_canonical(const HalfEdge &a, const HalfEdge &b)
     unsigned int b_hi = b.a < b.b ? b.b : b.a;
     return a_lo == b_lo && a_hi == b_hi;
 }
+
+} // namespace
 
 int merge_coplanar(MeshBatch &batch, Ref ref, float angleTolDeg, const int *faces, int selFaceCount)
 {

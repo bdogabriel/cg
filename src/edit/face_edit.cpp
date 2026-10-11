@@ -4,7 +4,10 @@
 namespace faceedit
 {
 
-static int get_touched_vertices(const MeshBatch &batch, Ref ref, int *faces, int faceCount, int *touched)
+namespace
+{
+
+int get_touched_vertices(const MeshBatch &batch, Ref ref, int *faces, int faceCount, int *touched)
 {
     int touchedCount = 0;
     int faceBase = batch.faceBatch.faceOffsets[ref];
@@ -32,6 +35,8 @@ static int get_touched_vertices(const MeshBatch &batch, Ref ref, int *faces, int
     }
     return touchedCount;
 }
+
+} // namespace
 
 void transform(MeshBatch &batch, Ref ref, int *faces, int faceCount, Mat4 t)
 {

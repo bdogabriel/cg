@@ -39,9 +39,12 @@ struct KeyMap
     }
 };
 
-static const KeyMap keyOfGlfw{};
+namespace
+{
 
-static void key_callback(GLFWwindow *window, int key, int scancode, int action, int glfwMods)
+const KeyMap keyOfGlfw{};
+
+void key_callback(GLFWwindow *window, int key, int scancode, int action, int glfwMods)
 {
     (void)scancode; // glfw mandates this callback parameter
     Keyboard *kb = static_cast<Keyboard *>(glfwGetWindowUserPointer(window));
@@ -63,7 +66,7 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action, 
     kb->mods = (uint8_t)(glfwMods & mods::ALL);
 }
 
-static void char_callback(GLFWwindow *window, unsigned int codepoint)
+void char_callback(GLFWwindow *window, unsigned int codepoint)
 {
     Keyboard *kb = static_cast<Keyboard *>(glfwGetWindowUserPointer(window));
     if (codepoint < 32 || codepoint >= 127)
@@ -75,6 +78,8 @@ static void char_callback(GLFWwindow *window, unsigned int codepoint)
         kb->chars[kb->charCount++] = (char)codepoint;
     }
 }
+
+} // namespace
 
 void setup(Keyboard &kb, GLFWwindow *window)
 {

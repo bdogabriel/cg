@@ -8,7 +8,10 @@ namespace draw3d
 constexpr float GOLDEN_RATIO = 1.6180339887f;
 constexpr float GOLDEN_RATIO_INV = 0.6180339887f;
 
-static Vec4 cubeVertices[] = {
+namespace
+{
+
+Vec4 cubeVertices[] = {
     {1, -1, 1, 1},   //
     {1, 1, 1, 1},    //
     {-1, -1, 1, 1},  //
@@ -18,7 +21,7 @@ static Vec4 cubeVertices[] = {
     {-1, -1, -1, 1}, //
     {-1, 1, -1, 1},
 };
-static unsigned int cubeFaceCorners[] = {
+unsigned int cubeFaceCorners[] = {
     0, 1, 3, 2, // front (z=1)
     4, 5, 7, 6, // back (z=-1)
     1, 5, 7, 3, // top (y=1)
@@ -26,23 +29,23 @@ static unsigned int cubeFaceCorners[] = {
     0, 1, 5, 4, // right (x=1)
     2, 3, 7, 6, // left (x=-1)
 };
-static int cubeFaceCornerCounts[] = {4, 4, 4, 4, 4, 4};
+int cubeFaceCornerCounts[] = {4, 4, 4, 4, 4, 4};
 
-static Vec4 tetrahedronVertices[] = {
+Vec4 tetrahedronVertices[] = {
     {1, 1, 1, 1},   //
     {1, -1, -1, 1}, //
     {-1, 1, -1, 1}, //
     {-1, -1, 1, 1},
 };
-static unsigned int tetrahedronFaceCorners[] = {
+unsigned int tetrahedronFaceCorners[] = {
     1, 3, 2, //
     0, 2, 3, //
     0, 3, 1, //
     0, 1, 2,
 };
-static int tetrahedronFaceCornerCounts[] = {3, 3, 3, 3};
+int tetrahedronFaceCornerCounts[] = {3, 3, 3, 3};
 
-static Vec4 octahedronVertices[] = {
+Vec4 octahedronVertices[] = {
     {1, 0, 0, 1},  //
     {-1, 0, 0, 1}, //
     {0, 1, 0, 1},  //
@@ -50,7 +53,7 @@ static Vec4 octahedronVertices[] = {
     {0, 0, 1, 1},  //
     {0, 0, -1, 1},
 };
-static unsigned int octahedronFaceCorners[] = {
+unsigned int octahedronFaceCorners[] = {
     0, 2, 4, //
     0, 5, 2, //
     0, 4, 3, //
@@ -60,9 +63,9 @@ static unsigned int octahedronFaceCorners[] = {
     1, 3, 4, //
     1, 5, 3,
 };
-static int octahedronFaceCornerCounts[] = {3, 3, 3, 3, 3, 3, 3, 3};
+int octahedronFaceCornerCounts[] = {3, 3, 3, 3, 3, 3, 3, 3};
 
-static Vec4 icosahedronVertices[] = {
+Vec4 icosahedronVertices[] = {
     {-1, GOLDEN_RATIO, 0, 1},  //
     {1, GOLDEN_RATIO, 0, 1},   //
     {-1, -GOLDEN_RATIO, 0, 1}, //
@@ -76,7 +79,7 @@ static Vec4 icosahedronVertices[] = {
     {-GOLDEN_RATIO, 0, -1, 1}, //
     {-GOLDEN_RATIO, 0, 1, 1},
 };
-static unsigned int icosahedronFaceCorners[] = {
+unsigned int icosahedronFaceCorners[] = {
     0,  11, 5,  //
     0,  5,  1,  //
     0,  1,  7,  //
@@ -98,9 +101,9 @@ static unsigned int icosahedronFaceCorners[] = {
     8,  6,  7,  //
     9,  8,  1,
 };
-static int icosahedronFaceCornerCounts[] = {3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3};
+int icosahedronFaceCornerCounts[] = {3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3};
 
-static Vec4 dodecahedronVertices[] = {
+Vec4 dodecahedronVertices[] = {
     {1, 1, 1, 1},                             //
     {1, 1, -1, 1},                            //
     {1, -1, 1, 1},                            //
@@ -122,7 +125,7 @@ static Vec4 dodecahedronVertices[] = {
     {-GOLDEN_RATIO, 0, GOLDEN_RATIO_INV, 1},  //
     {-GOLDEN_RATIO, 0, -GOLDEN_RATIO_INV, 1},
 };
-static unsigned int dodecahedronFaceCorners[] = {
+unsigned int dodecahedronFaceCorners[] = {
     8,  10, 2,  16, 0,  // pentagon 1
     11, 9,  1,  17, 3,  // pentagon 2
     4,  18, 6,  10, 8,  // pentagon 3
@@ -136,31 +139,31 @@ static unsigned int dodecahedronFaceCorners[] = {
     5,  19, 18, 4,  14, // pentagon 11
     19, 7,  15, 6,  18, // pentagon 12
 };
-static int dodecahedronFaceCornerCounts[] = {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5};
+int dodecahedronFaceCornerCounts[] = {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5};
 
-static Vec4 pyramidVertices[MAX_PYRAMID_SIDES + 2];
-static unsigned int pyramidFaceCorners[MAX_PYRAMID_SIDES * 6];
-static int pyramidFaceCornerCounts[MAX_PYRAMID_SIDES * 2];
-static Color pyramidColors[MAX_PYRAMID_SIDES * 2];
+Vec4 pyramidVertices[MAX_PYRAMID_SIDES + 2];
+unsigned int pyramidFaceCorners[MAX_PYRAMID_SIDES * 6];
+int pyramidFaceCornerCounts[MAX_PYRAMID_SIDES * 2];
+Color pyramidColors[MAX_PYRAMID_SIDES * 2];
 
-static Vec4 cylinderVertices[MAX_CYLINDER_SEGMENTS * 2 + 2];
-static unsigned int cylinderFaceCorners[MAX_CYLINDER_SEGMENTS * 12];
-static int cylinderFaceCornerCounts[MAX_CYLINDER_SEGMENTS * 4];
-static Color cylinderColors[MAX_CYLINDER_SEGMENTS * 4];
+Vec4 cylinderVertices[MAX_CYLINDER_SEGMENTS * 2 + 2];
+unsigned int cylinderFaceCorners[MAX_CYLINDER_SEGMENTS * 12];
+int cylinderFaceCornerCounts[MAX_CYLINDER_SEGMENTS * 4];
+Color cylinderColors[MAX_CYLINDER_SEGMENTS * 4];
 
-static constexpr int MAX_SPHERE_VERTICES = 2 + (MAX_SPHERE_SEGMENTS - 1) * MAX_SPHERE_SEGMENTS;
-static constexpr int MAX_SPHERE_FACES = MAX_SPHERE_SEGMENTS * MAX_SPHERE_SEGMENTS;
-static constexpr int MAX_SPHERE_CORNERS = 4 * MAX_SPHERE_SEGMENTS * MAX_SPHERE_SEGMENTS - 2 * MAX_SPHERE_SEGMENTS;
+constexpr int MAX_SPHERE_VERTICES = 2 + (MAX_SPHERE_SEGMENTS - 1) * MAX_SPHERE_SEGMENTS;
+constexpr int MAX_SPHERE_FACES = MAX_SPHERE_SEGMENTS * MAX_SPHERE_SEGMENTS;
+constexpr int MAX_SPHERE_CORNERS = 4 * MAX_SPHERE_SEGMENTS * MAX_SPHERE_SEGMENTS - 2 * MAX_SPHERE_SEGMENTS;
 
-static Vec4 sphereVertices[MAX_SPHERE_VERTICES];
-static unsigned int sphereFaceCorners[MAX_SPHERE_CORNERS];
-static int sphereFaceCornerCounts[MAX_SPHERE_FACES];
-static Color sphereColors[MAX_SPHERE_FACES];
+Vec4 sphereVertices[MAX_SPHERE_VERTICES];
+unsigned int sphereFaceCorners[MAX_SPHERE_CORNERS];
+int sphereFaceCornerCounts[MAX_SPHERE_FACES];
+Color sphereColors[MAX_SPHERE_FACES];
 
-static Color defaultColors[20];
-static bool defaultColorsInit = false;
+Color defaultColors[20];
+bool defaultColorsInit = false;
 
-static void ensureDefaultColors()
+void ensureDefaultColors()
 {
     if (!defaultColorsInit)
     {
@@ -172,7 +175,7 @@ static void ensureDefaultColors()
     }
 }
 
-static void generate_polygon_vertices(Vec4 *vertices, int count, float y, int start_idx)
+void generate_polygon_vertices(Vec4 *vertices, int count, float y, int start_idx)
 {
     for (int i = 0; i < count; i++)
     {
@@ -180,6 +183,8 @@ static void generate_polygon_vertices(Vec4 *vertices, int count, float y, int st
         vertices[start_idx + i] = {cosf(angle), y, sinf(angle), 1};
     }
 }
+
+} // namespace
 
 Mesh polyhedron(int faceCount)
 {

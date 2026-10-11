@@ -4,7 +4,12 @@
 namespace camera
 {
 
-static const Vec4 WORLD_UP = {0, 1, 0, 0};
+namespace
+{
+
+const Vec4 WORLD_UP = {0, 1, 0, 0};
+
+} // namespace
 
 Vec4 forward(const Camera &c)
 {

@@ -4,13 +4,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const int ATLAS_W = 512;
-static const int ATLAS_H = 512;
-static const int CELL_W = 16;
-static const int CELL_H = 32;
-static const int COLS = 32;
+namespace
+{
 
-static void load_bmp_grayscale(const char *path, uint8_t *out, int width, int height)
+const int ATLAS_W = 512;
+const int ATLAS_H = 512;
+const int CELL_W = 16;
+const int CELL_H = 32;
+const int COLS = 32;
+
+void load_bmp_grayscale(const char *path, uint8_t *out, int width, int height)
 {
     FILE *f = fopen(path, "rb");
     if (!f)
@@ -76,6 +79,8 @@ static void load_bmp_grayscale(const char *path, uint8_t *out, int width, int he
     free(row);
     fclose(f);
 }
+
+} // namespace
 
 const Font &baked_font()
 {
