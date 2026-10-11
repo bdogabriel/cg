@@ -7,22 +7,22 @@
 namespace meshedit
 {
 
-void move_to_end(MeshBatch &buf, Ref ref)
+void move_to_end(MeshBatch &batch, Ref ref)
 {
-    DrawCommand &cmd = buf.drawCmds[ref];
+    DrawCommand &cmd = batch.drawCmds[ref];
 
     int origVtxOffset = cmd.vertexOffset;
-    int origFaceOffset = buf.faceBatch.faceOffsets[ref];
-    int origFaceCount = buf.faceBatch.faceCounts[ref];
+    int origFaceOffset = batch.faceBatch.faceOffsets[ref];
+    int origFaceCount = batch.faceBatch.faceCounts[ref];
 
     int maxLocalVtx = 0;
     for (int f = origFaceOffset; f < origFaceOffset + origFaceCount; f++)
     {
-        int cornerStart = buf.faceBatch.faceCornerStarts[f];
-        int cornerCount = buf.faceBatch.faceCornerCounts[f];
+        int cornerStart = batch.faceBatch.faceCornerStarts[f];
+        int cornerCount = batch.faceBatch.faceCornerCounts[f];
         for (int c = 0; c < cornerCount; c++)
         {
-            int idx = buf.faceBatch.faceCorners[cornerStart + c];
+            int idx = batch.faceBatch.faceCorners[cornerStart + c];
             if (idx > maxLocalVtx)
             {
                 maxLocalVtx = idx;
@@ -30,14 +30,14 @@ void move_to_end(MeshBatch &buf, Ref ref)
         }
     }
 
-    int nextVtxOffset = buf.vtxCount;
-    for (int j = 1; j < buf.slotCount; j++)
+    int nextVtxOffset = batch.vtxCount;
+    for (int j = 1; j < batch.slotCount; j++)
     {
-        if (!buf.usedSlots[j] || j == ref)
+        if (!batch.usedSlots[j] || j == ref)
         {
             continue;
         }
-        int jVtxOff = buf.drawCmds[j].vertexOffset;
+        int jVtxOff = batch.drawCmds[j].vertexOffset;
         if (jVtxOff > origVtxOffset && jVtxOff < nextVtxOffset)
         {
             nextVtxOffset = jVtxOff;
@@ -45,30 +45,30 @@ void move_to_end(MeshBatch &buf, Ref ref)
     }
 
     int movedVtxCount = nextVtxOffset - origVtxOffset;
-    if (movedVtxCount == 0 && origFaceOffset + origFaceCount == buf.faceBatch.faceCount)
+    if (movedVtxCount == 0 && origFaceOffset + origFaceCount == batch.faceBatch.faceCount)
     {
         return;
     }
 
-    int nextFaceOffset = buf.faceBatch.faceCount;
-    for (int j = 1; j < buf.slotCount; j++)
+    int nextFaceOffset = batch.faceBatch.faceCount;
+    for (int j = 1; j < batch.slotCount; j++)
     {
-        if (!buf.usedSlots[j] || j == ref)
+        if (!batch.usedSlots[j] || j == ref)
         {
             continue;
         }
-        int jFaceOff = buf.faceBatch.faceOffsets[j];
+        int jFaceOff = batch.faceBatch.faceOffsets[j];
         if (jFaceOff > origFaceOffset && jFaceOff < nextFaceOffset)
         {
             nextFaceOffset = jFaceOff;
         }
     }
 
-    int refCornerStart = buf.faceBatch.faceCornerStarts[origFaceOffset];
-    int nextCornerOffset = buf.faceBatch.cornerCount;
-    if (origFaceOffset + origFaceCount < buf.faceBatch.faceCount)
+    int refCornerStart = batch.faceBatch.faceCornerStarts[origFaceOffset];
+    int nextCornerOffset = batch.faceBatch.cornerCount;
+    if (origFaceOffset + origFaceCount < batch.faceBatch.faceCount)
     {
-        nextCornerOffset = buf.faceBatch.faceCornerStarts[origFaceOffset + origFaceCount];
+        nextCornerOffset = batch.faceBatch.faceCornerStarts[origFaceOffset + origFaceCount];
     }
     int movedCornerCount = nextCornerOffset - refCornerStart;
 
@@ -77,93 +77,94 @@ void move_to_end(MeshBatch &buf, Ref ref)
     static Color savedColors[face::MAX_FACES];
     static unsigned int savedCorners[face::MAX_CORNERS];
 
-    memcpy(savedVerts, buf.vertices + origVtxOffset, movedVtxCount * sizeof(Vec4));
-    memcpy(savedCornerCounts, buf.faceBatch.faceCornerCounts + origFaceOffset, origFaceCount * sizeof(int));
-    memcpy(savedColors, buf.faceBatch.faceColors + origFaceOffset, origFaceCount * sizeof(Color));
-    memcpy(savedCorners, buf.faceBatch.faceCorners + refCornerStart, movedCornerCount * sizeof(unsigned int));
+    memcpy(savedVerts, batch.vertices + origVtxOffset, movedVtxCount * sizeof(Vec4));
+    memcpy(savedCornerCounts, batch.faceBatch.faceCornerCounts + origFaceOffset, origFaceCount * sizeof(int));
+    memcpy(savedColors, batch.faceBatch.faceColors + origFaceOffset, origFaceCount * sizeof(Color));
+    memcpy(savedCorners, batch.faceBatch.faceCorners + refCornerStart, movedCornerCount * sizeof(unsigned int));
 
-    memmove(buf.vertices + origVtxOffset, buf.vertices + origVtxOffset + movedVtxCount,
-            (buf.vtxCount - origVtxOffset - movedVtxCount) * sizeof(Vec4));
-    memmove(buf.faceBatch.faceCornerStarts + origFaceOffset,
-            buf.faceBatch.faceCornerStarts + origFaceOffset + origFaceCount,
-            (buf.faceBatch.faceCount - origFaceOffset - origFaceCount) * sizeof(int));
-    memmove(buf.faceBatch.faceCornerCounts + origFaceOffset,
-            buf.faceBatch.faceCornerCounts + origFaceOffset + origFaceCount,
-            (buf.faceBatch.faceCount - origFaceOffset - origFaceCount) * sizeof(int));
-    memmove(buf.faceBatch.faceColors + origFaceOffset, buf.faceBatch.faceColors + origFaceOffset + origFaceCount,
-            (buf.faceBatch.faceCount - origFaceOffset - origFaceCount) * sizeof(Color));
-    memmove(buf.faceBatch.faceCorners + refCornerStart, buf.faceBatch.faceCorners + refCornerStart + movedCornerCount,
-            (buf.faceBatch.cornerCount - refCornerStart - movedCornerCount) * sizeof(unsigned int));
+    memmove(batch.vertices + origVtxOffset, batch.vertices + origVtxOffset + movedVtxCount,
+            (batch.vtxCount - origVtxOffset - movedVtxCount) * sizeof(Vec4));
+    memmove(batch.faceBatch.faceCornerStarts + origFaceOffset,
+            batch.faceBatch.faceCornerStarts + origFaceOffset + origFaceCount,
+            (batch.faceBatch.faceCount - origFaceOffset - origFaceCount) * sizeof(int));
+    memmove(batch.faceBatch.faceCornerCounts + origFaceOffset,
+            batch.faceBatch.faceCornerCounts + origFaceOffset + origFaceCount,
+            (batch.faceBatch.faceCount - origFaceOffset - origFaceCount) * sizeof(int));
+    memmove(batch.faceBatch.faceColors + origFaceOffset, batch.faceBatch.faceColors + origFaceOffset + origFaceCount,
+            (batch.faceBatch.faceCount - origFaceOffset - origFaceCount) * sizeof(Color));
+    memmove(batch.faceBatch.faceCorners + refCornerStart,
+            batch.faceBatch.faceCorners + refCornerStart + movedCornerCount,
+            (batch.faceBatch.cornerCount - refCornerStart - movedCornerCount) * sizeof(unsigned int));
 
-    int newVtxOffset = buf.vtxCount - movedVtxCount;
-    int newFaceOffset = buf.faceBatch.faceCount - origFaceCount;
-    int newCornerOffset = buf.faceBatch.cornerCount - movedCornerCount;
+    int newVtxOffset = batch.vtxCount - movedVtxCount;
+    int newFaceOffset = batch.faceBatch.faceCount - origFaceCount;
+    int newCornerOffset = batch.faceBatch.cornerCount - movedCornerCount;
 
-    memcpy(buf.vertices + newVtxOffset, savedVerts, movedVtxCount * sizeof(Vec4));
-    memcpy(buf.faceBatch.faceCornerCounts + newFaceOffset, savedCornerCounts, origFaceCount * sizeof(int));
-    memcpy(buf.faceBatch.faceColors + newFaceOffset, savedColors, origFaceCount * sizeof(Color));
-    memcpy(buf.faceBatch.faceCorners + newCornerOffset, savedCorners, movedCornerCount * sizeof(unsigned int));
+    memcpy(batch.vertices + newVtxOffset, savedVerts, movedVtxCount * sizeof(Vec4));
+    memcpy(batch.faceBatch.faceCornerCounts + newFaceOffset, savedCornerCounts, origFaceCount * sizeof(int));
+    memcpy(batch.faceBatch.faceColors + newFaceOffset, savedColors, origFaceCount * sizeof(Color));
+    memcpy(batch.faceBatch.faceCorners + newCornerOffset, savedCorners, movedCornerCount * sizeof(unsigned int));
 
-    for (int j = 1; j < buf.slotCount; j++)
+    for (int j = 1; j < batch.slotCount; j++)
     {
-        if (!buf.usedSlots[j] || j == ref)
+        if (!batch.usedSlots[j] || j == ref)
         {
             continue;
         }
-        if (buf.drawCmds[j].vertexOffset > origVtxOffset)
+        if (batch.drawCmds[j].vertexOffset > origVtxOffset)
         {
-            buf.drawCmds[j].vertexOffset -= movedVtxCount;
+            batch.drawCmds[j].vertexOffset -= movedVtxCount;
         }
-        if (buf.faceBatch.faceOffsets[j] > origFaceOffset)
+        if (batch.faceBatch.faceOffsets[j] > origFaceOffset)
         {
-            buf.faceBatch.faceOffsets[j] -= origFaceCount;
+            batch.faceBatch.faceOffsets[j] -= origFaceCount;
         }
     }
 
     cmd.vertexOffset = newVtxOffset;
-    buf.faceBatch.faceOffsets[ref] = newFaceOffset;
+    batch.faceBatch.faceOffsets[ref] = newFaceOffset;
 
-    face::update_corner_starts(buf.faceBatch);
+    face::update_corner_starts(batch.faceBatch);
 }
 
-Ref merge(MeshBatch &buf, Ref dst, Ref src)
+Ref merge(MeshBatch &batch, Ref dst, Ref src)
 {
-    move_to_end(buf, dst);
-    move_to_end(buf, src);
+    move_to_end(batch, dst);
+    move_to_end(batch, src);
 
-    DrawCommand &dstCmd = buf.drawCmds[dst];
-    DrawCommand &srcCmd = buf.drawCmds[src];
+    DrawCommand &dstCmd = batch.drawCmds[dst];
+    DrawCommand &srcCmd = batch.drawCmds[src];
 
     int srcVtxStart = srcCmd.vertexOffset;
-    int srcVtxCount = buf.vtxCount - srcVtxStart;
+    int srcVtxCount = batch.vtxCount - srcVtxStart;
     int dstVtxStart = dstCmd.vertexOffset;
 
-    Mat4 xform = mat4::inverse(buf.models[dst]) * buf.models[src];
+    Mat4 xform = mat4::inverse(batch.models[dst]) * batch.models[src];
     for (int i = 0; i < srcVtxCount; i++)
     {
-        buf.vertices[srcVtxStart + i] = xform * buf.vertices[srcVtxStart + i];
+        batch.vertices[srcVtxStart + i] = xform * batch.vertices[srcVtxStart + i];
     }
 
     int vtxRelOffset = srcVtxStart - dstVtxStart;
-    int srcFaceOffset = buf.faceBatch.faceOffsets[src];
-    int srcFaceCount = buf.faceBatch.faceCounts[src];
+    int srcFaceOffset = batch.faceBatch.faceOffsets[src];
+    int srcFaceCount = batch.faceBatch.faceCounts[src];
 
     for (int f = srcFaceOffset; f < srcFaceOffset + srcFaceCount; f++)
     {
-        int cornerStart = buf.faceBatch.faceCornerStarts[f];
-        int cornerCount = buf.faceBatch.faceCornerCounts[f];
+        int cornerStart = batch.faceBatch.faceCornerStarts[f];
+        int cornerCount = batch.faceBatch.faceCornerCounts[f];
         for (int c = 0; c < cornerCount; c++)
         {
-            buf.faceBatch.faceCorners[cornerStart + c] += vtxRelOffset;
+            batch.faceBatch.faceCorners[cornerStart + c] += vtxRelOffset;
         }
     }
 
-    buf.faceBatch.faceCounts[dst] += srcFaceCount;
+    batch.faceBatch.faceCounts[dst] += srcFaceCount;
 
-    mesh::remove(buf, src);
+    mesh::remove(batch, src);
 
-    buf.meshDirty = true;
-    buf.modelsDirty = true;
+    batch.meshDirty = true;
+    batch.modelsDirty = true;
 
     return dst;
 }
@@ -221,20 +222,20 @@ static bool he_same_canonical(const HalfEdge &a, const HalfEdge &b)
     return a_lo == b_lo && a_hi == b_hi;
 }
 
-int merge_coplanar(MeshBatch &buf, Ref ref, float angleTolDeg, const int *faces, int selFaceCount)
+int merge_coplanar(MeshBatch &batch, Ref ref, float angleTolDeg, const int *faces, int selFaceCount)
 {
-    if (!buf.usedSlots[ref])
+    if (!batch.usedSlots[ref])
         return 0;
 
-    int faceOffset = buf.faceBatch.faceOffsets[ref];
-    int faceCount = buf.faceBatch.faceCounts[ref];
+    int faceOffset = batch.faceBatch.faceOffsets[ref];
+    int faceCount = batch.faceBatch.faceCounts[ref];
     if (faceCount <= 1)
         return faceCount;
 
-    move_to_end(buf, ref);
-    faceOffset = buf.faceBatch.faceOffsets[ref];
-    faceCount = buf.faceBatch.faceCounts[ref];
-    int vtxOffset = buf.drawCmds[ref].vertexOffset;
+    move_to_end(batch, ref);
+    faceOffset = batch.faceBatch.faceOffsets[ref];
+    faceCount = batch.faceBatch.faceCounts[ref];
+    int vtxOffset = batch.drawCmds[ref].vertexOffset;
 
     static bool selected[face::MAX_FACES];
     memset(selected, 0, faceCount * sizeof(bool));
@@ -258,11 +259,11 @@ int merge_coplanar(MeshBatch &buf, Ref ref, float angleTolDeg, const int *faces,
     for (int i = 0; i < faceCount; i++)
     {
         int f = faceOffset + i;
-        int cs = buf.faceBatch.faceCornerStarts[f];
-        int cc = buf.faceBatch.faceCornerCounts[f];
+        int cs = batch.faceBatch.faceCornerStarts[f];
+        int cc = batch.faceBatch.faceCornerCounts[f];
         for (int c = 0; c < cc; c++)
         {
-            const Vec4 &v = buf.vertices[vtxOffset + buf.faceBatch.faceCorners[cs + c]];
+            const Vec4 &v = batch.vertices[vtxOffset + batch.faceBatch.faceCorners[cs + c]];
             for (int d = 0; d < 3; d++)
             {
                 float val = (&v.x)[d];
@@ -286,13 +287,13 @@ int merge_coplanar(MeshBatch &buf, Ref ref, float angleTolDeg, const int *faces,
     for (int i = 0; i < faceCount; i++)
     {
         int f = faceOffset + i;
-        int cs = buf.faceBatch.faceCornerStarts[f];
-        int cc = buf.faceBatch.faceCornerCounts[f];
+        int cs = batch.faceBatch.faceCornerStarts[f];
+        int cc = batch.faceBatch.faceCornerCounts[f];
 
         Vec4 loop[64];
         for (int c = 0; c < cc; c++)
         {
-            loop[c] = buf.vertices[vtxOffset + buf.faceBatch.faceCorners[cs + c]];
+            loop[c] = batch.vertices[vtxOffset + batch.faceBatch.faceCorners[cs + c]];
         }
 
         Vec4 n = newell_normal(loop, cc);
@@ -314,7 +315,7 @@ int merge_coplanar(MeshBatch &buf, Ref ref, float angleTolDeg, const int *faces,
     int totalHE = 0;
     for (int i = 0; i < faceCount; i++)
     {
-        totalHE += buf.faceBatch.faceCornerCounts[faceOffset + i];
+        totalHE += batch.faceBatch.faceCornerCounts[faceOffset + i];
     }
 
     int heIdx = 0;
@@ -322,13 +323,13 @@ int merge_coplanar(MeshBatch &buf, Ref ref, float angleTolDeg, const int *faces,
     for (int i = 0; i < faceCount; i++)
     {
         int f = faceOffset + i;
-        int cs = buf.faceBatch.faceCornerStarts[f];
-        int cc = buf.faceBatch.faceCornerCounts[f];
+        int cs = batch.faceBatch.faceCornerStarts[f];
+        int cc = batch.faceBatch.faceCornerCounts[f];
         faceHEStart[i] = heIdx;
         for (int c = 0; c < cc; c++)
         {
-            unsigned int a = buf.faceBatch.faceCorners[cs + c];
-            unsigned int b = buf.faceBatch.faceCorners[cs + (c + 1) % cc];
+            unsigned int a = batch.faceBatch.faceCorners[cs + c];
+            unsigned int b = batch.faceBatch.faceCorners[cs + (c + 1) % cc];
             halfEdges[heIdx++] = {a, b, i};
         }
     }
@@ -389,7 +390,7 @@ int merge_coplanar(MeshBatch &buf, Ref ref, float angleTolDeg, const int *faces,
         {
             int f = queue[qHead++];
             int heStart = faceHEStart[f];
-            int heCount = buf.faceBatch.faceCornerCounts[faceOffset + f];
+            int heCount = batch.faceBatch.faceCornerCounts[faceOffset + f];
 
             for (int e = 0; e < heCount; e++)
             {
@@ -406,11 +407,11 @@ int merge_coplanar(MeshBatch &buf, Ref ref, float angleTolDeg, const int *faces,
                     continue;
 
                 bool ok = true;
-                int pcs = buf.faceBatch.faceCornerStarts[faceOffset + partner];
-                int pcc = buf.faceBatch.faceCornerCounts[faceOffset + partner];
+                int pcs = batch.faceBatch.faceCornerStarts[faceOffset + partner];
+                int pcc = batch.faceBatch.faceCornerCounts[faceOffset + partner];
                 for (int c = 0; c < pcc; c++)
                 {
-                    const Vec4 &v = buf.vertices[vtxOffset + buf.faceBatch.faceCorners[pcs + c]];
+                    const Vec4 &v = batch.vertices[vtxOffset + batch.faceBatch.faceCorners[pcs + c]];
                     float dist = fabsf(vec4::dot3(seedNormals[rid], v) - seedOffsets[rid]);
                     if (dist > distEps)
                     {
@@ -479,7 +480,7 @@ int merge_coplanar(MeshBatch &buf, Ref ref, float angleTolDeg, const int *faces,
             continue;
         }
 
-        for (int i = 0; i < buf.vtxCount; i++)
+        for (int i = 0; i < batch.vtxCount; i++)
             startMap[i] = -1;
         for (int i = 0; i < perimCount; i++)
         {
@@ -521,13 +522,15 @@ int merge_coplanar(MeshBatch &buf, Ref ref, float angleTolDeg, const int *faces,
                     int prev = (i + loopCount - 1) % loopCount;
                     int nxt = (i + 1) % loopCount;
                     Vec4 e1 = {
-                        buf.vertices[vtxOffset + loopCorners[i]].x - buf.vertices[vtxOffset + loopCorners[prev]].x,
-                        buf.vertices[vtxOffset + loopCorners[i]].y - buf.vertices[vtxOffset + loopCorners[prev]].y,
-                        buf.vertices[vtxOffset + loopCorners[i]].z - buf.vertices[vtxOffset + loopCorners[prev]].z, 0};
+                        batch.vertices[vtxOffset + loopCorners[i]].x - batch.vertices[vtxOffset + loopCorners[prev]].x,
+                        batch.vertices[vtxOffset + loopCorners[i]].y - batch.vertices[vtxOffset + loopCorners[prev]].y,
+                        batch.vertices[vtxOffset + loopCorners[i]].z - batch.vertices[vtxOffset + loopCorners[prev]].z,
+                        0};
                     Vec4 e2 = {
-                        buf.vertices[vtxOffset + loopCorners[nxt]].x - buf.vertices[vtxOffset + loopCorners[i]].x,
-                        buf.vertices[vtxOffset + loopCorners[nxt]].y - buf.vertices[vtxOffset + loopCorners[i]].y,
-                        buf.vertices[vtxOffset + loopCorners[nxt]].z - buf.vertices[vtxOffset + loopCorners[i]].z, 0};
+                        batch.vertices[vtxOffset + loopCorners[nxt]].x - batch.vertices[vtxOffset + loopCorners[i]].x,
+                        batch.vertices[vtxOffset + loopCorners[nxt]].y - batch.vertices[vtxOffset + loopCorners[i]].y,
+                        batch.vertices[vtxOffset + loopCorners[nxt]].z - batch.vertices[vtxOffset + loopCorners[i]].z,
+                        0};
                     float len1 = vec4::length(e1);
                     float len2 = vec4::length(e2);
                     if (len1 < 1e-12f || len2 < 1e-12f)
@@ -551,7 +554,7 @@ int merge_coplanar(MeshBatch &buf, Ref ref, float angleTolDeg, const int *faces,
                     {
                         nf.corners[i] = pruned[i];
                     }
-                    nf.color = buf.faceBatch.faceColors[faceOffset + seedFace[rid]];
+                    nf.color = batch.faceBatch.faceColors[faceOffset + seedFace[rid]];
                     regionEmitted[rid] = true;
                 }
             }
@@ -564,13 +567,13 @@ int merge_coplanar(MeshBatch &buf, Ref ref, float angleTolDeg, const int *faces,
     {
         if (!selected[i])
         {
-            int cs = buf.faceBatch.faceCornerStarts[faceOffset + i];
-            int cc = buf.faceBatch.faceCornerCounts[faceOffset + i];
+            int cs = batch.faceBatch.faceCornerStarts[faceOffset + i];
+            int cc = batch.faceBatch.faceCornerCounts[faceOffset + i];
             NewFace &of = outFaces[outFaceCount++];
             of.cornerCount = cc;
             for (int c = 0; c < cc; c++)
-                of.corners[c] = buf.faceBatch.faceCorners[cs + c];
-            of.color = buf.faceBatch.faceColors[faceOffset + i];
+                of.corners[c] = batch.faceBatch.faceCorners[cs + c];
+            of.color = batch.faceBatch.faceColors[faceOffset + i];
         }
         else
         {
@@ -587,23 +590,23 @@ int merge_coplanar(MeshBatch &buf, Ref ref, float angleTolDeg, const int *faces,
         return faceCount;
     }
 
-    int runningCorner = buf.faceBatch.faceCornerStarts[faceOffset];
+    int runningCorner = batch.faceBatch.faceCornerStarts[faceOffset];
     for (int i = 0; i < outFaceCount; i++)
     {
         int f = faceOffset + i;
-        buf.faceBatch.faceCornerStarts[f] = runningCorner;
-        buf.faceBatch.faceCornerCounts[f] = outFaces[i].cornerCount;
-        buf.faceBatch.faceColors[f] = outFaces[i].color;
+        batch.faceBatch.faceCornerStarts[f] = runningCorner;
+        batch.faceBatch.faceCornerCounts[f] = outFaces[i].cornerCount;
+        batch.faceBatch.faceColors[f] = outFaces[i].color;
         for (int c = 0; c < outFaces[i].cornerCount; c++)
         {
-            buf.faceBatch.faceCorners[runningCorner + c] = outFaces[i].corners[c];
+            batch.faceBatch.faceCorners[runningCorner + c] = outFaces[i].corners[c];
         }
         runningCorner += outFaces[i].cornerCount;
     }
-    buf.faceBatch.faceCounts[ref] = outFaceCount;
-    buf.faceBatch.faceCount = faceOffset + outFaceCount;
-    buf.faceBatch.cornerCount = runningCorner;
-    buf.meshDirty = true;
+    batch.faceBatch.faceCounts[ref] = outFaceCount;
+    batch.faceBatch.faceCount = faceOffset + outFaceCount;
+    batch.faceBatch.cornerCount = runningCorner;
+    batch.meshDirty = true;
 
     printf("merged coplanar: %d faces -> %d faces\n", faceCount, outFaceCount);
 

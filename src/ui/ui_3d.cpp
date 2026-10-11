@@ -6,7 +6,7 @@
 namespace ui3d
 {
 
-void build_axes(const Editor &e, LineBatch &axes)
+void build_axes(const Editor &e, LineBatch &batch)
 {
     Mat4 axisMat = mat4::IDENTITY;
     if (e.meshBatch.usedSlots[e.selectedRef])
@@ -21,34 +21,35 @@ void build_axes(const Editor &e, LineBatch &axes)
     Vec4 y = axisMat * Vec4{0, 1, 0, 1};
     Vec4 z = axisMat * Vec4{0, 0, 1, 1};
 
-    line::add(axes, o, x, color::palette[0]);
-    line::add(axes, o, y, color::palette[1]);
-    line::add(axes, o, z, color::palette[2]);
+    line::add(batch, o, x, color::palette[0]);
+    line::add(batch, o, y, color::palette[1]);
+    line::add(batch, o, z, color::palette[2]);
 }
 
-void build_face_highlights(const Editor &e, LineBatch &highlights)
+void build_face_highlights(const Editor &e, LineBatch &batch)
 {
     if (e.target != Target::Face || !e.meshBatch.usedSlots[e.selectedRef])
     {
         return;
     }
 
-    const MeshBatch &buf = e.meshBatch;
-    const DrawCommand &cmd = buf.drawCmds[e.selectedRef];
-    Mat4 model = buf.models[e.selectedRef];
+    const MeshBatch &meshBatch = e.meshBatch;
+    const DrawCommand &cmd = meshBatch.drawCmds[e.selectedRef];
+    Mat4 model = meshBatch.models[e.selectedRef];
 
     auto add_outline = [&](int face, Color color) {
-        int faceIdx = buf.faceBatch.faceOffsets[e.selectedRef] + face;
-        int cornerStart = buf.faceBatch.faceCornerStarts[faceIdx];
-        int cornerCount = buf.faceBatch.faceCornerCounts[faceIdx];
+        int faceIdx = meshBatch.faceBatch.faceOffsets[e.selectedRef] + face;
+        int cornerStart = meshBatch.faceBatch.faceCornerStarts[faceIdx];
+        int cornerCount = meshBatch.faceBatch.faceCornerCounts[faceIdx];
         Vec4 corners[32];
         for (int i = 0; i < cornerCount; i++)
         {
-            corners[i] = model * buf.vertices[cmd.vertexOffset + buf.faceBatch.faceCorners[cornerStart + i]];
+            corners[i] =
+                model * meshBatch.vertices[cmd.vertexOffset + meshBatch.faceBatch.faceCorners[cornerStart + i]];
         }
         for (int i = 0; i < cornerCount; i++)
         {
-            line::add(highlights, corners[i], corners[(i + 1) % cornerCount], color);
+            line::add(batch, corners[i], corners[(i + 1) % cornerCount], color);
         }
     };
 

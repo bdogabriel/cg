@@ -6,8 +6,8 @@
 
 namespace ui3d
 {
-void build_axes(const Editor &e, LineBatch &axes);
-void build_face_highlights(const Editor &e, LineBatch &highlights);
-}
+void build_axes(const Editor &e, LineBatch &batch);
+void build_face_highlights(const Editor &e, LineBatch &batch);
+} // namespace ui3d
 
 #endif // UI3D_H

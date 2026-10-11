@@ -25,7 +25,7 @@ struct FaceBatch
 
 namespace face
 {
-void update_corner_starts(FaceBatch &fb);
+void update_corner_starts(FaceBatch &batch);
 int triangulate(const Vec4 *loop, int count, int *outTris);
 } // namespace face
 

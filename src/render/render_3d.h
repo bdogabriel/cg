@@ -24,13 +24,13 @@ namespace render3d
 {
 
 void init(Render3D &r, GLuint idxVertex);
-void upload_mesh(const Render3D &r, const MeshBatch &buf);
-void upload_commands(Render3D &r, const MeshBatch &buf);
-void upload_models(const Render3D &r, const MeshBatch &buf);
-void upload_face_colors(const Render3D &r, const MeshBatch &buf);
+void upload_mesh(const Render3D &r, const MeshBatch &batch);
+void upload_commands(Render3D &r, const MeshBatch &batch);
+void upload_models(const Render3D &r, const MeshBatch &batch);
+void upload_face_colors(const Render3D &r, const MeshBatch &batch);
 
-void draw_flat(const Render3D &r, const MeshBatch &buf);
-void draw_textured(const Render3D &r, const MeshBatch &buf, const ModelTextureCache &modelTexCache);
+void draw_flat(const Render3D &r, const MeshBatch &batch);
+void draw_textured(const Render3D &r, const MeshBatch &batch, const ModelTextureCache &modelTexCache);
 void free(Render3D &r);
 
 } // namespace render3d

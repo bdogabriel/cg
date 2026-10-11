@@ -32,57 +32,58 @@ void init(Render3D &r, GLuint idxVertex)
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, r.faceOffsetBuffer);
 }
 
-void upload_mesh(const Render3D &r, const MeshBatch &buf)
+void upload_mesh(const Render3D &r, const MeshBatch &batch)
 {
-    glNamedBufferData(r.vbo, buf.vtxCount * sizeof(Vec4), buf.vertices, GL_DYNAMIC_DRAW);
-    glNamedBufferData(r.uvVbo, buf.vtxCount * sizeof(Vec2), buf.uvs, GL_DYNAMIC_DRAW);
-    glNamedBufferData(r.ebo, buf.idxCount * sizeof(unsigned int), buf.indices, GL_DYNAMIC_DRAW);
+    glNamedBufferData(r.vbo, batch.vtxCount * sizeof(Vec4), batch.vertices, GL_DYNAMIC_DRAW);
+    glNamedBufferData(r.uvVbo, batch.vtxCount * sizeof(Vec2), batch.uvs, GL_DYNAMIC_DRAW);
+    glNamedBufferData(r.ebo, batch.idxCount * sizeof(unsigned int), batch.indices, GL_DYNAMIC_DRAW);
 }
 
-void upload_commands(Render3D &r, const MeshBatch &buf)
+void upload_commands(Render3D &r, const MeshBatch &batch)
 {
-    glNamedBufferData(r.commandBuffer, (buf.flatCount + buf.texCount) * sizeof(DrawCommand), nullptr, GL_DYNAMIC_DRAW);
-    glNamedBufferSubData(r.commandBuffer, 0, buf.flatCount * sizeof(DrawCommand), buf.flatCmds);
-    glNamedBufferSubData(r.commandBuffer, buf.flatCount * sizeof(DrawCommand), buf.texCount * sizeof(DrawCommand),
-                         buf.texCmds);
+    glNamedBufferData(r.commandBuffer, (batch.flatCount + batch.texCount) * sizeof(DrawCommand), nullptr,
+                      GL_DYNAMIC_DRAW);
+    glNamedBufferSubData(r.commandBuffer, 0, batch.flatCount * sizeof(DrawCommand), batch.flatCmds);
+    glNamedBufferSubData(r.commandBuffer, batch.flatCount * sizeof(DrawCommand), batch.texCount * sizeof(DrawCommand),
+                         batch.texCmds);
 }
 
-void upload_models(const Render3D &r, const MeshBatch &buf)
+void upload_models(const Render3D &r, const MeshBatch &batch)
 {
-    glNamedBufferData(r.modelBuffer, buf.slotCount * sizeof(Mat4), buf.models, GL_DYNAMIC_DRAW);
+    glNamedBufferData(r.modelBuffer, batch.slotCount * sizeof(Mat4), batch.models, GL_DYNAMIC_DRAW);
 }
 
-void upload_face_colors(const Render3D &r, const MeshBatch &buf)
+void upload_face_colors(const Render3D &r, const MeshBatch &batch)
 {
-    glNamedBufferData(r.faceColorBuffer, buf.primCount * sizeof(Color), buf.primColors, GL_DYNAMIC_DRAW);
-    glNamedBufferData(r.faceOffsetBuffer, buf.slotCount * sizeof(int), buf.primOffsets, GL_DYNAMIC_DRAW);
+    glNamedBufferData(r.faceColorBuffer, batch.primCount * sizeof(Color), batch.primColors, GL_DYNAMIC_DRAW);
+    glNamedBufferData(r.faceOffsetBuffer, batch.slotCount * sizeof(int), batch.primOffsets, GL_DYNAMIC_DRAW);
 }
 
-void draw_flat(const Render3D &r, const MeshBatch &buf)
+void draw_flat(const Render3D &r, const MeshBatch &batch)
 {
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, r.modelBuffer);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, r.faceColorBuffer);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, r.faceOffsetBuffer);
     glBindVertexArray(r.vao);
     glBindBuffer(GL_DRAW_INDIRECT_BUFFER, r.commandBuffer);
-    glMultiDrawElementsIndirect(r.primitive, GL_UNSIGNED_INT, (void *)0, buf.flatCount, 0);
+    glMultiDrawElementsIndirect(r.primitive, GL_UNSIGNED_INT, (void *)0, batch.flatCount, 0);
 }
 
-void draw_textured(const Render3D &r, const MeshBatch &buf, const ModelTextureCache &modelTexCache)
+void draw_textured(const Render3D &r, const MeshBatch &batch, const ModelTextureCache &modelTexCache)
 {
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, r.modelBuffer);
     glBindVertexArray(r.vao);
     glBindBuffer(GL_DRAW_INDIRECT_BUFFER, r.commandBuffer);
     for (int m = 0; m < modeltexture::count(modelTexCache); m++)
     {
-        if (buf.texMatCount[m] == 0)
+        if (batch.texMatCount[m] == 0)
         {
             continue;
         }
         glBindTextureUnit(0, modeltexture::get(modelTexCache, m));
         glMultiDrawElementsIndirect(r.primitive, GL_UNSIGNED_INT,
-                                    (void *)((buf.flatCount + buf.texMatStart[m]) * sizeof(DrawCommand)),
-                                    buf.texMatCount[m], 0);
+                                    (void *)((batch.flatCount + batch.texMatStart[m]) * sizeof(DrawCommand)),
+                                    batch.texMatCount[m], 0);
     }
 }
 

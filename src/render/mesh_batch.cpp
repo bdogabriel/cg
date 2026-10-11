@@ -4,36 +4,36 @@
 namespace mesh
 {
 
-void reset(MeshBatch &buf)
+void reset(MeshBatch &batch)
 {
-    buf.vtxCount = 0;
-    buf.faceBatch.faceCount = 0;
-    buf.faceBatch.cornerCount = 0;
-    buf.idxCount = 0;
-    buf.primCount = 0;
-    buf.slotCount = 1;
-    memset(buf.usedSlots, 0, sizeof(buf.usedSlots));
-    memset(buf.texturedSlots, 0, sizeof(buf.texturedSlots));
-    buf.meshDirty = true;
-    buf.modelsDirty = true;
+    batch.vtxCount = 0;
+    batch.faceBatch.faceCount = 0;
+    batch.faceBatch.cornerCount = 0;
+    batch.idxCount = 0;
+    batch.primCount = 0;
+    batch.slotCount = 1;
+    memset(batch.usedSlots, 0, sizeof(batch.usedSlots));
+    memset(batch.texturedSlots, 0, sizeof(batch.texturedSlots));
+    batch.meshDirty = true;
+    batch.modelsDirty = true;
 }
 
-bool can_add(const MeshBatch &buf, const Mesh &mesh)
+bool can_add(const MeshBatch &batch, const Mesh &mesh)
 {
-    if (buf.slotCount >= mesh::MAX_REFS)
+    if (batch.slotCount >= mesh::MAX_REFS)
     {
         printf("E: cannot add ref, mesh::MAX_REFS limit reached (%d)\n", mesh::MAX_REFS);
         return false;
     }
-    if (buf.vtxCount + mesh.vtxCount > mesh::MAX_VERTICES)
+    if (batch.vtxCount + mesh.vtxCount > mesh::MAX_VERTICES)
     {
-        printf("E: cannot add %s, would exceed MAX_VERTICES (%d + %d > %d)\n", mesh.name, buf.vtxCount, mesh.vtxCount,
+        printf("E: cannot add %s, would exceed MAX_VERTICES (%d + %d > %d)\n", mesh.name, batch.vtxCount, mesh.vtxCount,
                mesh::MAX_VERTICES);
         return false;
     }
-    if (buf.faceBatch.faceCount + mesh.faceCount > face::MAX_FACES)
+    if (batch.faceBatch.faceCount + mesh.faceCount > face::MAX_FACES)
     {
-        printf("E: cannot add %s, would exceed MAX_FACES (%d + %d > %d)\n", mesh.name, buf.faceBatch.faceCount,
+        printf("E: cannot add %s, would exceed MAX_FACES (%d + %d > %d)\n", mesh.name, batch.faceBatch.faceCount,
                mesh.faceCount, face::MAX_FACES);
         return false;
     }
@@ -45,31 +45,31 @@ bool can_add(const MeshBatch &buf, const Mesh &mesh)
         meshCorners += n;
         meshTris += (n >= 3) ? (n - 2) : 0;
     }
-    if (buf.faceBatch.cornerCount + meshCorners > face::MAX_CORNERS)
+    if (batch.faceBatch.cornerCount + meshCorners > face::MAX_CORNERS)
     {
-        printf("E: cannot add %s, would exceed MAX_CORNERS (%d + %d > %d)\n", mesh.name, buf.faceBatch.cornerCount,
+        printf("E: cannot add %s, would exceed MAX_CORNERS (%d + %d > %d)\n", mesh.name, batch.faceBatch.cornerCount,
                meshCorners, face::MAX_CORNERS);
         return false;
     }
-    if (buf.idxCount + meshTris * 3 > mesh::MAX_INDICES)
+    if (batch.idxCount + meshTris * 3 > mesh::MAX_INDICES)
     {
-        printf("E: cannot add %s, would exceed MAX_INDICES (%d + %d > %d)\n", mesh.name, buf.idxCount, meshTris * 3,
+        printf("E: cannot add %s, would exceed MAX_INDICES (%d + %d > %d)\n", mesh.name, batch.idxCount, meshTris * 3,
                mesh::MAX_INDICES);
         return false;
     }
     return true;
 }
 
-Ref add(MeshBatch &buf, const Mesh &mesh)
+Ref add(MeshBatch &batch, const Mesh &mesh)
 {
-    int vtxOffset = buf.vtxCount;
-    int faceOffset = buf.faceBatch.faceCount;
-    int cornerOffset = buf.faceBatch.cornerCount;
+    int vtxOffset = batch.vtxCount;
+    int faceOffset = batch.faceBatch.faceCount;
+    int cornerOffset = batch.faceBatch.cornerCount;
 
-    memcpy(buf.vertices + buf.vtxCount, mesh.vertices, mesh.vtxCount * sizeof(Vec4));
+    memcpy(batch.vertices + batch.vtxCount, mesh.vertices, mesh.vtxCount * sizeof(Vec4));
     if (mesh.uvs)
     {
-        memcpy(buf.uvs + buf.vtxCount, mesh.uvs, mesh.vtxCount * sizeof(Vec2));
+        memcpy(batch.uvs + batch.vtxCount, mesh.uvs, mesh.vtxCount * sizeof(Vec2));
     }
 
     int totalCorners = 0;
@@ -79,124 +79,124 @@ Ref add(MeshBatch &buf, const Mesh &mesh)
     }
     if (mesh.faceCorners && totalCorners > 0)
     {
-        memcpy(buf.faceBatch.faceCorners + buf.faceBatch.cornerCount, mesh.faceCorners,
+        memcpy(batch.faceBatch.faceCorners + batch.faceBatch.cornerCount, mesh.faceCorners,
                totalCorners * sizeof(unsigned int));
     }
 
-    memcpy(buf.faceBatch.faceCornerCounts + buf.faceBatch.faceCount, mesh.faceCornerCounts,
+    memcpy(batch.faceBatch.faceCornerCounts + batch.faceBatch.faceCount, mesh.faceCornerCounts,
            mesh.faceCount * sizeof(int));
-    memcpy(buf.faceBatch.faceColors + buf.faceBatch.faceCount, mesh.faceColors, mesh.faceCount * sizeof(Color));
+    memcpy(batch.faceBatch.faceColors + batch.faceBatch.faceCount, mesh.faceColors, mesh.faceCount * sizeof(Color));
     if (mesh.faceMaterialIds)
     {
-        memcpy(buf.faceBatch.faceMaterialIds + buf.faceBatch.faceCount, mesh.faceMaterialIds,
+        memcpy(batch.faceBatch.faceMaterialIds + batch.faceBatch.faceCount, mesh.faceMaterialIds,
                mesh.faceCount * sizeof(int));
     }
     else
     {
-        memset(buf.faceBatch.faceMaterialIds + buf.faceBatch.faceCount, 0xFF, mesh.faceCount * sizeof(int));
+        memset(batch.faceBatch.faceMaterialIds + batch.faceBatch.faceCount, 0xFF, mesh.faceCount * sizeof(int));
     }
 
     int runningCorner = cornerOffset;
     for (int i = 0; i < mesh.faceCount; i++)
     {
-        buf.faceBatch.faceCornerStarts[buf.faceBatch.faceCount + i] = runningCorner;
+        batch.faceBatch.faceCornerStarts[batch.faceBatch.faceCount + i] = runningCorner;
         runningCorner += mesh.faceCornerCounts[i];
     }
 
-    buf.vtxCount += mesh.vtxCount;
-    buf.faceBatch.faceCount += mesh.faceCount;
-    buf.faceBatch.cornerCount += totalCorners;
+    batch.vtxCount += mesh.vtxCount;
+    batch.faceBatch.faceCount += mesh.faceCount;
+    batch.faceBatch.cornerCount += totalCorners;
 
     int slot = 1;
-    while (slot < mesh::MAX_REFS && buf.usedSlots[slot])
+    while (slot < mesh::MAX_REFS && batch.usedSlots[slot])
     {
         slot++;
     }
-    buf.usedSlots[slot] = true;
-    if (slot >= buf.slotCount)
+    batch.usedSlots[slot] = true;
+    if (slot >= batch.slotCount)
     {
-        buf.slotCount = slot + 1;
+        batch.slotCount = slot + 1;
     }
 
-    buf.models[slot] = mesh.model;
-    buf.faceBatch.faceOffsets[slot] = faceOffset;
-    buf.faceBatch.faceCounts[slot] = mesh.faceCount;
-    buf.texturedSlots[slot] = (mesh.uvs != nullptr);
+    batch.models[slot] = mesh.model;
+    batch.faceBatch.faceOffsets[slot] = faceOffset;
+    batch.faceBatch.faceCounts[slot] = mesh.faceCount;
+    batch.texturedSlots[slot] = (mesh.uvs != nullptr);
 
-    buf.drawCmds[slot] = {.indicesCount = 0,
-                          .copies = 1,
-                          .indexOffset = 0,
-                          .vertexOffset = vtxOffset,
-                          .baseInstance = (unsigned int)slot};
+    batch.drawCmds[slot] = {.indicesCount = 0,
+                            .copies = 1,
+                            .indexOffset = 0,
+                            .vertexOffset = vtxOffset,
+                            .baseInstance = (unsigned int)slot};
 
-    buf.meshDirty = true;
-    buf.modelsDirty = true;
+    batch.meshDirty = true;
+    batch.modelsDirty = true;
 
     return slot;
 }
 
-void remove(MeshBatch &buf, Ref ref)
+void remove(MeshBatch &batch, Ref ref)
 {
-    buf.usedSlots[ref] = false;
-    buf.drawCmds[ref].indicesCount = 0;
-    buf.drawCmds[ref].indexOffset = 0;
-    while (buf.slotCount > 1 && !buf.usedSlots[buf.slotCount - 1])
+    batch.usedSlots[ref] = false;
+    batch.drawCmds[ref].indicesCount = 0;
+    batch.drawCmds[ref].indexOffset = 0;
+    while (batch.slotCount > 1 && !batch.usedSlots[batch.slotCount - 1])
     {
-        buf.slotCount--;
+        batch.slotCount--;
     }
 }
 
-void compose_model(MeshBatch &buf, Ref ref, const Mat4 &model)
+void compose_model(MeshBatch &batch, Ref ref, const Mat4 &model)
 {
-    buf.models[ref] = model;
-    buf.modelsDirty = true;
+    batch.models[ref] = model;
+    batch.modelsDirty = true;
 }
 
-void triangulate(MeshBatch &buf)
+void triangulate(MeshBatch &batch)
 {
-    buf.idxCount = 0;
-    buf.primCount = 0;
+    batch.idxCount = 0;
+    batch.primCount = 0;
 
-    for (int slot = 1; slot < buf.slotCount; slot++)
+    for (int slot = 1; slot < batch.slotCount; slot++)
     {
-        if (!buf.usedSlots[slot])
+        if (!batch.usedSlots[slot])
         {
             continue;
         }
 
-        DrawCommand &cmd = buf.drawCmds[slot];
-        cmd.indexOffset = buf.idxCount;
-        buf.primOffsets[slot] = buf.primCount;
+        DrawCommand &cmd = batch.drawCmds[slot];
+        cmd.indexOffset = batch.idxCount;
+        batch.primOffsets[slot] = batch.primCount;
 
-        int faceStart = buf.faceBatch.faceOffsets[slot];
-        int faceEnd = faceStart + buf.faceBatch.faceCounts[slot];
+        int faceStart = batch.faceBatch.faceOffsets[slot];
+        int faceEnd = faceStart + batch.faceBatch.faceCounts[slot];
         int vtxOffset = cmd.vertexOffset;
 
         for (int f = faceStart; f < faceEnd; f++)
         {
-            int n = buf.faceBatch.faceCornerCounts[f];
+            int n = batch.faceBatch.faceCornerCounts[f];
             if (n < 3)
             {
                 continue;
             }
 
-            int cornerBase = buf.faceBatch.faceCornerStarts[f];
+            int cornerBase = batch.faceBatch.faceCornerStarts[f];
 
             if (n == 3)
             {
-                buf.indices[buf.idxCount++] = buf.faceBatch.faceCorners[cornerBase];
-                buf.indices[buf.idxCount++] = buf.faceBatch.faceCorners[cornerBase + 1];
-                buf.indices[buf.idxCount++] = buf.faceBatch.faceCorners[cornerBase + 2];
-                buf.primColors[buf.primCount] = buf.faceBatch.faceColors[f];
-                buf.primMaterialIds[buf.primCount] = buf.faceBatch.faceMaterialIds[f];
-                buf.primCount++;
+                batch.indices[batch.idxCount++] = batch.faceBatch.faceCorners[cornerBase];
+                batch.indices[batch.idxCount++] = batch.faceBatch.faceCorners[cornerBase + 1];
+                batch.indices[batch.idxCount++] = batch.faceBatch.faceCorners[cornerBase + 2];
+                batch.primColors[batch.primCount] = batch.faceBatch.faceColors[f];
+                batch.primMaterialIds[batch.primCount] = batch.faceBatch.faceMaterialIds[f];
+                batch.primCount++;
             }
             else
             {
                 Vec4 loop[64];
                 for (int i = 0; i < n; i++)
                 {
-                    loop[i] = buf.vertices[vtxOffset + buf.faceBatch.faceCorners[cornerBase + i]];
+                    loop[i] = batch.vertices[vtxOffset + batch.faceBatch.faceCorners[cornerBase + i]];
                 }
 
                 int outTris[3 * 64];
@@ -204,73 +204,73 @@ void triangulate(MeshBatch &buf)
 
                 for (int t = 0; t < triCount; t++)
                 {
-                    buf.indices[buf.idxCount++] = buf.faceBatch.faceCorners[cornerBase + outTris[t * 3 + 0]];
-                    buf.indices[buf.idxCount++] = buf.faceBatch.faceCorners[cornerBase + outTris[t * 3 + 1]];
-                    buf.indices[buf.idxCount++] = buf.faceBatch.faceCorners[cornerBase + outTris[t * 3 + 2]];
-                    buf.primColors[buf.primCount] = buf.faceBatch.faceColors[f];
-                    buf.primMaterialIds[buf.primCount] = buf.faceBatch.faceMaterialIds[f];
-                    buf.primCount++;
+                    batch.indices[batch.idxCount++] = batch.faceBatch.faceCorners[cornerBase + outTris[t * 3 + 0]];
+                    batch.indices[batch.idxCount++] = batch.faceBatch.faceCorners[cornerBase + outTris[t * 3 + 1]];
+                    batch.indices[batch.idxCount++] = batch.faceBatch.faceCorners[cornerBase + outTris[t * 3 + 2]];
+                    batch.primColors[batch.primCount] = batch.faceBatch.faceColors[f];
+                    batch.primMaterialIds[batch.primCount] = batch.faceBatch.faceMaterialIds[f];
+                    batch.primCount++;
                 }
             }
         }
 
-        cmd.indicesCount = buf.idxCount - cmd.indexOffset;
+        cmd.indicesCount = batch.idxCount - cmd.indexOffset;
     }
 }
 
-void build_commands(MeshBatch &buf, int textureCount)
+void build_commands(MeshBatch &batch, int textureCount)
 {
     int flat = 0;
     int tex = 0;
 
     // flat: one command each.
-    for (int slot = 1; slot < buf.slotCount; slot++)
+    for (int slot = 1; slot < batch.slotCount; slot++)
     {
-        if (!buf.usedSlots[slot])
+        if (!batch.usedSlots[slot])
         {
             continue;
         }
-        if (!buf.texturedSlots[slot])
+        if (!batch.texturedSlots[slot])
         {
-            buf.flatCmds[flat++] = buf.drawCmds[slot];
+            batch.flatCmds[flat++] = batch.drawCmds[slot];
         }
     }
 
     // textured: bucketed by material
     for (int m = 0; m < textureCount; m++)
     {
-        buf.texMatStart[m] = tex;
-        for (int slot = 1; slot < buf.slotCount; slot++)
+        batch.texMatStart[m] = tex;
+        for (int slot = 1; slot < batch.slotCount; slot++)
         {
-            if (!buf.usedSlots[slot] || !buf.texturedSlots[slot])
+            if (!batch.usedSlots[slot] || !batch.texturedSlots[slot])
             {
                 continue;
             }
-            int triStart = buf.primOffsets[slot];
-            int triEnd = triStart + (int)buf.drawCmds[slot].indicesCount / 3;
+            int triStart = batch.primOffsets[slot];
+            int triEnd = triStart + (int)batch.drawCmds[slot].indicesCount / 3;
             for (int i = triStart; i < triEnd;)
             {
-                int mm = buf.primMaterialIds[i];
+                int mm = batch.primMaterialIds[i];
                 int j = i;
-                while (j < triEnd && buf.primMaterialIds[j] == mm)
+                while (j < triEnd && batch.primMaterialIds[j] == mm)
                 {
                     j++;
                 }
                 if (mm == m)
                 {
-                    DrawCommand cmd = buf.drawCmds[slot];
+                    DrawCommand cmd = batch.drawCmds[slot];
                     cmd.indexOffset = (unsigned int)(i * 3);
                     cmd.indicesCount = (unsigned int)(j - i) * 3;
-                    buf.texCmds[tex++] = cmd;
+                    batch.texCmds[tex++] = cmd;
                 }
                 i = j;
             }
         }
-        buf.texMatCount[m] = tex - buf.texMatStart[m];
+        batch.texMatCount[m] = tex - batch.texMatStart[m];
     }
 
-    buf.flatCount = flat;
-    buf.texCount = tex;
+    batch.flatCount = flat;
+    batch.texCount = tex;
 }
 
 } // namespace mesh

@@ -10,21 +10,21 @@
 namespace wfront
 {
 
-void save(const MeshBatch &buf, const ModelTextureCache &modelTexCache, Ref ref, const char *path)
+void save(const MeshBatch &batch, const ModelTextureCache &modelTexCache, Ref ref, const char *path)
 {
-    const DrawCommand &cmd = buf.drawCmds[ref];
-    bool textured = buf.texturedSlots[ref];
+    const DrawCommand &cmd = batch.drawCmds[ref];
+    bool textured = batch.texturedSlots[ref];
 
     int maxVtx = -1;
-    int faceStart = buf.faceBatch.faceOffsets[ref];
-    int faceEnd = faceStart + buf.faceBatch.faceCounts[ref];
+    int faceStart = batch.faceBatch.faceOffsets[ref];
+    int faceEnd = faceStart + batch.faceBatch.faceCounts[ref];
     for (int f = faceStart; f < faceEnd; f++)
     {
-        int cornerStart = buf.faceBatch.faceCornerStarts[f];
-        int cornerCount = buf.faceBatch.faceCornerCounts[f];
+        int cornerStart = batch.faceBatch.faceCornerStarts[f];
+        int cornerCount = batch.faceBatch.faceCornerCounts[f];
         for (int c = 0; c < cornerCount; c++)
         {
-            int idx = buf.faceBatch.faceCorners[cornerStart + c];
+            int idx = batch.faceBatch.faceCorners[cornerStart + c];
             if (idx > maxVtx)
             {
                 maxVtx = idx;
@@ -32,7 +32,7 @@ void save(const MeshBatch &buf, const ModelTextureCache &modelTexCache, Ref ref,
         }
     }
     int vtxCount = maxVtx + 1;
-    int faceCount = buf.faceBatch.faceCounts[ref];
+    int faceCount = batch.faceBatch.faceCounts[ref];
 
     char mpath[256];
     file::replace_extension(path, "mtl", mpath, sizeof(mpath));
@@ -50,7 +50,7 @@ void save(const MeshBatch &buf, const ModelTextureCache &modelTexCache, Ref ref,
         bool written[modeltexture::MAX_MODEL_TEXTURES] = {};
         for (int i = 0; i < faceCount; i++)
         {
-            int mat = buf.faceBatch.faceMaterialIds[faceStart + i];
+            int mat = batch.faceBatch.faceMaterialIds[faceStart + i];
             if (mat >= 0 && !written[mat])
             {
                 written[mat] = true;
@@ -62,10 +62,10 @@ void save(const MeshBatch &buf, const ModelTextureCache &modelTexCache, Ref ref,
         // Flat materials for any untextured faces (no texture assigned).
         for (int i = 0; i < faceCount; i++)
         {
-            int mat = buf.faceBatch.faceMaterialIds[faceStart + i];
+            int mat = batch.faceBatch.faceMaterialIds[faceStart + i];
             if (mat < 0)
             {
-                const Color &col = buf.faceBatch.faceColors[faceStart + i];
+                const Color &col = batch.faceBatch.faceColors[faceStart + i];
                 fprintf(mtl, "newmtl flat_%d\n", i);
                 fprintf(mtl, "Kd %g %g %g\n", col.r / 255.0f, col.g / 255.0f, col.b / 255.0f);
                 fprintf(mtl, "d %g\n\n", col.a / 255.0f);
@@ -76,7 +76,7 @@ void save(const MeshBatch &buf, const ModelTextureCache &modelTexCache, Ref ref,
     {
         for (int i = 0; i < faceCount; i++)
         {
-            const Color &col = buf.faceBatch.faceColors[faceStart + i];
+            const Color &col = batch.faceBatch.faceColors[faceStart + i];
             fprintf(mtl, "newmtl mat_%d\n", i);
             fprintf(mtl, "Kd %g %g %g\n", col.r / 255.0f, col.g / 255.0f, col.b / 255.0f);
             fprintf(mtl, "d %g\n\n", col.a / 255.0f);
@@ -94,24 +94,24 @@ void save(const MeshBatch &buf, const ModelTextureCache &modelTexCache, Ref ref,
     fprintf(f, "mtllib %s\no model\n", file::basename(mpath));
     for (int i = 0; i < vtxCount; i++)
     {
-        const Vec4 &v = buf.vertices[cmd.vertexOffset + i];
+        const Vec4 &v = batch.vertices[cmd.vertexOffset + i];
         fprintf(f, "v %g %g %g\n", v.x, v.y, v.z);
     }
     if (textured)
     {
         for (int i = 0; i < vtxCount; i++)
         {
-            const Vec2 &uv = buf.uvs[cmd.vertexOffset + i];
+            const Vec2 &uv = batch.uvs[cmd.vertexOffset + i];
             fprintf(f, "vt %g %g\n", uv.x, 1.0f - uv.y);
         }
     }
     for (int i = 0; i < faceCount; i++)
     {
-        int cornerStart = buf.faceBatch.faceCornerStarts[faceStart + i];
-        int cornerCount = buf.faceBatch.faceCornerCounts[faceStart + i];
+        int cornerStart = batch.faceBatch.faceCornerStarts[faceStart + i];
+        int cornerCount = batch.faceBatch.faceCornerCounts[faceStart + i];
         if (textured)
         {
-            int mat = buf.faceBatch.faceMaterialIds[faceStart + i];
+            int mat = batch.faceBatch.faceMaterialIds[faceStart + i];
             if (mat >= 0)
             {
                 fprintf(f, "usemtl tex_%d\n", mat);
@@ -128,7 +128,7 @@ void save(const MeshBatch &buf, const ModelTextureCache &modelTexCache, Ref ref,
         fprintf(f, "f");
         for (int c = 0; c < cornerCount; c++)
         {
-            unsigned int idx = buf.faceBatch.faceCorners[cornerStart + c] + 1;
+            unsigned int idx = batch.faceBatch.faceCorners[cornerStart + c] + 1;
             if (textured)
             {
                 fprintf(f, " %u/%u", idx, idx);
@@ -428,7 +428,7 @@ bool parse(const char *path, Vec4 *verts, Vec2 *uvs, int &vtxCount, unsigned int
 }
 } // anonymous namespace
 
-bool load(MeshBatch &buf, Editor &e, const char *path, bool clearBuffer)
+bool load(MeshBatch &batch, Editor &e, const char *path, bool clearBuffer)
 {
     static Vec4 verts[mesh::MAX_VERTICES];
     static Vec2 uvs[mesh::MAX_VERTICES];
@@ -445,7 +445,7 @@ bool load(MeshBatch &buf, Editor &e, const char *path, bool clearBuffer)
 
     if (clearBuffer)
     {
-        mesh::reset(buf);
+        mesh::reset(batch);
         modeltexture::reset(e.modelTextureCache);
     }
 
@@ -491,12 +491,12 @@ bool load(MeshBatch &buf, Editor &e, const char *path, bool clearBuffer)
     mesh.faceMaterialIds = textured ? faceMaterialIds : nullptr;
     mesh.name = path;
 
-    if (!mesh::can_add(buf, mesh))
+    if (!mesh::can_add(batch, mesh))
     {
         return false;
     }
 
-    Ref newRef = mesh::add(buf, mesh);
+    Ref newRef = mesh::add(batch, mesh);
     e.transforms[newRef] = TRS{};
 
     e.selectedRef = newRef;

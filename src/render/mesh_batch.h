@@ -60,14 +60,13 @@ struct MeshBatch
 namespace mesh
 {
 
-// TODO: rename buf to batch accross the codebase; same for LineBatch and QuadBatch
-void reset(MeshBatch &buf);
-bool can_add(const MeshBatch &buf, const Mesh &mesh);
-Ref add(MeshBatch &buf, const Mesh &mesh);
-void remove(MeshBatch &buf, Ref ref);
-void compose_model(MeshBatch &buf, Ref ref, const Mat4 &model);
-void triangulate(MeshBatch &buf);
-void build_commands(MeshBatch &buf, int textureCount);
+void reset(MeshBatch &batch);
+bool can_add(const MeshBatch &batch, const Mesh &mesh);
+Ref add(MeshBatch &batch, const Mesh &mesh);
+void remove(MeshBatch &batch, Ref ref);
+void compose_model(MeshBatch &batch, Ref ref, const Mat4 &model);
+void triangulate(MeshBatch &batch);
+void build_commands(MeshBatch &batch, int textureCount);
 
 } // namespace mesh
 

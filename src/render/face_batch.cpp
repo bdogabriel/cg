@@ -4,13 +4,13 @@
 namespace face
 {
 
-void update_corner_starts(FaceBatch &fb)
+void update_corner_starts(FaceBatch &batch)
 {
     int running = 0;
-    for (int i = 0; i < fb.faceCount; i++)
+    for (int i = 0; i < batch.faceCount; i++)
     {
-        fb.faceCornerStarts[i] = running;
-        running += fb.faceCornerCounts[i];
+        batch.faceCornerStarts[i] = running;
+        running += batch.faceCornerCounts[i];
     }
 }
 

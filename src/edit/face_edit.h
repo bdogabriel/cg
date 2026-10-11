@@ -5,8 +5,8 @@
 
 namespace faceedit
 {
-void transform(MeshBatch &buf, Ref ref, int *faces, int faceCount, Mat4 t);
-void extrude(MeshBatch &buf, Ref ref, int *faces, int faceCount);
+void transform(MeshBatch &batch, Ref ref, int *faces, int faceCount, Mat4 t);
+void extrude(MeshBatch &batch, Ref ref, int *faces, int faceCount);
 } // namespace faceedit
 
 #endif

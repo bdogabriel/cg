@@ -18,7 +18,7 @@ struct LineBatch
 
 namespace line
 {
-void reset(LineBatch &b);
+void reset(LineBatch &batch);
 bool can_add(const LineBatch &batch, int segments);
 void add(LineBatch &batch, Vec4 a, Vec4 b, Color c);
 } // namespace line
