@@ -52,12 +52,12 @@ const ParamSpec params_save_obj[] = {
     {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
 };
 
-const ParamSpec params_save[] = {
+const ParamSpec params_save_scene[] = {
     {"name", ParamType::STRING, nullptr, "scene name (default handmade)", false, "handmade"},
     {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
 };
 
-const ParamSpec params_load[] = {
+const ParamSpec params_load_scene[] = {
     {"name", ParamType::STRING, nullptr, "scene name", true, nullptr},
     {"clear", ParamType::STRING, clear_choices, "clear existing scene first", false, "false"},
     {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
@@ -320,15 +320,14 @@ void do_save_obj(Editor &e, Session &s, const Args &a, bool)
     wfront::save(e.meshBatch, e.modelTextureCache, e.selectedRef, s.currentFile);
 }
 
-void do_save(Editor &e, Session &s, const Args &a, bool)
+void do_save_scene(Editor &e, Session &s, const Args &a, bool)
 {
     const char *name = a.get("name");
     scene::save(e, name);
     s.cmd = get(CommandId::camera);
 }
 
-// TODO: rename load to load_scene
-void do_load(Editor &e, Session &s, const Args &a, bool)
+void do_load_scene(Editor &e, Session &s, const Args &a, bool)
 {
     const char *name = a.get("name");
     bool clear = (strcmp(a.get("clear"), "true") == 0);
