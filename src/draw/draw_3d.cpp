@@ -1,5 +1,7 @@
 #include "draw_3d.h"
 
+#include "arena.h"
+
 #include <stdio.h>
 
 namespace draw3d
@@ -141,25 +143,6 @@ unsigned int dodecahedronFaceCorners[] = {
 };
 int dodecahedronFaceCornerCounts[] = {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5};
 
-Vec4 pyramidVertices[MAX_PYRAMID_SIDES + 2];
-unsigned int pyramidFaceCorners[MAX_PYRAMID_SIDES * 6];
-int pyramidFaceCornerCounts[MAX_PYRAMID_SIDES * 2];
-Color pyramidColors[MAX_PYRAMID_SIDES * 2];
-
-Vec4 cylinderVertices[MAX_CYLINDER_SEGMENTS * 2 + 2];
-unsigned int cylinderFaceCorners[MAX_CYLINDER_SEGMENTS * 12];
-int cylinderFaceCornerCounts[MAX_CYLINDER_SEGMENTS * 4];
-Color cylinderColors[MAX_CYLINDER_SEGMENTS * 4];
-
-constexpr int MAX_SPHERE_VERTICES = 2 + (MAX_SPHERE_SEGMENTS - 1) * MAX_SPHERE_SEGMENTS;
-constexpr int MAX_SPHERE_FACES = MAX_SPHERE_SEGMENTS * MAX_SPHERE_SEGMENTS;
-constexpr int MAX_SPHERE_CORNERS = 4 * MAX_SPHERE_SEGMENTS * MAX_SPHERE_SEGMENTS - 2 * MAX_SPHERE_SEGMENTS;
-
-Vec4 sphereVertices[MAX_SPHERE_VERTICES];
-unsigned int sphereFaceCorners[MAX_SPHERE_CORNERS];
-int sphereFaceCornerCounts[MAX_SPHERE_FACES];
-Color sphereColors[MAX_SPHERE_FACES];
-
 Color defaultColors[20];
 bool defaultColorsInit = false;
 
@@ -221,43 +204,49 @@ Mesh pyramid(int sides)
     {
         sides = 3;
     }
-    if (sides > MAX_PYRAMID_SIDES)
-    {
-        sides = MAX_PYRAMID_SIDES;
-    }
+
+    int vtxCount = sides + 2;
+    int faceCount = sides + 1;
+    int cornerCount = sides + sides * 3;
+
+    Vec4 *vertices = (Vec4 *)arena::scratch_alloc(sizeof(Vec4) * (size_t)vtxCount);
+    unsigned int *faceCorners = (unsigned int *)arena::scratch_alloc(sizeof(unsigned int) * (size_t)cornerCount);
+    int *faceCornerCounts = (int *)arena::scratch_alloc(sizeof(int) * (size_t)faceCount);
+    Color *colors = (Color *)arena::scratch_alloc(sizeof(Color) * (size_t)faceCount);
 
     int vtxIdx = 0;
     int cornerIdx = 0;
     int faceIdx = 0;
-    int colorIdx = 0;
 
     // base center and apex
-    pyramidVertices[vtxIdx++] = {0, 0, 0, 1};
-    pyramidVertices[vtxIdx++] = {0, 2, 0, 1};
+    vertices[vtxIdx++] = {0, 0, 0, 1};
+    vertices[vtxIdx++] = {0, 2, 0, 1};
 
-    generate_polygon_vertices(pyramidVertices, sides, 0, vtxIdx);
+    generate_polygon_vertices(vertices, sides, 0, vtxIdx);
     vtxIdx += sides;
 
     // base n-gon (single face)
     for (int i = 0; i < sides; i++)
     {
-        pyramidFaceCorners[cornerIdx++] = 2 + i;
+        faceCorners[cornerIdx++] = 2 + i;
     }
-    pyramidFaceCornerCounts[faceIdx++] = sides;
-    pyramidColors[colorIdx++] = {255, 255, 255, 255};
+    faceCornerCounts[faceIdx] = sides;
+    colors[faceIdx] = {255, 255, 255, 255};
+    faceIdx++;
 
     // side triangles
     for (int i = 0; i < sides; i++)
     {
         int next = (i + 1) % sides;
-        pyramidFaceCorners[cornerIdx++] = 2 + i;    // base current
-        pyramidFaceCorners[cornerIdx++] = 2 + next; // base next
-        pyramidFaceCorners[cornerIdx++] = 1;        // apex
-        pyramidFaceCornerCounts[faceIdx++] = 3;
-        pyramidColors[colorIdx++] = {255, 255, 255, 255};
+        faceCorners[cornerIdx++] = 2 + i;    // base current
+        faceCorners[cornerIdx++] = 2 + next; // base next
+        faceCorners[cornerIdx++] = 1;        // apex
+        faceCornerCounts[faceIdx] = 3;
+        colors[faceIdx] = {255, 255, 255, 255};
+        faceIdx++;
     }
 
-    return {pyramidVertices, vtxIdx, pyramidFaceCorners, pyramidFaceCornerCounts, faceIdx, pyramidColors};
+    return {vertices, vtxIdx, faceCorners, faceCornerCounts, faceIdx, colors};
 }
 
 Mesh cylinder(int segments)
@@ -266,43 +255,49 @@ Mesh cylinder(int segments)
     {
         segments = 3;
     }
-    if (segments > MAX_CYLINDER_SEGMENTS)
-    {
-        segments = MAX_CYLINDER_SEGMENTS;
-    }
+
+    int vtxCount = segments * 2 + 2;
+    int faceCount = segments + 2;
+    int cornerCount = segments * 6;
+
+    Vec4 *vertices = (Vec4 *)arena::scratch_alloc(sizeof(Vec4) * (size_t)vtxCount);
+    unsigned int *faceCorners = (unsigned int *)arena::scratch_alloc(sizeof(unsigned int) * (size_t)cornerCount);
+    int *faceCornerCounts = (int *)arena::scratch_alloc(sizeof(int) * (size_t)faceCount);
+    Color *colors = (Color *)arena::scratch_alloc(sizeof(Color) * (size_t)faceCount);
 
     int vtxIdx = 0;
     int cornerIdx = 0;
     int faceIdx = 0;
-    int colorIdx = 0;
 
     // center vertices for caps
-    cylinderVertices[vtxIdx++] = {0, 1, 0, 1};
-    cylinderVertices[vtxIdx++] = {0, -1, 0, 1};
+    vertices[vtxIdx++] = {0, 1, 0, 1};
+    vertices[vtxIdx++] = {0, -1, 0, 1};
 
     // generate circle vertices (top and bottom)
     for (int i = 0; i < segments; i++)
     {
         float angle = (2.0f * mesh::PI * i) / segments;
-        cylinderVertices[vtxIdx++] = {cosf(angle), 1, sinf(angle), 1};
-        cylinderVertices[vtxIdx++] = {cosf(angle), -1, sinf(angle), 1};
+        vertices[vtxIdx++] = {cosf(angle), 1, sinf(angle), 1};
+        vertices[vtxIdx++] = {cosf(angle), -1, sinf(angle), 1};
     }
 
     // top cap n-gon (single face)
     for (int i = 0; i < segments; i++)
     {
-        cylinderFaceCorners[cornerIdx++] = 2 + i * 2;
+        faceCorners[cornerIdx++] = 2 + i * 2;
     }
-    cylinderFaceCornerCounts[faceIdx++] = segments;
-    cylinderColors[colorIdx++] = {255, 255, 255, 255};
+    faceCornerCounts[faceIdx] = segments;
+    colors[faceIdx] = {255, 255, 255, 255};
+    faceIdx++;
 
     // bottom cap n-gon (single face)
     for (int i = 0; i < segments; i++)
     {
-        cylinderFaceCorners[cornerIdx++] = 2 + i * 2 + 1;
+        faceCorners[cornerIdx++] = 2 + i * 2 + 1;
     }
-    cylinderFaceCornerCounts[faceIdx++] = segments;
-    cylinderColors[colorIdx++] = {255, 255, 255, 255};
+    faceCornerCounts[faceIdx] = segments;
+    colors[faceIdx] = {255, 255, 255, 255};
+    faceIdx++;
 
     // side quad faces (1 per segment)
     for (int i = 0; i < segments; i++)
@@ -313,15 +308,16 @@ Mesh cylinder(int segments)
         int topNext = 2 + next * 2;
         int botNext = 2 + next * 2 + 1;
 
-        cylinderFaceCorners[cornerIdx++] = topCurr;
-        cylinderFaceCorners[cornerIdx++] = botCurr;
-        cylinderFaceCorners[cornerIdx++] = botNext;
-        cylinderFaceCorners[cornerIdx++] = topNext;
-        cylinderFaceCornerCounts[faceIdx++] = 4;
-        cylinderColors[colorIdx++] = {255, 255, 255, 255};
+        faceCorners[cornerIdx++] = topCurr;
+        faceCorners[cornerIdx++] = botCurr;
+        faceCorners[cornerIdx++] = botNext;
+        faceCorners[cornerIdx++] = topNext;
+        faceCornerCounts[faceIdx] = 4;
+        colors[faceIdx] = {255, 255, 255, 255};
+        faceIdx++;
     }
 
-    return {cylinderVertices, vtxIdx, cylinderFaceCorners, cylinderFaceCornerCounts, faceIdx, cylinderColors};
+    return {vertices, vtxIdx, faceCorners, faceCornerCounts, faceIdx, colors};
 }
 
 Mesh sphere(int segments)
@@ -330,22 +326,26 @@ Mesh sphere(int segments)
     {
         segments = 3;
     }
-    if (segments > MAX_SPHERE_SEGMENTS)
-    {
-        segments = MAX_SPHERE_SEGMENTS;
-    }
 
     int slices = segments;
     int stacks = segments;
 
+    int vtxCount = 2 + (stacks - 1) * slices;
+    int faceCount = slices * stacks;
+    int cornerCount = 4 * slices * stacks - 2 * slices;
+
+    Vec4 *vertices = (Vec4 *)arena::scratch_alloc(sizeof(Vec4) * (size_t)vtxCount);
+    unsigned int *faceCorners = (unsigned int *)arena::scratch_alloc(sizeof(unsigned int) * (size_t)cornerCount);
+    int *faceCornerCounts = (int *)arena::scratch_alloc(sizeof(int) * (size_t)faceCount);
+    Color *colors = (Color *)arena::scratch_alloc(sizeof(Color) * (size_t)faceCount);
+
     int vtxIdx = 0;
     int cornerIdx = 0;
     int faceIdx = 0;
-    int colorIdx = 0;
 
     // north and south poles
-    sphereVertices[vtxIdx++] = {0, 1, 0, 1};
-    sphereVertices[vtxIdx++] = {0, -1, 0, 1};
+    vertices[vtxIdx++] = {0, 1, 0, 1};
+    vertices[vtxIdx++] = {0, -1, 0, 1};
 
     // intermediate latitude rings (ring 1 .. stacks-1)
     for (int i = 1; i < stacks; i++)
@@ -356,7 +356,7 @@ Mesh sphere(int segments)
         for (int j = 0; j < slices; j++)
         {
             float phi = (2.0f * mesh::PI * j) / slices;
-            sphereVertices[vtxIdx++] = {r * cosf(phi), y, r * sinf(phi), 1};
+            vertices[vtxIdx++] = {r * cosf(phi), y, r * sinf(phi), 1};
         }
     }
 
@@ -366,11 +366,12 @@ Mesh sphere(int segments)
     // top cap: triangle fans from the north pole to ring 1
     for (int j = 0; j < slices; j++)
     {
-        sphereFaceCorners[cornerIdx++] = 0;
-        sphereFaceCorners[cornerIdx++] = ringBase(1) + j;
-        sphereFaceCorners[cornerIdx++] = ringBase(1) + (j + 1) % slices;
-        sphereFaceCornerCounts[faceIdx++] = 3;
-        sphereColors[colorIdx++] = {255, 255, 255, 255};
+        faceCorners[cornerIdx++] = 0;
+        faceCorners[cornerIdx++] = ringBase(1) + j;
+        faceCorners[cornerIdx++] = ringBase(1) + (j + 1) % slices;
+        faceCornerCounts[faceIdx] = 3;
+        colors[faceIdx] = {255, 255, 255, 255};
+        faceIdx++;
     }
 
     // body: quads between consecutive rings
@@ -379,26 +380,28 @@ Mesh sphere(int segments)
         for (int j = 0; j < slices; j++)
         {
             int next = (j + 1) % slices;
-            sphereFaceCorners[cornerIdx++] = ringBase(i) + j;
-            sphereFaceCorners[cornerIdx++] = ringBase(i) + next;
-            sphereFaceCorners[cornerIdx++] = ringBase(i + 1) + next;
-            sphereFaceCorners[cornerIdx++] = ringBase(i + 1) + j;
-            sphereFaceCornerCounts[faceIdx++] = 4;
-            sphereColors[colorIdx++] = {255, 255, 255, 255};
+            faceCorners[cornerIdx++] = ringBase(i) + j;
+            faceCorners[cornerIdx++] = ringBase(i) + next;
+            faceCorners[cornerIdx++] = ringBase(i + 1) + next;
+            faceCorners[cornerIdx++] = ringBase(i + 1) + j;
+            faceCornerCounts[faceIdx] = 4;
+            colors[faceIdx] = {255, 255, 255, 255};
+            faceIdx++;
         }
     }
 
     // bottom cap: triangle fans from the south pole to ring stacks-1
     for (int j = 0; j < slices; j++)
     {
-        sphereFaceCorners[cornerIdx++] = 1;
-        sphereFaceCorners[cornerIdx++] = ringBase(stacks - 1) + (j + 1) % slices;
-        sphereFaceCorners[cornerIdx++] = ringBase(stacks - 1) + j;
-        sphereFaceCornerCounts[faceIdx++] = 3;
-        sphereColors[colorIdx++] = {255, 255, 255, 255};
+        faceCorners[cornerIdx++] = 1;
+        faceCorners[cornerIdx++] = ringBase(stacks - 1) + (j + 1) % slices;
+        faceCorners[cornerIdx++] = ringBase(stacks - 1) + j;
+        faceCornerCounts[faceIdx] = 3;
+        colors[faceIdx] = {255, 255, 255, 255};
+        faceIdx++;
     }
 
-    return {sphereVertices, vtxIdx, sphereFaceCorners, sphereFaceCornerCounts, faceIdx, sphereColors};
+    return {vertices, vtxIdx, faceCorners, faceCornerCounts, faceIdx, colors};
 }
 
 } // namespace draw3d

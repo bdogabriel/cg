@@ -1,12 +1,11 @@
 #ifndef MESH_BATCH_H
 #define MESH_BATCH_H
 
+#include "buffer.h"
 #include "face_batch.h"
 #include "mesh.h"
-#include "model_texture_cache.h"
 
 // TODO: cycle faces sorted by distance to the camera (when camera is implemented)
-// TODO: review code that creates temporary buffers with MAX_VERTICES, MAX_INDICES etc (waste of memory)
 // TODO: use intrusive list for buffer (used slots, next vertex offset etc)
 // TODO: refactor merge to allow arbitrary selection
 // TODO: review make_cylinder and make_pyramid (there must be a cleaner way)
@@ -25,26 +24,26 @@ struct DrawCommand
 struct MeshBatch
 {
     // source
-    Vec4 vertices[mesh::MAX_VERTICES] = {};
-    Vec2 uvs[mesh::MAX_VERTICES] = {};
+    Buffer vertices; // Vec4
+    Buffer uvs;      // Vec2
     FaceBatch faceBatch;
 
     // derived (rebuilt by triangulate)
-    unsigned int indices[mesh::MAX_INDICES] = {};
-    Color primColors[mesh::MAX_INDICES / 3] = {};
-    int primMaterialIds[mesh::MAX_INDICES / 3] = {};
-    int primOffsets[mesh::MAX_REFS] = {};
-    bool texturedSlots[mesh::MAX_REFS] = {};
+    Buffer indices;         // unsigned int
+    Buffer primColors;      // Color
+    Buffer primMaterialIds; // int
+    Buffer primOffsets;     // int; indexed by slot
+    Buffer texturedSlots;   // bool; indexed by slot
 
-    Mat4 models[mesh::MAX_REFS] = {};
-    DrawCommand drawCmds[mesh::MAX_REFS] = {};
-    bool usedSlots[mesh::MAX_REFS] = {};
+    Buffer models;    // Mat4; indexed by slot
+    Buffer drawCmds;  // DrawCommand, indexed by slot
+    Buffer usedSlots; // bool; indexed by slot
 
     // derived (rebuilt by build_commands)
-    DrawCommand flatCmds[mesh::MAX_REFS] = {};
-    DrawCommand texCmds[face::MAX_FACES] = {};
-    int texMatStart[modeltexture::MAX_MODEL_TEXTURES] = {};
-    int texMatCount[modeltexture::MAX_MODEL_TEXTURES] = {};
+    Buffer flatCmds;    // DrawCommand
+    Buffer texCmds;     // DrawCommand
+    Buffer texMatStart; // int; indexed by texture
+    Buffer texMatCount; // int; indexed by texture
     int flatCount = 0;
     int texCount = 0;
 
@@ -68,6 +67,16 @@ void compose_model(MeshBatch &batch, Ref ref, const Mat4 &model);
 void triangulate(MeshBatch &batch);
 void build_commands(MeshBatch &batch, int textureCount);
 
+// deep-copy the used bytes of src into dst
+// only source data is copied
+// derived arrays are rebuilt by triangulate()/build_commands() after a restore
+// used to snapshot undo
+void clone(MeshBatch &dst, const MeshBatch &src);
+// swap every buffer between two batches
+// used to restore undo snapshots
+void swap(MeshBatch &a, MeshBatch &b);
+void free_buffers(MeshBatch &batch);
+
 } // namespace mesh
 
-#endif
+#endif // MESH_BATCH_H

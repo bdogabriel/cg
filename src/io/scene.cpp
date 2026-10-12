@@ -1,4 +1,5 @@
 #include "file.h"
+#include "trs.h"
 #include "wavefront.h"
 #include <stdio.h>
 
@@ -56,7 +57,7 @@ bool save(Editor &e, const char *name)
     int ordinal = 0;
     for (int i = 1; i < e.meshBatch.slotCount; i++)
     {
-        if (!e.meshBatch.usedSlots[i])
+        if (!BUF(bool, e.meshBatch.usedSlots)[i])
         {
             continue;
         }
@@ -73,7 +74,7 @@ bool save(Editor &e, const char *name)
 
     for (int i = 1; i < e.meshBatch.slotCount; i++)
     {
-        if (!e.meshBatch.usedSlots[i])
+        if (!BUF(bool, e.meshBatch.usedSlots)[i])
         {
             continue;
         }
@@ -81,7 +82,7 @@ bool save(Editor &e, const char *name)
         snprintf(objPath, sizeof(objPath), "%s/%s_%d.obj", dir, name, i);
         wfront::save(e.meshBatch, e.modelTextureCache, i, objPath);
         const char *objBase = file::basename(objPath);
-        const TRS &t = e.transforms[i];
+        const TRS &t = BUF(TRS, e.transforms)[i];
         fprintf(f, "o %s\n", objBase);
         fprintf(f, "  t %g %g %g\n", t.tx, t.ty, t.tz);
         fprintf(f, "  r %g %g %g %g\n", t.r.x, t.r.y, t.r.z, t.r.w);
@@ -109,6 +110,7 @@ bool load(Editor &e, const char *name, bool clear)
     if (clear)
     {
         mesh::reset(e.meshBatch);
+        modeltexture::reset(e.modelTextureCache);
         e.selectedRef = 0;
         e.faceCursor = 0;
         e.selectedFaceCount = 0;
@@ -137,7 +139,8 @@ bool load(Editor &e, const char *name, bool clear)
         if (wfront::load(e.meshBatch, e, fullPath, false))
         {
             Ref newRef = e.selectedRef;
-            e.transforms[newRef] = curTRS;
+            buffer::ensure(e.transforms, sizeof(TRS), e.meshBatch.slotCount);
+            BUF(TRS, e.transforms)[newRef] = curTRS;
             mesh::compose_model(e.meshBatch, newRef, trs::compose(curTRS));
             loadedCount++;
         }
@@ -227,7 +230,7 @@ bool load(Editor &e, const char *name, bool clear)
     int ordinal = 0;
     for (int i = 1; i < e.meshBatch.slotCount; i++)
     {
-        if (!e.meshBatch.usedSlots[i])
+        if (!BUF(bool, e.meshBatch.usedSlots)[i])
         {
             continue;
         }

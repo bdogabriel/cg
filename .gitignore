@@ -1,4 +1,5 @@
 **/**.o
 exe
-third-party
 compile_commands.json
+models
+scenes

@@ -37,6 +37,11 @@ const ParamSpec params_axis_step[] = {
     {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
 };
 
+const ParamSpec params_uniform_scale[] = {
+    {"step", ParamType::INT, nullptr, "signed step size (negative = shrink)", true, nullptr},
+    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
+};
+
 namespace
 {
 
@@ -80,12 +85,13 @@ void run_transform(Editor &e, const Args &a, bool snapshot, FaceDeltaFn faceFn, 
     float amount = step * e.keySensitivity;
     if (isFace)
     {
-        faceedit::transform(e.meshBatch, e.selectedRef, e.selectedFaces, e.selectedFaceCount, faceFn(axis, amount));
+        faceedit::transform(e.meshBatch, e.selectedRef, BUF(int, e.selectedFaces), e.selectedFaceCount,
+                            faceFn(axis, amount));
     }
     else
     {
         objFn(e, axis, amount);
-        mesh::compose_model(e.meshBatch, e.selectedRef, trs::compose(e.transforms[e.selectedRef]));
+        mesh::compose_model(e.meshBatch, e.selectedRef, trs::compose(BUF(TRS, e.transforms)[e.selectedRef]));
     }
 }
 
@@ -106,7 +112,7 @@ Mat4 translate_face_delta(AxisLock axis, float amount)
 
 void translate_object_apply(Editor &e, AxisLock axis, float amount)
 {
-    TRS &t = e.transforms[e.selectedRef];
+    TRS &t = BUF(TRS, e.transforms)[e.selectedRef];
     if (!e.locked)
     {
         switch (axis)
@@ -171,7 +177,7 @@ Mat4 rotate_face_delta(AxisLock axis, float amount)
 
 void rotate_object_apply(Editor &e, AxisLock axis, float amount)
 {
-    TRS &t = e.transforms[e.selectedRef];
+    TRS &t = BUF(TRS, e.transforms)[e.selectedRef];
     if (!e.locked)
     {
         switch (axis)
@@ -238,7 +244,7 @@ Mat4 scale_face_delta(AxisLock axis, float amount)
 
 void scale_object_apply(Editor &e, AxisLock axis, float amount)
 {
-    TRS &t = e.transforms[e.selectedRef];
+    TRS &t = BUF(TRS, e.transforms)[e.selectedRef];
     float s = 1.0f + amount;
     switch (axis)
     {
@@ -264,6 +270,38 @@ void do_scale(Editor &e, Session &s, const Args &a, bool snapshot)
     run_transform(e, a, snapshot, scale_face_delta, scale_object_apply);
 }
 
+void do_uniform_scale(Editor &e, Session &s, const Args &a, bool snapshot)
+{
+    (void)s;
+    int step = a.getInt("step");
+    if (step == 0)
+    {
+        return;
+    }
+    bool isFace = (e.target == Target::Face);
+    if (isFace && e.selectedFaceCount == 0)
+    {
+        return;
+    }
+    if (snapshot)
+    {
+        editor::push_undo(e);
+    }
+    float amount = step * e.keySensitivity;
+    float sc = 1.0f + amount;
+    if (isFace)
+    {
+        faceedit::transform(e.meshBatch, e.selectedRef, BUF(int, e.selectedFaces), e.selectedFaceCount,
+                            trs::scaling(sc, sc, sc));
+    }
+    else
+    {
+        TRS &t = BUF(TRS, e.transforms)[e.selectedRef];
+        trs::scale(t, sc, sc, sc);
+        mesh::compose_model(e.meshBatch, e.selectedRef, trs::compose(t));
+    }
+}
+
 namespace
 {
 
@@ -284,7 +322,7 @@ Mat4 shear_face_delta(AxisLock axis, float amount)
 
 void shear_object_apply(Editor &e, AxisLock axis, float amount)
 {
-    TRS &t = e.transforms[e.selectedRef];
+    TRS &t = BUF(TRS, e.transforms)[e.selectedRef];
     switch (axis)
     {
     case AxisLock::X:

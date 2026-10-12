@@ -40,6 +40,58 @@ void replace_extension(const char *path, const char *ext, char *out, size_t outS
     snprintf(out, outSize, "%.*s.%s", (int)baseLen, path, ext);
 }
 
+bool copy(const char *src, const char *dst)
+{
+    FILE *in = fopen(src, "rb");
+    if (!in)
+    {
+        return false;
+    }
+    FILE *out = fopen(dst, "wb");
+    if (!out)
+    {
+        fclose(in);
+        return false;
+    }
+    char buf[8192];
+    size_t n;
+    bool ok = true;
+    while ((n = fread(buf, 1, sizeof(buf), in)) > 0)
+    {
+        if (fwrite(buf, 1, n, out) != n)
+        {
+            ok = false;
+            break;
+        }
+    }
+    if (ferror(in))
+    {
+        ok = false;
+    }
+    fclose(in);
+    fclose(out);
+    return ok;
+}
+
+void dirname(const char *path, char *out, size_t outSize)
+{
+    const char *slash = strrchr(path, '/');
+    if (slash)
+    {
+        size_t len = (size_t)(slash - path + 1);
+        if (len >= outSize)
+        {
+            len = outSize - 1;
+        }
+        memcpy(out, path, len);
+        out[len] = '\0';
+    }
+    else
+    {
+        out[0] = '\0';
+    }
+}
+
 const char *basename(const char *path)
 {
     const char *slash = strrchr(path, '/');

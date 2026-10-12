@@ -126,14 +126,15 @@ void do_toggle_selection(Editor &e, Session &s, const Args &, bool)
     }
     for (int i = 0; i < e.selectedFaceCount; i++)
     {
-        if (e.selectedFaces[i] == e.faceCursor)
+        if (BUF(int, e.selectedFaces)[i] == e.faceCursor)
         {
-            e.selectedFaces[i] = e.selectedFaces[e.selectedFaceCount - 1];
+            BUF(int, e.selectedFaces)[i] = BUF(int, e.selectedFaces)[e.selectedFaceCount - 1];
             e.selectedFaceCount--;
             return;
         }
     }
-    e.selectedFaces[e.selectedFaceCount++] = e.faceCursor;
+    buffer::ensure(e.selectedFaces, sizeof(int), e.selectedFaceCount + 1);
+    BUF(int, e.selectedFaces)[e.selectedFaceCount++] = e.faceCursor;
 }
 
 void do_clear_selection(Editor &e, Session &, const Args &, bool)

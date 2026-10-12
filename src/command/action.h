@@ -30,6 +30,7 @@ void do_quit(Editor &, Session &, const Args &, bool);
 void do_translate(Editor &, Session &, const Args &, bool);
 void do_rotate(Editor &, Session &, const Args &, bool);
 void do_scale(Editor &, Session &, const Args &, bool);
+void do_uniform_scale(Editor &, Session &, const Args &, bool);
 void do_shear(Editor &, Session &, const Args &, bool);
 void do_camera(Editor &, Session &, const Args &, bool);
 void do_extrude(Editor &, Session &, const Args &, bool);
@@ -48,6 +49,7 @@ void do_help(Editor &, Session &, const Args &, bool);
 
 extern const ParamSpec params_set_cmd[];
 extern const ParamSpec params_axis_step[];
+extern const ParamSpec params_uniform_scale[];
 extern const ParamSpec params_set_target[];
 extern const ParamSpec params_set_color[];
 extern const ParamSpec params_cycle[];

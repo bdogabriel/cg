@@ -29,10 +29,6 @@ namespace mesh
 
 constexpr float PI = 3.14159265359f;
 
-constexpr int MAX_VERTICES = 200000;
-constexpr int MAX_INDICES = 500000;
-constexpr int MAX_REFS = 2000;
-
 } // namespace mesh
 
 #endif // MESH_H

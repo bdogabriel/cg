@@ -34,29 +34,30 @@ void init(Render3D &r, GLuint idxVertex)
 
 void upload_mesh(const Render3D &r, const MeshBatch &batch)
 {
-    glNamedBufferData(r.vbo, batch.vtxCount * sizeof(Vec4), batch.vertices, GL_DYNAMIC_DRAW);
-    glNamedBufferData(r.uvVbo, batch.vtxCount * sizeof(Vec2), batch.uvs, GL_DYNAMIC_DRAW);
-    glNamedBufferData(r.ebo, batch.idxCount * sizeof(unsigned int), batch.indices, GL_DYNAMIC_DRAW);
+    glNamedBufferData(r.vbo, batch.vtxCount * sizeof(Vec4), BUF(Vec4, batch.vertices), GL_DYNAMIC_DRAW);
+    glNamedBufferData(r.uvVbo, batch.vtxCount * sizeof(Vec2), BUF(Vec2, batch.uvs), GL_DYNAMIC_DRAW);
+    glNamedBufferData(r.ebo, batch.idxCount * sizeof(unsigned int), BUF(unsigned int, batch.indices), GL_DYNAMIC_DRAW);
 }
 
 void upload_commands(Render3D &r, const MeshBatch &batch)
 {
     glNamedBufferData(r.commandBuffer, (batch.flatCount + batch.texCount) * sizeof(DrawCommand), nullptr,
                       GL_DYNAMIC_DRAW);
-    glNamedBufferSubData(r.commandBuffer, 0, batch.flatCount * sizeof(DrawCommand), batch.flatCmds);
+    glNamedBufferSubData(r.commandBuffer, 0, batch.flatCount * sizeof(DrawCommand), BUF(DrawCommand, batch.flatCmds));
     glNamedBufferSubData(r.commandBuffer, batch.flatCount * sizeof(DrawCommand), batch.texCount * sizeof(DrawCommand),
-                         batch.texCmds);
+                         BUF(DrawCommand, batch.texCmds));
 }
 
 void upload_models(const Render3D &r, const MeshBatch &batch)
 {
-    glNamedBufferData(r.modelBuffer, batch.slotCount * sizeof(Mat4), batch.models, GL_DYNAMIC_DRAW);
+    glNamedBufferData(r.modelBuffer, batch.slotCount * sizeof(Mat4), BUF(Mat4, batch.models), GL_DYNAMIC_DRAW);
 }
 
 void upload_face_colors(const Render3D &r, const MeshBatch &batch)
 {
-    glNamedBufferData(r.faceColorBuffer, batch.primCount * sizeof(Color), batch.primColors, GL_DYNAMIC_DRAW);
-    glNamedBufferData(r.faceOffsetBuffer, batch.slotCount * sizeof(int), batch.primOffsets, GL_DYNAMIC_DRAW);
+    glNamedBufferData(r.faceColorBuffer, batch.primCount * sizeof(Color), BUF(Color, batch.primColors),
+                      GL_DYNAMIC_DRAW);
+    glNamedBufferData(r.faceOffsetBuffer, batch.slotCount * sizeof(int), BUF(int, batch.primOffsets), GL_DYNAMIC_DRAW);
 }
 
 void draw_flat(const Render3D &r, const MeshBatch &batch)
@@ -76,14 +77,14 @@ void draw_textured(const Render3D &r, const MeshBatch &batch, const ModelTexture
     glBindBuffer(GL_DRAW_INDIRECT_BUFFER, r.commandBuffer);
     for (int m = 0; m < modeltexture::count(modelTexCache); m++)
     {
-        if (batch.texMatCount[m] == 0)
+        if (BUF(int, batch.texMatCount)[m] == 0)
         {
             continue;
         }
         glBindTextureUnit(0, modeltexture::get(modelTexCache, m));
         glMultiDrawElementsIndirect(r.primitive, GL_UNSIGNED_INT,
-                                    (void *)((batch.flatCount + batch.texMatStart[m]) * sizeof(DrawCommand)),
-                                    batch.texMatCount[m], 0);
+                                    (void *)((batch.flatCount + BUF(int, batch.texMatStart)[m]) * sizeof(DrawCommand)),
+                                    BUF(int, batch.texMatCount)[m], 0);
     }
 }
 

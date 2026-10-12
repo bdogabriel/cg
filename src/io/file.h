@@ -6,7 +6,9 @@
 namespace file
 {
 char *read_file(const char *path);
+bool copy(const char *src, const char *dst);
 void replace_extension(const char *path, const char *ext, char *out, size_t outSize);
+void dirname(const char *path, char *out, size_t outSize);
 const char *basename(const char *path);
 bool mkdir_p(const char *path);
 } // namespace file

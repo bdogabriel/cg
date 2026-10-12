@@ -4,6 +4,7 @@
 #include "face_edit.h"
 #include "mesh_edit.h"
 #include "session.h"
+#include "trs.h"
 #include "wavefront.h"
 #include <stdio.h>
 
@@ -13,7 +14,7 @@ namespace cmd
 namespace
 {
 
-const char *const reset_choices[] = {"rotation", "translation", nullptr};
+const char *const reset_choices[] = {"rotation", "translation", "scale", nullptr};
 const char *const clear_choices[] = {"true", "false", nullptr};
 
 } // namespace
@@ -97,11 +98,11 @@ void do_set_color(Editor &e, Session &, const Args &a, bool)
 
 void do_apply_color(Editor &e, Session &, const Args &, bool snapshot)
 {
-    if (!e.meshBatch.usedSlots[e.selectedRef])
+    if (!BUF(bool, e.meshBatch.usedSlots)[e.selectedRef])
     {
         return;
     }
-    int base = e.meshBatch.faceBatch.faceOffsets[e.selectedRef];
+    int base = BUF(int, e.meshBatch.faceBatch.faceOffsets)[e.selectedRef];
     Color c = e.currentColor;
 
     if (e.target == Target::Face)
@@ -115,17 +116,17 @@ void do_apply_color(Editor &e, Session &, const Args &, bool snapshot)
             editor::push_undo(e);
         for (int i = 0; i < e.selectedFaceCount; i++)
         {
-            e.meshBatch.faceBatch.faceColors[base + e.selectedFaces[i]] = c;
+            BUF(Color, e.meshBatch.faceBatch.faceColors)[base + BUF(int, e.selectedFaces)[i]] = c;
         }
     }
     else
     {
         if (snapshot)
             editor::push_undo(e);
-        int count = e.meshBatch.faceBatch.faceCounts[e.selectedRef];
+        int count = BUF(int, e.meshBatch.faceBatch.faceCounts)[e.selectedRef];
         for (int f = 0; f < count; f++)
         {
-            e.meshBatch.faceBatch.faceColors[base + f] = c;
+            BUF(Color, e.meshBatch.faceBatch.faceColors)[base + f] = c;
         }
     }
     e.meshBatch.meshDirty = true;
@@ -139,7 +140,7 @@ void do_cycle(Editor &e, Session &s, const Args &a, bool)
 
     if (isFace)
     {
-        int total = e.meshBatch.faceBatch.faceCounts[e.selectedRef];
+        int total = BUF(int, e.meshBatch.faceBatch.faceCounts)[e.selectedRef];
         if (total > 0)
         {
             e.faceCursor = (e.faceCursor + step + total) % total;
@@ -159,7 +160,7 @@ void do_cycle(Editor &e, Session &s, const Args &a, bool)
             {
                 return;
             }
-            if (e.meshBatch.usedSlots[j])
+            if (BUF(bool, e.meshBatch.usedSlots)[j])
             {
                 e.selectedRef = j;
                 e.faceCursor = 0;
@@ -180,7 +181,7 @@ void do_cycle(Editor &e, Session &s, const Args &a, bool)
             {
                 return;
             }
-            if (e.meshBatch.usedSlots[j])
+            if (BUF(bool, e.meshBatch.usedSlots)[j])
             {
                 e.selectedRef = j;
                 e.faceCursor = 0;
@@ -199,15 +200,21 @@ void do_reset(Editor &e, Session &, const Args &a, bool snapshot)
     }
     if (strcmp(a.get("property"), "rotation") == 0)
     {
-        e.transforms[e.selectedRef].r = quat::identity();
+        BUF(TRS, e.transforms)[e.selectedRef].r = quat::identity();
+    }
+    else if (strcmp(a.get("property"), "scale") == 0)
+    {
+        BUF(TRS, e.transforms)[e.selectedRef].sx = 1;
+        BUF(TRS, e.transforms)[e.selectedRef].sy = 1;
+        BUF(TRS, e.transforms)[e.selectedRef].sz = 1;
     }
     else
     {
-        e.transforms[e.selectedRef].tx = 0;
-        e.transforms[e.selectedRef].ty = 0;
-        e.transforms[e.selectedRef].tz = 0;
+        BUF(TRS, e.transforms)[e.selectedRef].tx = 0;
+        BUF(TRS, e.transforms)[e.selectedRef].ty = 0;
+        BUF(TRS, e.transforms)[e.selectedRef].tz = 0;
     }
-    mesh::compose_model(e.meshBatch, e.selectedRef, trs::compose(e.transforms[e.selectedRef]));
+    mesh::compose_model(e.meshBatch, e.selectedRef, trs::compose(BUF(TRS, e.transforms)[e.selectedRef]));
 }
 
 void do_undo(Editor &e, Session &, const Args &, bool snapshot)
@@ -230,7 +237,7 @@ void do_extrude(Editor &e, Session &s, const Args &, bool snapshot)
     {
         editor::push_undo(e);
     }
-    faceedit::extrude(e.meshBatch, e.selectedRef, e.selectedFaces, e.selectedFaceCount);
+    faceedit::extrude(e.meshBatch, e.selectedRef, BUF(int, e.selectedFaces), e.selectedFaceCount);
     s.cmd = get(CommandId::camera);
 }
 
@@ -249,16 +256,17 @@ void add_mesh(Editor &e, const Mesh &mesh, const char *colorStr, const char *nam
     t.sx = t.sy = t.sz = e.defaultMeshScale;
     m.model = trs::compose(t);
     Ref newRef = mesh::add(e.meshBatch, m);
-    e.transforms[newRef] = t;
+    buffer::ensure(e.transforms, sizeof(TRS), e.meshBatch.slotCount);
+    BUF(TRS, e.transforms)[newRef] = t;
 
     Color color;
     if (color::from_hex(colorStr, color))
     {
-        int base = e.meshBatch.faceBatch.faceOffsets[newRef];
-        int count = e.meshBatch.faceBatch.faceCounts[newRef];
+        int base = BUF(int, e.meshBatch.faceBatch.faceOffsets)[newRef];
+        int count = BUF(int, e.meshBatch.faceBatch.faceCounts)[newRef];
         for (int f = 0; f < count; f++)
         {
-            e.meshBatch.faceBatch.faceColors[base + f] = color;
+            BUF(Color, e.meshBatch.faceBatch.faceColors)[base + f] = color;
         }
         e.meshBatch.meshDirty = true;
     }
@@ -366,7 +374,7 @@ void do_load_obj(Editor &e, Session &s, const Args &a, bool)
 void do_delete(Editor &e, Session &s, const Args &, bool snapshot)
 {
     (void)s;
-    if (!e.meshBatch.usedSlots[e.selectedRef])
+    if (!BUF(bool, e.meshBatch.usedSlots)[e.selectedRef])
     {
         return;
     }
@@ -386,7 +394,7 @@ void do_delete(Editor &e, Session &s, const Args &, bool snapshot)
         {
             break;
         }
-        if (e.meshBatch.usedSlots[j])
+        if (BUF(bool, e.meshBatch.usedSlots)[j])
         {
             e.selectedRef = j;
             break;
@@ -406,7 +414,7 @@ void do_merge(Editor &e, Session &s, const Args &, bool snapshot)
     int usedCount = 0;
     for (int j = 1; j < e.meshBatch.slotCount; j++)
     {
-        if (e.meshBatch.usedSlots[j])
+        if (BUF(bool, e.meshBatch.usedSlots)[j])
         {
             usedCount++;
         }
@@ -427,7 +435,7 @@ void do_merge(Editor &e, Session &s, const Args &, bool snapshot)
         {
             j = 1;
         }
-        if (e.meshBatch.usedSlots[j])
+        if (BUF(bool, e.meshBatch.usedSlots)[j])
         {
             nextUsedSlot = j;
             break;
@@ -443,7 +451,7 @@ void do_merge(Editor &e, Session &s, const Args &, bool snapshot)
 void do_merge_coplanar(Editor &e, Session &s, const Args &a, bool snapshot)
 {
     (void)s;
-    if (!e.meshBatch.usedSlots[e.selectedRef])
+    if (!BUF(bool, e.meshBatch.usedSlots)[e.selectedRef])
     {
         return;
     }
@@ -464,7 +472,8 @@ void do_merge_coplanar(Editor &e, Session &s, const Args &a, bool snapshot)
     }
     if (isFace)
     {
-        meshedit::merge_coplanar(e.meshBatch, e.selectedRef, (float)angle, e.selectedFaces, e.selectedFaceCount);
+        meshedit::merge_coplanar(e.meshBatch, e.selectedRef, (float)angle, BUF(int, e.selectedFaces),
+                                 e.selectedFaceCount);
     }
     else
     {

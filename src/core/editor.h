@@ -1,12 +1,12 @@
 #ifndef EDITOR_H
 #define EDITOR_H
 
+#include "buffer.h"
 #include "camera.h"
 #include "mesh_batch.h"
 #include "model_texture_cache.h"
-#include "trs.h"
 
-constexpr int MAX_UNDO = 32;
+constexpr int MAX_UNDO = 100;
 
 enum class Target
 {
@@ -26,17 +26,17 @@ struct Editor
 {
     MeshBatch meshBatch;
     ModelTextureCache modelTextureCache;
-    TRS transforms[mesh::MAX_REFS] = {};
+    Buffer transforms; // TRS; indexed by slot
     Camera camera;
 
     MeshBatch undoMeshBatches[MAX_UNDO];
-    TRS undoTransforms[MAX_UNDO][mesh::MAX_REFS];
+    Buffer undoTransforms[MAX_UNDO]; // TRS; indexed by slot
     int undoHead = 0;
     int undoCount = 0;
 
     Ref selectedRef = 0;
     int faceCursor = 0;
-    int selectedFaces[face::MAX_FACES] = {};
+    Buffer selectedFaces; // int
     int selectedFaceCount = 0;
     float keySensitivity = 0.03f;
     float defaultMeshScale = 0.3f;

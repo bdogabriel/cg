@@ -15,7 +15,7 @@ int find_by_path(const ModelTextureCache &modelTexCache, const char *path)
 {
     for (int i = 0; i < modelTexCache.count; i++)
     {
-        if (strcmp(modelTexCache.paths[i], path) == 0)
+        if (strcmp(BUF(TexturePath, modelTexCache.paths)[i], path) == 0)
         {
             return i;
         }
@@ -32,11 +32,6 @@ int add(ModelTextureCache &modelTexCache, const char *path)
     {
         return existing;
     }
-    if (modelTexCache.count >= MAX_MODEL_TEXTURES)
-    {
-        printf("E: too many model textures (max %d)\n", MAX_MODEL_TEXTURES);
-        return -1;
-    }
 
     int w = 0, h = 0, comp = 0;
     unsigned char *data = stbi_load(path, &w, &h, &comp, 4);
@@ -49,17 +44,20 @@ int add(ModelTextureCache &modelTexCache, const char *path)
     GLuint tex = glutil::make_texture(w, h, data, GL_RGBA8, GL_RGBA);
     stbi_image_free(data);
 
+    buffer::ensure(modelTexCache.textures, sizeof(unsigned int), modelTexCache.count + 1);
+    buffer::ensure(modelTexCache.paths, 256, modelTexCache.count + 1);
+
     int idx = modelTexCache.count++;
-    modelTexCache.textures[idx] = tex;
-    strncpy(modelTexCache.paths[idx], path, sizeof(modelTexCache.paths[idx]) - 1);
-    modelTexCache.paths[idx][sizeof(modelTexCache.paths[idx]) - 1] = '\0';
+    BUF(unsigned int, modelTexCache.textures)[idx] = tex;
+    strncpy(BUF(TexturePath, modelTexCache.paths)[idx], path, 255);
+    BUF(TexturePath, modelTexCache.paths)[idx][255] = '\0';
 
     return idx;
 }
 
 unsigned int get(const ModelTextureCache &modelTexCache, int index)
 {
-    return modelTexCache.textures[index];
+    return BUF(unsigned int, modelTexCache.textures)[index];
 }
 
 int count(const ModelTextureCache &modelTexCache)
@@ -71,12 +69,12 @@ void reset(ModelTextureCache &modelTexCache)
 {
     for (int i = 0; i < modelTexCache.count; i++)
     {
-        if (modelTexCache.textures[i] != 0)
+        if (BUF(unsigned int, modelTexCache.textures)[i] != 0)
         {
-            glDeleteTextures(1, &modelTexCache.textures[i]);
+            glDeleteTextures(1, &BUF(unsigned int, modelTexCache.textures)[i]);
         }
-        modelTexCache.textures[i] = 0;
-        modelTexCache.paths[i][0] = '\0';
+        BUF(unsigned int, modelTexCache.textures)[i] = 0;
+        BUF(TexturePath, modelTexCache.paths)[i][0] = '\0';
     }
     modelTexCache.count = 0;
 }

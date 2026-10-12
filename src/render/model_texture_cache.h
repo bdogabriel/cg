@@ -1,15 +1,14 @@
 #ifndef MODEL_TEXTURE_CACHE_H
 #define MODEL_TEXTURE_CACHE_H
 
-namespace modeltexture
-{
-constexpr int MAX_MODEL_TEXTURES = 200;
-} // namespace modeltexture
+#include "buffer.h"
+
+typedef char TexturePath[256];
 
 struct ModelTextureCache
 {
-    unsigned int textures[modeltexture::MAX_MODEL_TEXTURES] = {};
-    char paths[modeltexture::MAX_MODEL_TEXTURES][256] = {};
+    Buffer textures; // unsigned int (GLuint)
+    Buffer paths;
     int count = 0;
 };
 

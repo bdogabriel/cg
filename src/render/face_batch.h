@@ -1,26 +1,20 @@
 #ifndef FACE_BATCH_H
 #define FACE_BATCH_H
 
-#include "color.h"
-#include "mesh.h"
-
-namespace face
-{
-constexpr int MAX_FACES = 100000;
-constexpr int MAX_CORNERS = 500000;
-} // namespace face
+#include "buffer.h"
+#include "mat4.h"
 
 struct FaceBatch
 {
-    unsigned int faceCorners[face::MAX_CORNERS] = {};
-    int faceCornerStarts[face::MAX_FACES] = {};
-    int faceCornerCounts[face::MAX_FACES] = {};
-    Color faceColors[face::MAX_FACES] = {};
-    int faceMaterialIds[face::MAX_FACES] = {};
+    Buffer faceCorners;      // unsigned int
+    Buffer faceCornerStarts; // int
+    Buffer faceCornerCounts; // int
+    Buffer faceColors;       // Color
+    Buffer faceMaterialIds;  // int
     int cornerCount = 0;
     int faceCount = 0;
-    int faceOffsets[mesh::MAX_REFS] = {};
-    int faceCounts[mesh::MAX_REFS] = {};
+    Buffer faceOffsets; // int, indexed by slot
+    Buffer faceCounts;  // int, indexed by slot
 };
 
 namespace face

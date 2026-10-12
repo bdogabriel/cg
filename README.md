@@ -33,6 +33,7 @@ Or use `make run` to build and run.
 - `t` - translate
 - `r` - rotate
 - `s` - scale
+- `alt+s` - uniform scale
 - `a` - shear
 - `e` - extrude (face mode)
 - `ctrl+d` - delete object
@@ -61,6 +62,7 @@ Or use `make run` to build and run.
 - `ctrl+u` - undo
 - `shift+r` - reset rotation
 - `shift+t` - reset translation
+- `shift+s` - reset scale
 - `shift+;` - open command prompt
 - `esc` - return to camera mode
 
@@ -68,10 +70,10 @@ Or use `make run` to build and run.
 
 Open the prompt with `shift+;` and type commands:
 
-- `save <name>` - save scene to `scenes/<name>/`
-- `load <name>` - load scene from `scenes/<name>/`
+- `save_scene <name>` - save scene to `scenes/<name>/`
+- `load_scene <name> [clear]` - load scene from `scenes/<name>/`
 - `save_obj <file>` - export selected object to `.obj`
-- `load_obj <file>` - load a single `.obj` object
+- `load_obj <file> [clear]` - load a single `.obj` object
 - `add_pyramid [sides] [color]` - add a pyramid primitive
 - `add_cylinder [segments] [color]` - add a cylinder primitive
 - `add_polyhedron [faces] [color]` - add a polyhedron (4, 6, 8, 12, 20 faces; 6 = cube)

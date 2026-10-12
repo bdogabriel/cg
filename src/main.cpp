@@ -2,6 +2,7 @@
 #include "mesh_batch.h"
 #include "render_1d.h"
 
+#include "arena.h"
 #include "binding.h"
 #include "camera.h"
 #include "font.h"
@@ -80,6 +81,8 @@ void setup_bindings()
     binding::bind(Key::U, mods::CTRL, true, "undo", "");
     binding::bind(Key::R, mods::SHIFT, true, "reset", "property=rotation");
     binding::bind(Key::T, mods::SHIFT, true, "reset", "property=translation");
+    binding::bind(Key::S, mods::SHIFT, true, "reset", "property=scale");
+    binding::bind(Key::S, mods::ALT, true, "set_cmd", "op=uniform_scale");
     binding::bind(Key::SEMICOLON, mods::NONE, true, "toggle_lock", "");
     binding::bind(Key::SEMICOLON, mods::SHIFT, true, "prompt", "");
 }
@@ -111,6 +114,7 @@ int main(int argc, char *argv[])
 
     static Editor editor;
     static Session session;
+    mesh::reset(editor.meshBatch);
 
     Render3D meshRenderer;
     Render2D hudRenderer;
@@ -136,6 +140,8 @@ int main(int argc, char *argv[])
 
     while (!glfwWindowShouldClose(window))
     {
+        arena::scratch_reset();
+
         glfwPollEvents();
         session::process_input(editor, session);
         if (session.shouldQuit)

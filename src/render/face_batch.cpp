@@ -1,4 +1,7 @@
 #include "face_batch.h"
+
+#include "arena.h"
+
 #include <cmath>
 
 namespace face
@@ -9,8 +12,8 @@ void update_corner_starts(FaceBatch &batch)
     int running = 0;
     for (int i = 0; i < batch.faceCount; i++)
     {
-        batch.faceCornerStarts[i] = running;
-        running += batch.faceCornerCounts[i];
+        BUF(int, batch.faceCornerStarts)[i] = running;
+        running += BUF(int, batch.faceCornerCounts)[i];
     }
 }
 
@@ -131,13 +134,13 @@ int triangulate(const Vec4 *loop, int count, int *outTris)
         return 1;
     }
 
-    float poly2d[128];
+    float *poly2d = (float *)arena::scratch_alloc(sizeof(float) * 2 * (size_t)count);
     int axis_x, axis_y;
     drop_dominant_axis(loop, count, poly2d, axis_x, axis_y);
 
     float area = compute_signed_area_2d(poly2d, count);
 
-    int remaining[64];
+    int *remaining = (int *)arena::scratch_alloc(sizeof(int) * (size_t)count);
     for (int i = 0; i < count; i++)
         remaining[i] = i;
 
