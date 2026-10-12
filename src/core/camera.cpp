@@ -32,9 +32,43 @@ Mat4 view(const Camera &c)
     return viewproj::look_at(c.position, c.position + forward(c), WORLD_UP);
 }
 
+Mat4 view_rotation(const Camera &c)
+{
+    Vec4 eye = {0, 0, 0, 1};
+    return viewproj::look_at(eye, eye + forward(c), WORLD_UP);
+}
+
 Mat4 projection(const Camera &c, float aspect)
 {
     return viewproj::perspective(c.fovY, aspect, c.near, c.far);
+}
+
+void clamp_position(Camera &c, const WorldBounds &b)
+{
+    if (c.position.x < b.minX)
+    {
+        c.position.x = b.minX;
+    }
+    if (c.position.x > b.maxX)
+    {
+        c.position.x = b.maxX;
+    }
+    if (c.position.y < b.minY)
+    {
+        c.position.y = b.minY;
+    }
+    if (c.position.y > b.maxY)
+    {
+        c.position.y = b.maxY;
+    }
+    if (c.position.z < b.minZ)
+    {
+        c.position.z = b.minZ;
+    }
+    if (c.position.z > b.maxZ)
+    {
+        c.position.z = b.maxZ;
+    }
 }
 
 } // namespace camera

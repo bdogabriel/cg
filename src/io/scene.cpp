@@ -1,4 +1,5 @@
 #include "file.h"
+#include "skybox.h"
 #include "trs.h"
 #include "wavefront.h"
 #include <stdio.h>
@@ -72,6 +73,22 @@ bool save(Editor &e, const char *name)
     fprintf(f, "camera %g %g %g %g %g %g %g %g\n", e.camera.position.x, e.camera.position.y, e.camera.position.z,
             e.camera.yaw, e.camera.pitch, e.camera.fovY, e.camera.near, e.camera.far);
 
+    if (e.skybox.path[0] != '\0')
+    {
+        const char *ext = strrchr(e.skybox.path, '.');
+        const char *extStr = ext ? ext : ".jpg";
+        char dst[512];
+        snprintf(dst, sizeof(dst), "%s/%s_skybox%s", dir, name, extStr);
+        if (file::copy(e.skybox.path, dst))
+        {
+            fprintf(f, "skybox %s_skybox%s\n", name, extStr);
+        }
+        else
+        {
+            printf("E: cannot copy skybox to %s\n", dst);
+        }
+    }
+
     for (int i = 1; i < e.meshBatch.slotCount; i++)
     {
         if (!BUF(bool, e.meshBatch.usedSlots)[i])
@@ -111,6 +128,7 @@ bool load(Editor &e, const char *name, bool clear)
     {
         mesh::reset(e.meshBatch);
         modeltexture::reset(e.modelTextureCache);
+        skybox::free(e.skybox);
         e.selectedRef = 0;
         e.faceCursor = 0;
         e.selectedFaceCount = 0;
@@ -128,6 +146,7 @@ bool load(Editor &e, const char *name, bool clear)
     bool hasObj = false;
     float cam[8] = {};
     bool hasCam = false;
+    char savedSkybox[256] = {};
 
     auto flush = [&]() {
         if (!hasObj)
@@ -162,6 +181,25 @@ bool load(Editor &e, const char *name, bool clear)
             sscanf(line + 7, "%f %f %f %f %f %f %f %f", &cam[0], &cam[1], &cam[2], &cam[3], &cam[4], &cam[5], &cam[6],
                    &cam[7]);
             hasCam = true;
+        }
+        else if (strncmp(line, "skybox ", 7) == 0)
+        {
+            char *p = line + 7;
+            while (*p == ' ' || *p == '\t')
+            {
+                p++;
+            }
+            size_t len = strlen(p);
+            while (len > 0 && (p[len - 1] == '\n' || p[len - 1] == '\r' || p[len - 1] == ' '))
+            {
+                len--;
+            }
+            if (len >= sizeof(savedSkybox))
+            {
+                len = sizeof(savedSkybox) - 1;
+            }
+            memcpy(savedSkybox, p, len);
+            savedSkybox[len] = '\0';
         }
         else if (line[0] == 'o' && line[1] == ' ')
         {
@@ -212,6 +250,13 @@ bool load(Editor &e, const char *name, bool clear)
         }
     }
     flush();
+
+    if (savedSkybox[0] != '\0')
+    {
+        char skyPath[512];
+        snprintf(skyPath, sizeof(skyPath), "%s%s", sceneDir, savedSkybox);
+        skybox::load(e.skybox, skyPath);
+    }
 
     fclose(f);
 

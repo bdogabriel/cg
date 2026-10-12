@@ -30,6 +30,7 @@ void camera_move(Editor &e, AxisLock axis, float step)
 
     // j (step=-1) = out, k (step=+1) = in
     e.camera.position += dir * (step * MOVE_SPEED);
+    camera::clamp_position(e.camera, camera::WORLD_BOUNDS);
 }
 
 void camera_rotate(Editor &e, AxisLock axis, float step)

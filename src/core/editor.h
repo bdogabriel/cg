@@ -5,6 +5,7 @@
 #include "camera.h"
 #include "mesh_batch.h"
 #include "model_texture_cache.h"
+#include "skybox.h"
 
 constexpr int MAX_UNDO = 100;
 
@@ -28,6 +29,7 @@ struct Editor
     ModelTextureCache modelTextureCache;
     Buffer transforms; // TRS; indexed by slot
     Camera camera;
+    Skybox skybox;
 
     MeshBatch undoMeshBatches[MAX_UNDO];
     Buffer undoTransforms[MAX_UNDO]; // TRS; indexed by slot

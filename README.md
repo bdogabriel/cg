@@ -74,6 +74,7 @@ Open the prompt with `shift+;` and type commands:
 - `load_scene <name> [clear]` - load scene from `scenes/<name>/`
 - `save_obj <file>` - export selected object to `.obj`
 - `load_obj <file> [clear]` - load a single `.obj` object
+- `load_skybox <file>` - load an equirectangular skybox image (saved/restored with scenes)
 - `add_pyramid [sides] [color]` - add a pyramid primitive
 - `add_cylinder [segments] [color]` - add a cylinder primitive
 - `add_polyhedron [faces] [color]` - add a polyhedron (4, 6, 8, 12, 20 faces; 6 = cube)

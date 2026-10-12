@@ -9,6 +9,7 @@
 #include "render_2d.h"
 #include "render_3d.h"
 #include "session.h"
+#include "skybox.h"
 #include "ui_2d.h"
 #include "ui_3d.h"
 
@@ -110,6 +111,10 @@ int main(int argc, char *argv[])
     GLint u_meshTexturedSampler = glGetUniformLocation(meshTexturedProgram, "u_tex");
     glProgramUniform1i(meshTexturedProgram, u_meshTexturedSampler, 0);
     GLint u_lineViewProj = glGetUniformLocation(lineProgram, "u_viewProj");
+    GLuint skyboxProgram = glutil::make_program("shader/skybox_vertex.glsl", "shader/skybox_fragment.glsl");
+    GLint u_skyboxViewProj = glGetUniformLocation(skyboxProgram, "u_viewProj");
+    GLint u_skyboxSampler = glGetUniformLocation(skyboxProgram, "u_skybox");
+    glProgramUniform1i(skyboxProgram, u_skyboxSampler, 0);
     setup_graphics();
 
     static Editor editor;
@@ -131,6 +136,7 @@ int main(int argc, char *argv[])
     render3d::init(meshRenderer, IDX_VERTEX);
     render2d::init(hudRenderer);
     render1d::init(lineRenderer);
+    skybox::init(editor.skybox);
 
     Keyboard keyboard;
     keyboard::setup(keyboard, window);
@@ -196,6 +202,19 @@ int main(int argc, char *argv[])
         glLineWidth(1.0f);
         render1d::draw(lineRenderer, axesLines);
 
+        if (editor.skybox.texture != 0)
+        {
+            Mat4 skyViewProj = camera::projection(editor.camera, aspect) * camera::view_rotation(editor.camera);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            glUseProgram(skyboxProgram);
+            glUniformMatrix4fv(u_skyboxViewProj, 1, GL_FALSE, skyViewProj.data());
+            glDepthFunc(GL_LEQUAL);
+            glDepthMask(GL_FALSE);
+            skybox::draw(editor.skybox);
+            glDepthMask(GL_TRUE);
+            glDepthFunc(GL_LESS);
+        }
+
         glDisable(GL_DEPTH_TEST);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         quad::reset(textBatch);
@@ -220,11 +239,13 @@ int main(int argc, char *argv[])
     render3d::free(meshRenderer);
     render1d::free(lineRenderer);
     render2d::free(hudRenderer);
+    skybox::free(editor.skybox);
     glDeleteProgram(meshProgram);
     glDeleteProgram(meshTexturedProgram);
     glDeleteProgram(quadTexturedR8Program);
     glDeleteProgram(quadProgram);
     glDeleteProgram(lineProgram);
+    glDeleteProgram(skyboxProgram);
     glDeleteTextures(1, &atlasTexture);
     glfwTerminate();
 

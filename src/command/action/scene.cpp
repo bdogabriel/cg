@@ -4,6 +4,7 @@
 #include "face_edit.h"
 #include "mesh_edit.h"
 #include "session.h"
+#include "skybox.h"
 #include "trs.h"
 #include "wavefront.h"
 #include <stdio.h>
@@ -72,6 +73,11 @@ const ParamSpec params_load_scene[] = {
 const ParamSpec params_load_obj[] = {
     {"file", ParamType::STRING, nullptr, "input filename", true, nullptr},
     {"clear", ParamType::STRING, clear_choices, "clear existing scene first", false, "false"},
+    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
+};
+
+const ParamSpec params_load_skybox[] = {
+    {"file", ParamType::STRING, nullptr, "path to equirectangular skybox image", true, nullptr},
     {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
 };
 
@@ -369,6 +375,11 @@ void do_load_obj(Editor &e, Session &s, const Args &a, bool)
         e.target = Target::Object;
         e.locked = false;
     }
+}
+
+void do_load_skybox(Editor &e, Session &, const Args &a, bool)
+{
+    skybox::load(e.skybox, a.get("file"));
 }
 
 void do_delete(Editor &e, Session &s, const Args &, bool snapshot)

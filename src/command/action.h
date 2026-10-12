@@ -45,6 +45,7 @@ void do_save_obj(Editor &, Session &, const Args &, bool);
 void do_save_scene(Editor &, Session &, const Args &, bool);
 void do_load_obj(Editor &, Session &, const Args &, bool);
 void do_load_scene(Editor &, Session &, const Args &, bool);
+void do_load_skybox(Editor &, Session &, const Args &, bool);
 void do_help(Editor &, Session &, const Args &, bool);
 
 extern const ParamSpec params_set_cmd[];
@@ -63,6 +64,7 @@ extern const ParamSpec params_save_obj[];
 extern const ParamSpec params_save_scene[];
 extern const ParamSpec params_load_obj[];
 extern const ParamSpec params_load_scene[];
+extern const ParamSpec params_load_skybox[];
 extern const ParamSpec params_help[];
 
 extern const char *const axis_choices[];
