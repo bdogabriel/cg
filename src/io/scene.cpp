@@ -128,7 +128,7 @@ bool load(Editor &e, const char *name, bool clear)
     {
         mesh::reset(e.meshBatch);
         modeltexture::reset(e.modelTextureCache);
-        skybox::free(e.skybox);
+        skybox::reset(e.skybox);
         e.selectedRef = 0;
         e.faceCursor = 0;
         e.selectedFaceCount = 0;

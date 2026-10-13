@@ -193,12 +193,19 @@ void draw(const Skybox &s)
     glDrawArrays(GL_TRIANGLES, 0, CUBE_VERTEX_COUNT);
 }
 
-void free(Skybox &s)
+void reset(Skybox &s)
 {
     if (s.texture != 0)
     {
         glDeleteTextures(1, &s.texture);
     }
+    s.texture = 0;
+    s.path[0] = '\0';
+}
+
+void free(Skybox &s)
+{
+    reset(s);
     if (s.vao != 0)
     {
         glDeleteVertexArrays(1, &s.vao);
@@ -207,10 +214,8 @@ void free(Skybox &s)
     {
         glDeleteBuffers(1, &s.vbo);
     }
-    s.texture = 0;
     s.vao = 0;
     s.vbo = 0;
-    s.path[0] = '\0';
 }
 
 } // namespace skybox

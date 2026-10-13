@@ -147,6 +147,32 @@ void translate_object_apply(Editor &e, AxisLock axis, float amount)
             break;
         }
     }
+
+    const WorldBounds &b = camera::WORLD_BOUNDS;
+    if (t.tx < b.minX)
+    {
+        t.tx = b.minX;
+    }
+    if (t.tx > b.maxX)
+    {
+        t.tx = b.maxX;
+    }
+    if (t.ty < b.minY)
+    {
+        t.ty = b.minY;
+    }
+    if (t.ty > b.maxY)
+    {
+        t.ty = b.maxY;
+    }
+    if (t.tz < b.minZ)
+    {
+        t.tz = b.minZ;
+    }
+    if (t.tz > b.maxZ)
+    {
+        t.tz = b.maxZ;
+    }
 }
 
 } // namespace

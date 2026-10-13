@@ -96,10 +96,12 @@ void extrude(MeshBatch &batch, Ref ref, int *faces, int faceCount)
         for (int i = 0; i < cornerCount; i++)
         {
             Vec4 &curr =
-                BUF(Vec4, batch.vertices)[cmd.vertexOffset + BUF(unsigned int, batch.faceBatch.faceCorners)[cornerStart + i]];
-            Vec4 &next = BUF(Vec4, batch.vertices)[cmd.vertexOffset +
-                                                     BUF(unsigned int, batch.faceBatch.faceCorners)[cornerStart +
-                                                                                                     (i + 1) % cornerCount]];
+                BUF(Vec4,
+                    batch.vertices)[cmd.vertexOffset + BUF(unsigned int, batch.faceBatch.faceCorners)[cornerStart + i]];
+            Vec4 &next = BUF(
+                Vec4,
+                batch.vertices)[cmd.vertexOffset +
+                                BUF(unsigned int, batch.faceBatch.faceCorners)[cornerStart + (i + 1) % cornerCount]];
             normal.x += (curr.y - next.y) * (curr.z + next.z);
             normal.y += (curr.z - next.z) * (curr.x + next.x);
             normal.z += (curr.x - next.x) * (curr.y + next.y);

@@ -14,6 +14,7 @@ namespace skybox
 void init(Skybox &s);                   // create cube VAO/VBO
 bool load(Skybox &s, const char *path); // load equirect texture; set path
 void draw(const Skybox &s);             // bind VAO + texture; draw 36 verts
+void reset(Skybox &s);                  // delete texture only (scene clear)
 void free(Skybox &s);                   // delete texture + VAO + VBO
 } // namespace skybox
 
