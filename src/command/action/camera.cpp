@@ -1,7 +1,6 @@
 #include "camera.h"
 #include "action.h"
 #include "editor.h"
-#include "session.h"
 
 namespace cmd
 {
@@ -52,15 +51,14 @@ void camera_rotate(Editor &e, AxisLock axis, float step)
 
 } // namespace
 
-void do_camera(Editor &e, Session &s, const Args &a, bool)
+void do_camera(Editor &e, bool)
 {
-    (void)s;
-    AxisLock axis = axis_lock(a.get("axis"));
+    AxisLock axis = axis_lock(e.args.get("axis"));
     if (axis == AxisLock::None)
     {
         return;
     }
-    float step = (float)a.getInt("step");
+    float step = (float)e.args.getInt("step");
 
     if (e.locked)
     {

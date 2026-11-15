@@ -5,8 +5,6 @@
 #include <string.h>
 #include <xmmintrin.h>
 
-// TODO: optimize inverse
-
 struct Vec4
 {
     float x = 0, y = 0, z = 0, w = 0;

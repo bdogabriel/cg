@@ -5,10 +5,11 @@
 #include "arena.h"
 #include "binding.h"
 #include "camera.h"
+#include "dispatch.h"
+#include "editor.h"
 #include "font.h"
 #include "render_2d.h"
 #include "render_3d.h"
-#include "session.h"
 #include "skybox.h"
 #include "ui_2d.h"
 #include "ui_3d.h"
@@ -31,19 +32,14 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 
 } // namespace
 
-GLFWwindow *setup_window()
+void setup_window(Window &w)
 {
-    glfwInit();
-    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-    GLFWwindow *window = glfwCreateWindow(1000, 1000, "Handmade", nullptr, nullptr);
-    glfwMakeContextCurrent(window);
+    window::create(w, 1000, 1000, "Editor");
     glViewport(0, 0, g_fbW, g_fbH);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetFramebufferSizeCallback(window::native(w), framebuffer_size_callback);
     glewInit();
 
-    glfwShowWindow(window);
-
-    return window;
+    glfwShowWindow(window::native(w));
 }
 
 void setup_graphics()
@@ -93,7 +89,9 @@ int main(int argc, char *argv[])
     (void)argc;
     (void)argv;
 
-    GLFWwindow *window = setup_window();
+    static Editor editor;
+    setup_window(editor.window);
+
     GLuint meshProgram = glutil::make_program("shader/mesh_vertex.glsl", "shader/mesh_fragment.glsl");
     GLuint meshTexturedProgram =
         glutil::make_program("shader/mesh_textured_vertex.glsl", "shader/mesh_textured_fragment.glsl");
@@ -117,8 +115,6 @@ int main(int argc, char *argv[])
     glProgramUniform1i(skyboxProgram, u_skyboxSampler, 0);
     setup_graphics();
 
-    static Editor editor;
-    static Session session;
     mesh::reset(editor.meshBatch);
 
     Render3D meshRenderer;
@@ -138,23 +134,21 @@ int main(int argc, char *argv[])
     render1d::init(lineRenderer);
     skybox::init(editor.skybox);
 
-    Keyboard keyboard;
-    keyboard::setup(keyboard, window);
-    session::setup(session, keyboard);
+    keyboard::setup(editor.keyboard, editor.window);
 
     setup_bindings();
 
-    while (!glfwWindowShouldClose(window))
+    while (!window::should_close(editor.window))
     {
         arena::scratch_reset();
 
-        glfwPollEvents();
-        session::process_input(editor, session);
-        if (session.shouldQuit)
+        window::poll_events();
+        input::dispatch(editor);
+        if (window::should_close(editor.window))
         {
             break;
         }
-        keyboard::reset(keyboard);
+        keyboard::reset(editor.keyboard);
 
         if (editor.meshBatch.meshDirty)
         {
@@ -219,10 +213,10 @@ int main(int argc, char *argv[])
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         quad::reset(textBatch);
         quad::reset(solidBatch);
-        ui2d::build_statusline(editor, session, g_fbW, g_fbH, textBatch, solidBatch);
-        if (session::is_cmd_exec(session))
+        ui2d::build_statusline(editor, g_fbW, g_fbH, textBatch, solidBatch);
+        if (editor::is_cmd_exec(editor))
         {
-            ui2d::build_prompt(session, g_fbW, g_fbH, textBatch, solidBatch);
+            ui2d::build_prompt(editor, g_fbW, g_fbH, textBatch, solidBatch);
         }
         glUseProgram(quadProgram);
         glUniform2f(u_quadFbSize, (float)g_fbW, (float)g_fbH);
@@ -233,7 +227,7 @@ int main(int argc, char *argv[])
         render2d::draw(hudRenderer, textBatch);
         glEnable(GL_DEPTH_TEST);
 
-        glfwSwapBuffers(window);
+        window::swap_buffers(editor.window);
     }
 
     render3d::free(meshRenderer);
@@ -247,7 +241,7 @@ int main(int argc, char *argv[])
     glDeleteProgram(lineProgram);
     glDeleteProgram(skyboxProgram);
     glDeleteTextures(1, &atlasTexture);
-    glfwTerminate();
+    window::destroy(editor.window);
 
     return 0;
 }

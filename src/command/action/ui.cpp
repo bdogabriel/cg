@@ -1,7 +1,7 @@
 #include "action.h"
+#include "command.h"
 #include "editor.h"
 #include "prompt.h"
-#include "session.h"
 #include <cstdio>
 
 namespace cmd
@@ -24,27 +24,26 @@ const ParamSpec params_set_target[] = {
     {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
 };
 
-void do_none(Editor &, Session &, const Args &, bool)
+void do_none(Editor &, bool)
 {
 }
 
-void do_prompt(Editor &e, Session &s, const Args &, bool)
+void do_prompt(Editor &e, bool)
 {
-    (void)e;
-    prompt::reset(s.prompt);
-    s.cmd = get(CommandId::execute);
+    prompt::reset(e.prompt);
+    e.cmd = CommandId::execute;
 }
 
-void do_execute(Editor &e, Session &s, const Args &, bool snapshot)
+void do_execute(Editor &e, bool justPressed)
 {
-    if (s.prompt.buffer[0] == '\0')
+    if (e.prompt.buffer[0] == '\0')
     {
         return;
     }
-    s.cmd = get(CommandId::camera);
+    e.cmd = CommandId::camera;
 
     char buf[512];
-    strncpy(buf, s.prompt.buffer, sizeof(buf) - 1);
+    strncpy(buf, e.prompt.buffer, sizeof(buf) - 1);
     buf[sizeof(buf) - 1] = '\0';
     char *sp = strchr(buf, ' ');
     const char *name = buf;
@@ -58,68 +57,65 @@ void do_execute(Editor &e, Session &s, const Args &, bool snapshot)
     {
         return;
     }
-    const Command *c = find(name);
-    if (!c)
+    CommandId id;
+    if (!find_id(name, id))
     {
         printf("E: unknown command: %s\n", name);
         return;
     }
-    run(e, s, c, args, snapshot);
+    run(e, id, args, justPressed);
 }
 
-void do_set_cmd(Editor &e, Session &s, const Args &a, bool snapshot)
+void do_set_cmd(Editor &e, bool justPressed)
 {
-    const char *op = a.get("op");
+    const char *op = e.args.get("op");
     const Command *c = find(op);
     if (!c)
     {
         return;
     }
-    s.cmd = c;
-    if (c == get(CommandId::none))
+    e.cmd = c->id;
+    if (e.cmd == CommandId::none)
     {
         e.selectedFaceCount = 0;
     }
-    if (c == get(CommandId::extrude))
+    if (e.cmd == CommandId::extrude)
     {
         e.target = Target::Face;
     }
-    s.cmd->action(e, s, s.args, snapshot);
+    c->action(e, justPressed);
 }
 
-void do_set_args(Editor &e, Session &s, const Args &a, bool snapshot)
+void do_set_args(Editor &e, bool justPressed)
 {
-    (void)a;
-    s.cmd->action(e, s, s.args, snapshot);
+    get(e.cmd)->action(e, justPressed);
 }
 
-void do_set_target(Editor &e, Session &s, const Args &a, bool)
+void do_set_target(Editor &e, bool)
 {
-    (void)s;
-    const char *t = a.get("t");
+    const char *t = e.args.get("t");
     e.target = (strcmp(t, "face") == 0) ? Target::Face : Target::Object;
     e.selectedFaceCount = 0;
 }
 
-void do_toggle_lock(Editor &e, Session &, const Args &, bool)
+void do_toggle_lock(Editor &e, bool)
 {
     e.locked = !e.locked;
 }
 
-void do_set_bg_color(Editor &e, Session &, const Args &a, bool)
+void do_set_bg_color(Editor &e, bool)
 {
     Color c;
-    if (!color::from_hex(a.get("color"), c))
+    if (!color::from_hex(e.args.get("color"), c))
     {
-        printf("E: invalid color '%s' (expected #RRGGBB or #RRGGBBAA)\n", a.get("color"));
+        printf("E: invalid color '%s' (expected #RRGGBB or #RRGGBBAA)\n", e.args.get("color"));
         return;
     }
     e.bgColor = c;
 }
 
-void do_toggle_selection(Editor &e, Session &s, const Args &, bool)
+void do_toggle_selection(Editor &e, bool)
 {
-    (void)s;
     if (e.target == Target::Object)
     {
         return;
@@ -137,19 +133,19 @@ void do_toggle_selection(Editor &e, Session &s, const Args &, bool)
     BUF(int, e.selectedFaces)[e.selectedFaceCount++] = e.faceCursor;
 }
 
-void do_clear_selection(Editor &e, Session &, const Args &, bool)
+void do_clear_selection(Editor &e, bool)
 {
     e.selectedFaceCount = 0;
 }
 
-void do_wireframe_toggle(Editor &e, Session &, const Args &, bool)
+void do_wireframe_toggle(Editor &e, bool)
 {
     e.wireframe = !e.wireframe;
 }
 
-void do_quit(Editor &, Session &s, const Args &, bool)
+void do_quit(Editor &e, bool)
 {
-    s.shouldQuit = true;
+    window::request_close(e.window);
 }
 
 } // namespace cmd

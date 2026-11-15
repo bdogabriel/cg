@@ -2,7 +2,6 @@
 #include "editor.h"
 #include "face_edit.h"
 #include "mesh_batch.h"
-#include "session.h"
 #include "trs.h"
 
 namespace cmd
@@ -69,7 +68,7 @@ bool transform_prepare(const Editor &e, const Args &a, AxisLock &axis, int &step
 using FaceDeltaFn = Mat4 (*)(AxisLock, float);
 using ObjectApplyFn = void (*)(Editor &, AxisLock, float);
 
-void run_transform(Editor &e, const Args &a, bool snapshot, FaceDeltaFn faceFn, ObjectApplyFn objFn)
+void run_transform(Editor &e, const Args &a, bool justPressed, FaceDeltaFn faceFn, ObjectApplyFn objFn)
 {
     AxisLock axis;
     int step;
@@ -78,7 +77,7 @@ void run_transform(Editor &e, const Args &a, bool snapshot, FaceDeltaFn faceFn, 
     {
         return;
     }
-    if (snapshot)
+    if (justPressed)
     {
         editor::push_undo(e);
     }
@@ -177,10 +176,9 @@ void translate_object_apply(Editor &e, AxisLock axis, float amount)
 
 } // namespace
 
-void do_translate(Editor &e, Session &s, const Args &a, bool snapshot)
+void do_translate(Editor &e, bool justPressed)
 {
-    (void)s;
-    run_transform(e, a, snapshot, translate_face_delta, translate_object_apply);
+    run_transform(e, e.args, justPressed, translate_face_delta, translate_object_apply);
 }
 
 namespace
@@ -243,10 +241,9 @@ void rotate_object_apply(Editor &e, AxisLock axis, float amount)
 
 } // namespace
 
-void do_rotate(Editor &e, Session &s, const Args &a, bool snapshot)
+void do_rotate(Editor &e, bool justPressed)
 {
-    (void)s;
-    run_transform(e, a, snapshot, rotate_face_delta, rotate_object_apply);
+    run_transform(e, e.args, justPressed, rotate_face_delta, rotate_object_apply);
 }
 
 namespace
@@ -290,16 +287,14 @@ void scale_object_apply(Editor &e, AxisLock axis, float amount)
 
 } // namespace
 
-void do_scale(Editor &e, Session &s, const Args &a, bool snapshot)
+void do_scale(Editor &e, bool justPressed)
 {
-    (void)s;
-    run_transform(e, a, snapshot, scale_face_delta, scale_object_apply);
+    run_transform(e, e.args, justPressed, scale_face_delta, scale_object_apply);
 }
 
-void do_uniform_scale(Editor &e, Session &s, const Args &a, bool snapshot)
+void do_uniform_scale(Editor &e, bool justPressed)
 {
-    (void)s;
-    int step = a.getInt("step");
+    int step = e.args.getInt("step");
     if (step == 0)
     {
         return;
@@ -309,7 +304,7 @@ void do_uniform_scale(Editor &e, Session &s, const Args &a, bool snapshot)
     {
         return;
     }
-    if (snapshot)
+    if (justPressed)
     {
         editor::push_undo(e);
     }
@@ -367,10 +362,9 @@ void shear_object_apply(Editor &e, AxisLock axis, float amount)
 
 } // namespace
 
-void do_shear(Editor &e, Session &s, const Args &a, bool snapshot)
+void do_shear(Editor &e, bool justPressed)
 {
-    (void)s;
-    run_transform(e, a, snapshot, shear_face_delta, shear_object_apply);
+    run_transform(e, e.args, justPressed, shear_face_delta, shear_object_apply);
 }
 
 } // namespace cmd

@@ -1,5 +1,6 @@
 #include "action.h"
 #include "binding.h"
+#include "command.h"
 #include <cstdio>
 
 namespace cmd
@@ -92,7 +93,7 @@ void print_all_bindings_help()
         char chord[64];
         binding::chord_name(*b, chord, sizeof(chord));
 
-        printf("%-8s -> %s", chord, b->cmd->name);
+        printf("%-8s -> %s", chord, cmd::get(b->cmd)->name);
         if (b->args && b->args[0])
         {
             printf(" %s", b->args);
@@ -107,9 +108,9 @@ void print_all_bindings_help()
 
 } // namespace
 
-void do_help(Editor &, Session &, const Args &a, bool)
+void do_help(Editor &e, bool)
 {
-    const char *topic = a.get("topic");
+    const char *topic = e.args.get("topic");
     if (strcmp(topic, "commands") == 0)
     {
         print_all_commands_help();

@@ -1,7 +1,5 @@
 #include "trs.h"
 
-// TODO: uniform scaling (scale in all directions at the same time)
-
 namespace trs
 {
 Mat4 compose(const TRS &t)

@@ -3,9 +3,13 @@
 
 #include "buffer.h"
 #include "camera.h"
+#include "keyboard.h"
 #include "mesh_batch.h"
 #include "model_texture_cache.h"
+#include "param.h"
+#include "prompt.h"
 #include "skybox.h"
+#include "window.h"
 
 constexpr int MAX_UNDO = 100;
 
@@ -47,12 +51,24 @@ struct Editor
     bool locked = false;
     Color bgColor = {0, 0, 0, 255};
     Color currentColor = {255, 255, 255, 255};
+
+    CommandId cmd = CommandId::camera;
+    Args args;
+    Prompt prompt;
+    Keyboard keyboard;
+    Window window;
+    char currentFile[256] = {};
 };
 
 namespace editor
 {
 void push_undo(Editor &e);
 void pop_undo(Editor &e);
+
+inline bool is_cmd_exec(const Editor &e)
+{
+    return e.cmd == CommandId::execute;
+}
 } // namespace editor
 
 #endif

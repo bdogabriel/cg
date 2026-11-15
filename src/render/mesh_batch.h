@@ -8,7 +8,6 @@
 // TODO: cycle faces sorted by distance to the camera (when camera is implemented)
 // TODO: use intrusive list for buffer (used slots, next vertex offset etc)
 // TODO: refactor merge to allow arbitrary selection
-// TODO: review make_cylinder and make_pyramid (there must be a cleaner way)
 
 typedef int Ref;
 

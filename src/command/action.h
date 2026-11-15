@@ -1,52 +1,51 @@
 #ifndef ACTION_H
 #define ACTION_H
 
-#include "command.h"
 #include "editor.h"
+#include "param.h"
 
-struct Editor;
-struct Session;
+using Action = void (*)(Editor &e, bool justPressed);
 
 namespace cmd
 {
 
-void do_none(Editor &, Session &, const Args &, bool);
-void do_prompt(Editor &, Session &, const Args &, bool);
-void do_execute(Editor &, Session &, const Args &, bool);
-void do_set_cmd(Editor &, Session &, const Args &, bool);
-void do_set_args(Editor &, Session &, const Args &, bool);
-void do_set_target(Editor &, Session &, const Args &, bool);
-void do_toggle_lock(Editor &, Session &, const Args &, bool);
-void do_set_color(Editor &, Session &, const Args &, bool);
-void do_apply_color(Editor &, Session &, const Args &, bool);
-void do_set_bg_color(Editor &, Session &, const Args &, bool);
-void do_toggle_selection(Editor &, Session &, const Args &, bool);
-void do_clear_selection(Editor &, Session &, const Args &, bool);
-void do_wireframe_toggle(Editor &, Session &, const Args &, bool);
-void do_cycle(Editor &, Session &, const Args &, bool);
-void do_reset(Editor &, Session &, const Args &, bool);
-void do_undo(Editor &, Session &, const Args &, bool);
-void do_quit(Editor &, Session &, const Args &, bool);
-void do_translate(Editor &, Session &, const Args &, bool);
-void do_rotate(Editor &, Session &, const Args &, bool);
-void do_scale(Editor &, Session &, const Args &, bool);
-void do_uniform_scale(Editor &, Session &, const Args &, bool);
-void do_shear(Editor &, Session &, const Args &, bool);
-void do_camera(Editor &, Session &, const Args &, bool);
-void do_extrude(Editor &, Session &, const Args &, bool);
-void do_delete(Editor &, Session &, const Args &, bool);
-void do_merge(Editor &, Session &, const Args &, bool);
-void do_merge_coplanar(Editor &, Session &, const Args &, bool);
-void do_add_pyramid(Editor &, Session &, const Args &, bool);
-void do_add_cylinder(Editor &, Session &, const Args &, bool);
-void do_add_polyhedron(Editor &, Session &, const Args &, bool);
-void do_add_sphere(Editor &, Session &, const Args &, bool);
-void do_save_obj(Editor &, Session &, const Args &, bool);
-void do_save_scene(Editor &, Session &, const Args &, bool);
-void do_load_obj(Editor &, Session &, const Args &, bool);
-void do_load_scene(Editor &, Session &, const Args &, bool);
-void do_load_skybox(Editor &, Session &, const Args &, bool);
-void do_help(Editor &, Session &, const Args &, bool);
+void do_none(Editor &e, bool justPressed);
+void do_prompt(Editor &e, bool justPressed);
+void do_execute(Editor &e, bool justPressed);
+void do_set_cmd(Editor &e, bool justPressed);
+void do_set_args(Editor &e, bool justPressed);
+void do_set_target(Editor &e, bool justPressed);
+void do_toggle_lock(Editor &e, bool justPressed);
+void do_set_color(Editor &e, bool justPressed);
+void do_apply_color(Editor &e, bool justPressed);
+void do_set_bg_color(Editor &e, bool justPressed);
+void do_toggle_selection(Editor &e, bool justPressed);
+void do_clear_selection(Editor &e, bool justPressed);
+void do_wireframe_toggle(Editor &e, bool justPressed);
+void do_cycle(Editor &e, bool justPressed);
+void do_reset(Editor &e, bool justPressed);
+void do_undo(Editor &e, bool justPressed);
+void do_quit(Editor &e, bool justPressed);
+void do_translate(Editor &e, bool justPressed);
+void do_rotate(Editor &e, bool justPressed);
+void do_scale(Editor &e, bool justPressed);
+void do_uniform_scale(Editor &e, bool justPressed);
+void do_shear(Editor &e, bool justPressed);
+void do_camera(Editor &e, bool justPressed);
+void do_extrude(Editor &e, bool justPressed);
+void do_delete(Editor &e, bool justPressed);
+void do_merge(Editor &e, bool justPressed);
+void do_merge_coplanar(Editor &e, bool justPressed);
+void do_add_pyramid(Editor &e, bool justPressed);
+void do_add_cylinder(Editor &e, bool justPressed);
+void do_add_polyhedron(Editor &e, bool justPressed);
+void do_add_sphere(Editor &e, bool justPressed);
+void do_save_obj(Editor &e, bool justPressed);
+void do_save_scene(Editor &e, bool justPressed);
+void do_load_obj(Editor &e, bool justPressed);
+void do_load_scene(Editor &e, bool justPressed);
+void do_load_skybox(Editor &e, bool justPressed);
+void do_help(Editor &e, bool justPressed);
 
 extern const ParamSpec params_set_cmd[];
 extern const ParamSpec params_axis_step[];

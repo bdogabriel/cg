@@ -1,7 +1,5 @@
 #include "command.h"
 #include "action.h"
-#include "editor.h"
-#include "session.h"
 #include <cstdio>
 
 namespace cmd
@@ -11,7 +9,7 @@ namespace
 {
 
 const Command registry[] = {
-#define CMD(id, name, help, params, action) {name, help, params, action},
+#define CMD(id, name, help, params, action) {CommandId::id, name, help, params, action},
 #include "command.def"
 #undef CMD
 };
@@ -34,6 +32,17 @@ const Command *find(const char *name)
         }
     }
     return nullptr;
+}
+
+bool find_id(const char *name, CommandId &out)
+{
+    const Command *c = find(name);
+    if (!c)
+    {
+        return false;
+    }
+    out = c->id;
+    return true;
 }
 
 const Command *get(CommandId id)
@@ -268,14 +277,15 @@ bool parse_args(const char *argsStr, const ParamSpec *params, Args &out)
     return true;
 }
 
-void run(Editor &e, Session &s, const Command *c, const char *argsStr, bool snapshot)
+void run(Editor &e, CommandId id, const char *argsStr, bool justPressed)
 {
-    if (!parse_args(argsStr, c->params, s.args))
+    const Command *c = get(id);
+    if (!parse_args(argsStr, c->params, e.args))
     {
         print_command_help(*c);
         return;
     }
-    c->action(e, s, s.args, snapshot);
+    c->action(e, justPressed);
 }
 
 } // namespace cmd

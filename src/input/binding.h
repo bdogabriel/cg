@@ -1,16 +1,23 @@
 #ifndef BINDING_H
 #define BINDING_H
 
-#include "command.h"
 #include "keyboard.h"
+#include "param.h"
 
 struct Binding
 {
     Key key;
     uint8_t mods;
     bool oneShot;
-    const Command *cmd;
+    CommandId cmd;
     const char *args;
+};
+
+struct CommandCall
+{
+    CommandId cmd;
+    const char *args;
+    bool justPressed;
 };
 
 namespace binding

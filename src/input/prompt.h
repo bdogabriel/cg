@@ -1,7 +1,7 @@
 #ifndef PROMPT_H
 #define PROMPT_H
 
-struct Keyboard;
+#include "keyboard.h"
 
 struct Prompt
 {

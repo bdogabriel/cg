@@ -5,9 +5,6 @@
 #include "mat4.h"
 
 // TODO: transform/extrude faces into their own local axis (normal as y)
-// TODO: use non-triangular faces for selecting/editing (selecting each triangle individually is a pain)
-// TODO: add proper color support with color parameter to the functions
-// TODO: add make_sphere with u-v sphere
 // TODO: add parent object
 
 struct Mesh

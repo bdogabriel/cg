@@ -1,4 +1,4 @@
-# Handmade Mesh Editor
+# Mouseless Mesh Editor
 
 A mouseless lightweight OpenGL mesh editor for creating and manipulating 3D objects with support for n-gon faces, per-face colors, and scene management.
 

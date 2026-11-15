@@ -48,7 +48,7 @@ void save(const MeshBatch &batch, const ModelTextureCache &modelTexCache, Ref re
 
     if (textured)
     {
-        // One material per distinct texture used by this object.
+        // one material per distinct texture used by this object
         int texCount = modeltexture::count(modelTexCache);
         bool *written = (bool *)arena::scratch_alloc(sizeof(bool) * (size_t)texCount);
         memset(written, 0, sizeof(bool) * (size_t)texCount);
@@ -78,7 +78,7 @@ void save(const MeshBatch &batch, const ModelTextureCache &modelTexCache, Ref re
                 }
             }
         }
-        // Flat materials for any untextured faces (no texture assigned).
+        // flat materials for any untextured faces (no texture assigned)
         for (int i = 0; i < faceCount; i++)
         {
             int mat = BUF(int, batch.faceBatch.faceMaterialIds)[faceStart + i];
@@ -182,7 +182,7 @@ struct BakeSlot
     int idx; // -1 = empty
 };
 
-// File-scope growable buffers reused across loads (capacity retained).
+// file-scope growable buffers reused across loads (capacity retained)
 Buffer g_rawVerts;
 Buffer g_rawUVs;
 Buffer g_bake;
@@ -233,7 +233,9 @@ void bake_reset()
     }
     BakeSlot *s = BUF(BakeSlot, g_bake);
     for (int i = 0; i < g_bake.cap; i++)
+    {
         s[i].idx = -1;
+    }
 }
 
 int bake_lookup(int v, int vt, int *bakedCount)
@@ -244,7 +246,7 @@ int bake_lookup(int v, int vt, int *bakedCount)
     }
 
     int cap = g_bake.cap;
-    // Grow (rehash) when load factor would exceed ~0.7.
+    // grow (rehash) when load factor would exceed ~0.7
     if ((*bakedCount + 1) * 10 >= cap * 7)
     {
         int oldCap = cap;
@@ -310,7 +312,7 @@ bool parse(const char *path, int &vtxCount, int &faceCount, int &cornerCount, in
 
     bake_reset();
 
-    // Ensure a valid element 0 (used when v/vt indices are absent).
+    // ensure a valid element 0 (used when v/vt indices are absent)
     buffer::ensure(g_rawVerts, sizeof(Vec4), 1);
     BUF(Vec4, g_rawVerts)[0] = {0, 0, 0, 1};
     buffer::ensure(g_rawUVs, sizeof(Vec2), 1);
@@ -510,7 +512,7 @@ bool load(MeshBatch &batch, Editor &e, const char *path, bool clearBuffer)
         return false;
     }
 
-    // Resolve each material's texture to a texture index.
+    // resolve each material's texture to a texture index
     int *defToHandle = (int *)arena::scratch_alloc(sizeof(int) * (size_t)materialCount);
     for (int i = 0; i < materialCount; i++)
     {
@@ -522,7 +524,7 @@ bool load(MeshBatch &batch, Editor &e, const char *path, bool clearBuffer)
         }
     }
 
-    // Remap per-face material-def indices to texture indices.
+    // remap per-face material-def indices to texture indices
     bool textured = false;
     for (int i = 0; i < faceCount; i++)
     {

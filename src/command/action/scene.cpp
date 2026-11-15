@@ -3,7 +3,6 @@
 #include "draw_3d.h"
 #include "face_edit.h"
 #include "mesh_edit.h"
-#include "session.h"
 #include "skybox.h"
 #include "trs.h"
 #include "wavefront.h"
@@ -60,7 +59,7 @@ const ParamSpec params_save_obj[] = {
 };
 
 const ParamSpec params_save_scene[] = {
-    {"name", ParamType::STRING, nullptr, "scene name (default handmade)", false, "handmade"},
+    {"name", ParamType::STRING, nullptr, "scene name (default scene)", false, "scene"},
     {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
 };
 
@@ -91,18 +90,18 @@ const ParamSpec params_merge_coplanar[] = {
     {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
 };
 
-void do_set_color(Editor &e, Session &, const Args &a, bool)
+void do_set_color(Editor &e, bool)
 {
     Color c;
-    if (!color::from_hex(a.get("color"), c))
+    if (!color::from_hex(e.args.get("color"), c))
     {
-        printf("E: invalid color '%s' (expected #RRGGBB or #RRGGBBAA)\n", a.get("color"));
+        printf("E: invalid color '%s' (expected #RRGGBB or #RRGGBBAA)\n", e.args.get("color"));
         return;
     }
     e.currentColor = c;
 }
 
-void do_apply_color(Editor &e, Session &, const Args &, bool snapshot)
+void do_apply_color(Editor &e, bool justPressed)
 {
     if (!BUF(bool, e.meshBatch.usedSlots)[e.selectedRef])
     {
@@ -118,7 +117,7 @@ void do_apply_color(Editor &e, Session &, const Args &, bool snapshot)
             printf("E: no faces selected\n");
             return;
         }
-        if (snapshot)
+        if (justPressed)
             editor::push_undo(e);
         for (int i = 0; i < e.selectedFaceCount; i++)
         {
@@ -127,7 +126,7 @@ void do_apply_color(Editor &e, Session &, const Args &, bool snapshot)
     }
     else
     {
-        if (snapshot)
+        if (justPressed)
             editor::push_undo(e);
         int count = BUF(int, e.meshBatch.faceBatch.faceCounts)[e.selectedRef];
         for (int f = 0; f < count; f++)
@@ -138,10 +137,9 @@ void do_apply_color(Editor &e, Session &, const Args &, bool snapshot)
     e.meshBatch.meshDirty = true;
 }
 
-void do_cycle(Editor &e, Session &s, const Args &a, bool)
+void do_cycle(Editor &e, bool)
 {
-    (void)s;
-    int step = a.getInt("step");
+    int step = e.args.getInt("step");
     bool isFace = (e.target == Target::Face);
 
     if (isFace)
@@ -198,17 +196,17 @@ void do_cycle(Editor &e, Session &s, const Args &a, bool)
     }
 }
 
-void do_reset(Editor &e, Session &, const Args &a, bool snapshot)
+void do_reset(Editor &e, bool justPressed)
 {
-    if (snapshot)
+    if (justPressed)
     {
         editor::push_undo(e);
     }
-    if (strcmp(a.get("property"), "rotation") == 0)
+    if (strcmp(e.args.get("property"), "rotation") == 0)
     {
         BUF(TRS, e.transforms)[e.selectedRef].r = quat::identity();
     }
-    else if (strcmp(a.get("property"), "scale") == 0)
+    else if (strcmp(e.args.get("property"), "scale") == 0)
     {
         BUF(TRS, e.transforms)[e.selectedRef].sx = 1;
         BUF(TRS, e.transforms)[e.selectedRef].sy = 1;
@@ -223,28 +221,27 @@ void do_reset(Editor &e, Session &, const Args &a, bool snapshot)
     mesh::compose_model(e.meshBatch, e.selectedRef, trs::compose(BUF(TRS, e.transforms)[e.selectedRef]));
 }
 
-void do_undo(Editor &e, Session &, const Args &, bool snapshot)
+void do_undo(Editor &e, bool justPressed)
 {
-    if (snapshot)
+    if (justPressed)
     {
         editor::pop_undo(e);
     }
 }
 
-void do_extrude(Editor &e, Session &s, const Args &, bool snapshot)
+void do_extrude(Editor &e, bool justPressed)
 {
-    (void)s;
     bool isFace = (e.target == Target::Face);
     if (isFace && e.selectedFaceCount == 0)
     {
         return;
     }
-    if (snapshot)
+    if (justPressed)
     {
         editor::push_undo(e);
     }
     faceedit::extrude(e.meshBatch, e.selectedRef, BUF(int, e.selectedFaces), e.selectedFaceCount);
-    s.cmd = get(CommandId::camera);
+    e.cmd = CommandId::camera;
 }
 
 namespace
@@ -286,110 +283,109 @@ void add_mesh(Editor &e, const Mesh &mesh, const char *colorStr, const char *nam
 
 } // namespace
 
-void do_add_pyramid(Editor &e, Session &, const Args &a, bool snapshot)
+void do_add_pyramid(Editor &e, bool justPressed)
 {
-    if (snapshot)
+    if (justPressed)
     {
         editor::push_undo(e);
     }
-    add_mesh(e, draw3d::pyramid(a.getInt("sides")), a.get("color"), "pyramid");
+    add_mesh(e, draw3d::pyramid(e.args.getInt("sides")), e.args.get("color"), "pyramid");
 }
 
-void do_add_cylinder(Editor &e, Session &, const Args &a, bool snapshot)
+void do_add_cylinder(Editor &e, bool justPressed)
 {
-    if (snapshot)
+    if (justPressed)
     {
         editor::push_undo(e);
     }
-    add_mesh(e, draw3d::cylinder(a.getInt("segments")), a.get("color"), "cylinder");
+    add_mesh(e, draw3d::cylinder(e.args.getInt("segments")), e.args.get("color"), "cylinder");
 }
 
-void do_add_polyhedron(Editor &e, Session &, const Args &a, bool snapshot)
+void do_add_polyhedron(Editor &e, bool justPressed)
 {
-    if (snapshot)
+    if (justPressed)
     {
         editor::push_undo(e);
     }
-    int faces = a.getInt("faces");
+    int faces = e.args.getInt("faces");
     if (faces != 4 && faces != 6 && faces != 8 && faces != 12 && faces != 20)
     {
         printf("E: invalid face count %d (valid: 4, 6, 8, 12, 20)\n", faces);
         return;
     }
-    add_mesh(e, draw3d::polyhedron(faces), a.get("color"), "polyhedron");
+    add_mesh(e, draw3d::polyhedron(faces), e.args.get("color"), "polyhedron");
 }
 
-void do_add_sphere(Editor &e, Session &, const Args &a, bool snapshot)
+void do_add_sphere(Editor &e, bool justPressed)
 {
-    if (snapshot)
+    if (justPressed)
     {
         editor::push_undo(e);
     }
-    add_mesh(e, draw3d::sphere(a.getInt("segments")), a.get("color"), "sphere");
+    add_mesh(e, draw3d::sphere(e.args.getInt("segments")), e.args.get("color"), "sphere");
 }
 
-void do_save_obj(Editor &e, Session &s, const Args &a, bool)
+void do_save_obj(Editor &e, bool)
 {
-    const char *file = a.get("file");
+    const char *file = e.args.get("file");
     if (file[0] != '\0')
     {
-        strncpy(s.currentFile, file, sizeof(s.currentFile) - 1);
-        s.currentFile[sizeof(s.currentFile) - 1] = '\0';
+        strncpy(e.currentFile, file, sizeof(e.currentFile) - 1);
+        e.currentFile[sizeof(e.currentFile) - 1] = '\0';
     }
-    else if (s.currentFile[0] == '\0')
+    else if (e.currentFile[0] == '\0')
     {
-        strncpy(s.currentFile, "handmade.obj", sizeof(s.currentFile) - 1);
-        s.currentFile[sizeof(s.currentFile) - 1] = '\0';
+        strncpy(e.currentFile, "object.obj", sizeof(e.currentFile) - 1);
+        e.currentFile[sizeof(e.currentFile) - 1] = '\0';
     }
-    wfront::save(e.meshBatch, e.modelTextureCache, e.selectedRef, s.currentFile);
+    wfront::save(e.meshBatch, e.modelTextureCache, e.selectedRef, e.currentFile);
 }
 
-void do_save_scene(Editor &e, Session &s, const Args &a, bool)
+void do_save_scene(Editor &e, bool)
 {
-    const char *name = a.get("name");
+    const char *name = e.args.get("name");
     scene::save(e, name);
-    s.cmd = get(CommandId::camera);
+    e.cmd = CommandId::camera;
 }
 
-void do_load_scene(Editor &e, Session &s, const Args &a, bool)
+void do_load_scene(Editor &e, bool)
 {
-    const char *name = a.get("name");
-    bool clear = (strcmp(a.get("clear"), "true") == 0);
+    const char *name = e.args.get("name");
+    bool clear = (strcmp(e.args.get("clear"), "true") == 0);
     if (scene::load(e, name, clear))
     {
-        s.cmd = get(CommandId::camera);
+        e.cmd = CommandId::camera;
         e.target = Target::Object;
         e.locked = false;
     }
 }
 
-void do_load_obj(Editor &e, Session &s, const Args &a, bool)
+void do_load_obj(Editor &e, bool)
 {
-    const char *file = a.get("file");
-    bool clear = (strcmp(a.get("clear"), "true") == 0);
+    const char *file = e.args.get("file");
+    bool clear = (strcmp(e.args.get("clear"), "true") == 0);
     if (wfront::load(e.meshBatch, e, file, clear))
     {
-        strncpy(s.currentFile, file, sizeof(s.currentFile) - 1);
-        s.currentFile[sizeof(s.currentFile) - 1] = '\0';
-        s.cmd = get(CommandId::camera);
+        strncpy(e.currentFile, file, sizeof(e.currentFile) - 1);
+        e.currentFile[sizeof(e.currentFile) - 1] = '\0';
+        e.cmd = CommandId::camera;
         e.target = Target::Object;
         e.locked = false;
     }
 }
 
-void do_load_skybox(Editor &e, Session &, const Args &a, bool)
+void do_load_skybox(Editor &e, bool)
 {
-    skybox::load(e.skybox, a.get("file"));
+    skybox::load(e.skybox, e.args.get("file"));
 }
 
-void do_delete(Editor &e, Session &s, const Args &, bool snapshot)
+void do_delete(Editor &e, bool justPressed)
 {
-    (void)s;
     if (!BUF(bool, e.meshBatch.usedSlots)[e.selectedRef])
     {
         return;
     }
-    if (snapshot)
+    if (justPressed)
     {
         editor::push_undo(e);
     }
@@ -415,13 +411,12 @@ void do_delete(Editor &e, Session &s, const Args &, bool snapshot)
     mesh::remove(e.meshBatch, oldRef);
     e.faceCursor = 0;
     e.selectedFaceCount = 0;
-    s.cmd = get(CommandId::camera);
+    e.cmd = CommandId::camera;
     e.meshBatch.meshDirty = true;
 }
 
-void do_merge(Editor &e, Session &s, const Args &, bool snapshot)
+void do_merge(Editor &e, bool justPressed)
 {
-    (void)s;
     int usedCount = 0;
     for (int j = 1; j < e.meshBatch.slotCount; j++)
     {
@@ -434,7 +429,7 @@ void do_merge(Editor &e, Session &s, const Args &, bool snapshot)
     {
         return;
     }
-    if (snapshot)
+    if (justPressed)
     {
         editor::push_undo(e);
     }
@@ -456,12 +451,11 @@ void do_merge(Editor &e, Session &s, const Args &, bool snapshot)
     e.selectedRef = meshedit::merge(e.meshBatch, e.selectedRef, nextUsedSlot);
     e.faceCursor = 0;
     e.selectedFaceCount = 0;
-    s.cmd = get(CommandId::camera);
+    e.cmd = CommandId::camera;
 }
 
-void do_merge_coplanar(Editor &e, Session &s, const Args &a, bool snapshot)
+void do_merge_coplanar(Editor &e, bool justPressed)
 {
-    (void)s;
     if (!BUF(bool, e.meshBatch.usedSlots)[e.selectedRef])
     {
         return;
@@ -472,11 +466,11 @@ void do_merge_coplanar(Editor &e, Session &s, const Args &a, bool snapshot)
         printf("E: no faces selected\n");
         return;
     }
-    if (snapshot)
+    if (justPressed)
     {
         editor::push_undo(e);
     }
-    int angle = a.getInt("angle");
+    int angle = e.args.getInt("angle");
     if (angle <= 0)
     {
         angle = 1;
@@ -492,7 +486,7 @@ void do_merge_coplanar(Editor &e, Session &s, const Args &a, bool snapshot)
     }
     e.faceCursor = 0;
     e.selectedFaceCount = 0;
-    s.cmd = get(CommandId::camera);
+    e.cmd = CommandId::camera;
 }
 
 } // namespace cmd

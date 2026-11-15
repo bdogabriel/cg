@@ -1,4 +1,5 @@
 #include "binding.h"
+#include "command.h"
 #include <stdio.h>
 
 namespace binding
@@ -16,8 +17,8 @@ void bind(Key key, uint8_t mods, bool oneShot, const char *cmdName, const char *
         exit(1);
     }
 
-    const Command *c = cmd::find(cmdName);
-    if (c == nullptr)
+    CommandId id;
+    if (!cmd::find_id(cmdName, id))
     {
         printf("E: binding: unknown command '%s'\n", cmdName);
         fflush(stdout);
@@ -38,7 +39,7 @@ void bind(Key key, uint8_t mods, bool oneShot, const char *cmdName, const char *
     b.key = key;
     b.mods = mods;
     b.oneShot = oneShot;
-    b.cmd = c;
+    b.cmd = id;
     b.args = args;
     bindingCount++;
 }

@@ -81,11 +81,12 @@ void char_callback(GLFWwindow *window, unsigned int codepoint)
 
 } // namespace
 
-void setup(Keyboard &kb, GLFWwindow *window)
+void setup(Keyboard &kb, Window &w)
 {
-    glfwSetWindowUserPointer(window, &kb);
-    glfwSetKeyCallback(window, key_callback);
-    glfwSetCharCallback(window, char_callback);
+    GLFWwindow *handle = window::native(w);
+    glfwSetWindowUserPointer(handle, &kb);
+    glfwSetKeyCallback(handle, key_callback);
+    glfwSetCharCallback(handle, char_callback);
 }
 
 void reset(Keyboard &kb)

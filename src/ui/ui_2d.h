@@ -3,12 +3,11 @@
 
 #include "editor.h"
 #include "quad_batch.h"
-#include "session.h"
 
 namespace ui2d
 {
-void build_statusline(const Editor &e, const Session &s, int fbW, int fbH, QuadBatch &textBatch, QuadBatch &solidBatch);
-void build_prompt(const Session &s, int fbW, int fbH, QuadBatch &textBatch, QuadBatch &solidBatch);
+void build_statusline(const Editor &e, int fbW, int fbH, QuadBatch &textBatch, QuadBatch &solidBatch);
+void build_prompt(const Editor &e, int fbW, int fbH, QuadBatch &textBatch, QuadBatch &solidBatch);
 } // namespace ui2d
 
 #endif

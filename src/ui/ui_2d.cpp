@@ -2,6 +2,7 @@
 
 // TODO: think about a better desing
 
+#include "command.h"
 #include "draw_2d.h"
 #include "font.h"
 #include <cstdio>
@@ -59,7 +60,7 @@ const char *target_name(Target t)
 
 } // namespace
 
-void build_statusline(const Editor &e, const Session &s, int fbW, int fbH, QuadBatch &textBatch, QuadBatch &solidBatch)
+void build_statusline(const Editor &e, int fbW, int fbH, QuadBatch &textBatch, QuadBatch &solidBatch)
 {
     const Font &font = baked_font();
     float lineHeight = font.lineHeight * TEXT_SCALE;
@@ -68,8 +69,8 @@ void build_statusline(const Editor &e, const Session &s, int fbW, int fbH, QuadB
     draw_bar(solidBatch, 0.0f, statusY, fbW, barHeight, status_bg);
     char status[256];
     status[0] = '\0';
-    const char *cmdName = s.cmd ? s.cmd->name : "none";
-    const char *axis = s.args.get("axis");
+    const char *cmdName = cmd::get(e.cmd)->name;
+    const char *axis = e.args.get("axis");
     if (strcmp(cmdName, "none") != 0)
     {
         append_upper(status, sizeof(status), cmdName);
@@ -89,7 +90,7 @@ void build_statusline(const Editor &e, const Session &s, int fbW, int fbH, QuadB
     draw_text_line(textBatch, font, 8.0f, statusY + BAR_PADDING / 2.0f, status, text_color);
 }
 
-void build_prompt(const Session &s, int fbW, int fbH, QuadBatch &textBatch, QuadBatch &solidBatch)
+void build_prompt(const Editor &e, int fbW, int fbH, QuadBatch &textBatch, QuadBatch &solidBatch)
 {
     const Font &font = baked_font();
     float lineHeight = font.lineHeight * TEXT_SCALE;
@@ -98,7 +99,7 @@ void build_prompt(const Session &s, int fbW, int fbH, QuadBatch &textBatch, Quad
     float promptY = statusY - barHeight;
     draw_bar(solidBatch, 0.0f, promptY, fbW, barHeight, prompt_bg);
     char promptText[1024];
-    snprintf(promptText, sizeof(promptText), ":%s", s.prompt.buffer);
+    snprintf(promptText, sizeof(promptText), ":%s", e.prompt.buffer);
     draw_text_line(textBatch, font, 8.0f, promptY + BAR_PADDING / 2.0f, promptText, accent_color);
 }
 

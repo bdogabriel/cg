@@ -1,7 +1,7 @@
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
 
-#include <GLFW/glfw3.h>
+#include "window.h"
 #include <stdint.h>
 
 enum class KeyState
@@ -63,7 +63,7 @@ struct Keyboard
 
 namespace keyboard
 {
-void setup(Keyboard &kb, GLFWwindow *window);
+void setup(Keyboard &kb, Window &window);
 void reset(Keyboard &kb);
 const char *key_name(Key k);
 const char *mod_name(uint8_t mod);

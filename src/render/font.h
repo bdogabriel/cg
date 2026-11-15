@@ -1,8 +1,6 @@
 #ifndef FONT_H
 #define FONT_H
 
-// TODO: make it pretty
-
 #include <stdint.h>
 
 struct Glyph
