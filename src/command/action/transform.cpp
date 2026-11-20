@@ -11,7 +11,7 @@ AxisLock axis_lock(const char *s)
 {
     if (!s)
     {
-        return AxisLock::None;
+        return AxisLock::NONE;
     }
     if (s[0] == 'x')
     {
@@ -25,7 +25,7 @@ AxisLock axis_lock(const char *s)
     {
         return AxisLock::Z;
     }
-    return AxisLock::None;
+    return AxisLock::NONE;
 }
 
 const char *const axis_choices[] = {"x", "y", "z", nullptr};
@@ -52,11 +52,11 @@ bool transform_prepare(const Editor &e, const Args &a, AxisLock &axis, int &step
         return false;
     }
     axis = axis_lock(ax);
-    if (axis == AxisLock::None)
+    if (axis == AxisLock::NONE)
     {
         return false;
     }
-    isFace = (e.target == Target::Face);
+    isFace = (e.target == Target::FACE);
     if (isFace && e.selectedFaceCount == 0)
     {
         return false;
@@ -125,7 +125,7 @@ void translate_object_apply(Editor &e, AxisLock axis, float amount)
         case AxisLock::Z:
             trs::translate(t, 0, 0, amount);
             break;
-        case AxisLock::None:
+        case AxisLock::NONE:
             break;
         }
     }
@@ -142,7 +142,7 @@ void translate_object_apply(Editor &e, AxisLock axis, float amount)
         case AxisLock::Z:
             trs::translate_local(t, 0, 0, amount);
             break;
-        case AxisLock::None:
+        case AxisLock::NONE:
             break;
         }
     }
@@ -216,7 +216,7 @@ void rotate_object_apply(Editor &e, AxisLock axis, float amount)
         case AxisLock::Z:
             trs::rotate_z(t, amount);
             break;
-        case AxisLock::None:
+        case AxisLock::NONE:
             break;
         }
     }
@@ -233,7 +233,7 @@ void rotate_object_apply(Editor &e, AxisLock axis, float amount)
         case AxisLock::Z:
             trs::rotate_z_local(t, amount);
             break;
-        case AxisLock::None:
+        case AxisLock::NONE:
             break;
         }
     }
@@ -280,7 +280,7 @@ void scale_object_apply(Editor &e, AxisLock axis, float amount)
     case AxisLock::Z:
         trs::scale(t, 1, 1, s);
         break;
-    case AxisLock::None:
+    case AxisLock::NONE:
         break;
     }
 }
@@ -299,7 +299,7 @@ void do_uniform_scale(Editor &e, bool justPressed)
     {
         return;
     }
-    bool isFace = (e.target == Target::Face);
+    bool isFace = (e.target == Target::FACE);
     if (isFace && e.selectedFaceCount == 0)
     {
         return;
@@ -355,7 +355,7 @@ void shear_object_apply(Editor &e, AxisLock axis, float amount)
     case AxisLock::Z:
         trs::shear(t, 0, 0, 0, 0, 0, amount);
         break;
-    case AxisLock::None:
+    case AxisLock::NONE:
         break;
     }
 }

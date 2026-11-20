@@ -29,7 +29,7 @@ void build_axes(const Editor &e, LineBatch &batch)
 
 void build_face_highlights(const Editor &e, LineBatch &batch)
 {
-    if (e.target != Target::Face || !BUF(bool, e.meshBatch.usedSlots)[e.selectedRef])
+    if (e.target != Target::FACE || !BUF(bool, e.meshBatch.usedSlots)[e.selectedRef])
     {
         return;
     }

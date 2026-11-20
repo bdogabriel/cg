@@ -15,13 +15,13 @@ constexpr int MAX_UNDO = 100;
 
 enum class Target
 {
-    Object,
-    Face
+    OBJECT,
+    FACE
 };
 
 enum class AxisLock
 {
-    None,
+    NONE,
     X,
     Y,
     Z
@@ -47,7 +47,7 @@ struct Editor
     float keySensitivity = 0.03f;
     float defaultMeshScale = 0.3f;
     bool wireframe = false;
-    Target target = Target::Object;
+    Target target = Target::OBJECT;
     bool locked = false;
     Color bgColor = {0, 0, 0, 255};
     Color currentColor = {255, 255, 255, 255};
@@ -58,6 +58,7 @@ struct Editor
     Keyboard keyboard;
     Window window;
     char currentFile[256] = {};
+    char skyboxPath[256] = {};
 };
 
 namespace editor

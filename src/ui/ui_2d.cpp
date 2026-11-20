@@ -55,7 +55,7 @@ void append_upper(char *dst, size_t cap, const char *src)
 
 const char *target_name(Target t)
 {
-    return (t == Target::Face) ? "face" : "object";
+    return (t == Target::FACE) ? "face" : "object";
 }
 
 } // namespace

@@ -23,7 +23,7 @@ void camera_move(Editor &e, AxisLock axis, float step)
     case AxisLock::Z:
         dir = camera::up(e.camera); // u/d up/down
         break;
-    case AxisLock::None:
+    case AxisLock::NONE:
         return;
     }
 
@@ -44,7 +44,7 @@ void camera_rotate(Editor &e, AxisLock axis, float step)
         e.camera.pitch += step * rotSpeed; // j/k
         break;
     case AxisLock::Z:
-    case AxisLock::None:
+    case AxisLock::NONE:
         break;
     }
 }
@@ -54,7 +54,7 @@ void camera_rotate(Editor &e, AxisLock axis, float step)
 void do_camera(Editor &e, bool)
 {
     AxisLock axis = axis_lock(e.args.get("axis"));
-    if (axis == AxisLock::None)
+    if (axis == AxisLock::NONE)
     {
         return;
     }

@@ -1,5 +1,6 @@
 #include "gl_util.h"
 #include "file.h"
+#include "stb_image.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -75,6 +76,30 @@ GLuint make_texture(int width, int height, const uint8_t *data, GLenum internalF
     glTextureParameteri(tex, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTextureStorage2D(tex, 1, internalFormat, width, height);
     glTextureSubImage2D(tex, 0, 0, 0, width, height, format, GL_UNSIGNED_BYTE, data);
+    return tex;
+}
+
+GLuint load_texture(const char *path, GLenum internalFormat, GLenum format)
+{
+    int w = 0, h = 0, comp = 0;
+    unsigned char *data = stbi_load(path, &w, &h, &comp, 4);
+    if (!data)
+    {
+        printf("E: cannot load texture %s: %s\n", path, stbi_failure_reason());
+        return 0;
+    }
+
+    GLint maxSize = 0;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxSize);
+    if (w > maxSize || h > maxSize)
+    {
+        printf("E: texture %s (%dx%d) exceeds GL_MAX_TEXTURE_SIZE (%d)\n", path, w, h, (int)maxSize);
+        stbi_image_free(data);
+        return 0;
+    }
+
+    GLuint tex = make_texture(w, h, data, internalFormat, format);
+    stbi_image_free(data);
     return tex;
 }
 

@@ -81,7 +81,7 @@ void do_set_cmd(Editor &e, bool justPressed)
     }
     if (e.cmd == CommandId::extrude)
     {
-        e.target = Target::Face;
+        e.target = Target::FACE;
     }
     c->action(e, justPressed);
 }
@@ -94,7 +94,7 @@ void do_set_args(Editor &e, bool justPressed)
 void do_set_target(Editor &e, bool)
 {
     const char *t = e.args.get("t");
-    e.target = (strcmp(t, "face") == 0) ? Target::Face : Target::Object;
+    e.target = (strcmp(t, "face") == 0) ? Target::FACE : Target::OBJECT;
     e.selectedFaceCount = 0;
 }
 
@@ -116,7 +116,7 @@ void do_set_bg_color(Editor &e, bool)
 
 void do_toggle_selection(Editor &e, bool)
 {
-    if (e.target == Target::Object)
+    if (e.target == Target::OBJECT)
     {
         return;
     }

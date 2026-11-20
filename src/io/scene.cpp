@@ -1,4 +1,5 @@
 #include "file.h"
+#include "gl_util.h"
 #include "skybox.h"
 #include "trs.h"
 #include "wavefront.h"
@@ -73,13 +74,13 @@ bool save(Editor &e, const char *name)
     fprintf(f, "camera %g %g %g %g %g %g %g %g\n", e.camera.position.x, e.camera.position.y, e.camera.position.z,
             e.camera.yaw, e.camera.pitch, e.camera.fovY, e.camera.near, e.camera.far);
 
-    if (e.skybox.path[0] != '\0')
+    if (e.skyboxPath[0] != '\0')
     {
-        const char *ext = strrchr(e.skybox.path, '.');
+        const char *ext = strrchr(e.skyboxPath, '.');
         const char *extStr = ext ? ext : ".jpg";
         char dst[512];
         snprintf(dst, sizeof(dst), "%s/%s_skybox%s", dir, name, extStr);
-        if (file::copy(e.skybox.path, dst))
+        if (file::copy(e.skyboxPath, dst))
         {
             fprintf(f, "skybox %s_skybox%s\n", name, extStr);
         }
@@ -129,6 +130,7 @@ bool load(Editor &e, const char *name, bool clear)
         mesh::reset(e.meshBatch);
         modeltexture::reset(e.modelTextureCache);
         skybox::reset(e.skybox);
+        e.skyboxPath[0] = '\0';
         e.selectedRef = 0;
         e.faceCursor = 0;
         e.selectedFaceCount = 0;
@@ -255,7 +257,13 @@ bool load(Editor &e, const char *name, bool clear)
     {
         char skyPath[512];
         snprintf(skyPath, sizeof(skyPath), "%s%s", sceneDir, savedSkybox);
-        skybox::load(e.skybox, skyPath);
+        GLuint tex = glutil::load_texture(skyPath, GL_RGBA8, GL_RGBA);
+        if (tex)
+        {
+            skybox::set_texture(e.skybox, tex);
+            strncpy(e.skyboxPath, skyPath, sizeof(e.skyboxPath) - 1);
+            e.skyboxPath[sizeof(e.skyboxPath) - 1] = '\0';
+        }
     }
 
     fclose(f);

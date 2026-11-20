@@ -1,8 +1,10 @@
-#include "scene.h"
+#include "gl_util.h"
+
 #include "action.h"
 #include "draw_3d.h"
 #include "face_edit.h"
 #include "mesh_edit.h"
+#include "scene.h"
 #include "skybox.h"
 #include "trs.h"
 #include "wavefront.h"
@@ -110,7 +112,7 @@ void do_apply_color(Editor &e, bool justPressed)
     int base = BUF(int, e.meshBatch.faceBatch.faceOffsets)[e.selectedRef];
     Color c = e.currentColor;
 
-    if (e.target == Target::Face)
+    if (e.target == Target::FACE)
     {
         if (e.selectedFaceCount == 0)
         {
@@ -140,7 +142,7 @@ void do_apply_color(Editor &e, bool justPressed)
 void do_cycle(Editor &e, bool)
 {
     int step = e.args.getInt("step");
-    bool isFace = (e.target == Target::Face);
+    bool isFace = (e.target == Target::FACE);
 
     if (isFace)
     {
@@ -231,7 +233,7 @@ void do_undo(Editor &e, bool justPressed)
 
 void do_extrude(Editor &e, bool justPressed)
 {
-    bool isFace = (e.target == Target::Face);
+    bool isFace = (e.target == Target::FACE);
     if (isFace && e.selectedFaceCount == 0)
     {
         return;
@@ -355,7 +357,7 @@ void do_load_scene(Editor &e, bool)
     if (scene::load(e, name, clear))
     {
         e.cmd = CommandId::camera;
-        e.target = Target::Object;
+        e.target = Target::OBJECT;
         e.locked = false;
     }
 }
@@ -369,14 +371,21 @@ void do_load_obj(Editor &e, bool)
         strncpy(e.currentFile, file, sizeof(e.currentFile) - 1);
         e.currentFile[sizeof(e.currentFile) - 1] = '\0';
         e.cmd = CommandId::camera;
-        e.target = Target::Object;
+        e.target = Target::OBJECT;
         e.locked = false;
     }
 }
 
 void do_load_skybox(Editor &e, bool)
 {
-    skybox::load(e.skybox, e.args.get("file"));
+    const char *file = e.args.get("file");
+    GLuint tex = glutil::load_texture(file, GL_RGBA8, GL_RGBA);
+    if (tex)
+    {
+        skybox::set_texture(e.skybox, tex);
+        strncpy(e.skyboxPath, file, sizeof(e.skyboxPath) - 1);
+        e.skyboxPath[sizeof(e.skyboxPath) - 1] = '\0';
+    }
 }
 
 void do_delete(Editor &e, bool justPressed)
@@ -460,7 +469,7 @@ void do_merge_coplanar(Editor &e, bool justPressed)
     {
         return;
     }
-    bool isFace = (e.target == Target::Face);
+    bool isFace = (e.target == Target::FACE);
     if (isFace && e.selectedFaceCount == 0)
     {
         printf("E: no faces selected\n");

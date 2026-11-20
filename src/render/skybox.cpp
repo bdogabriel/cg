@@ -1,9 +1,6 @@
 #include "skybox.h"
-#include "gl_util.h"
-#include "stb_image.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <GL/glew.h>
 
 namespace skybox
 {
@@ -147,39 +144,18 @@ void init(Skybox &s)
     glNamedBufferData(s.vbo, sizeof(CUBE_VERTICES), CUBE_VERTICES, GL_STATIC_DRAW);
 }
 
-bool load(Skybox &s, const char *path)
+void set_texture(Skybox &s, unsigned int texture)
 {
-    int w = 0, h = 0, comp = 0;
-    unsigned char *data = stbi_load(path, &w, &h, &comp, 4);
-    if (!data)
-    {
-        printf("E: cannot load skybox %s: %s\n", path, stbi_failure_reason());
-        return false;
-    }
-
-    GLint maxSize = 0;
-    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxSize);
-    if (w > maxSize || h > maxSize)
-    {
-        printf("E: skybox %s (%dx%d) exceeds GL_MAX_TEXTURE_SIZE (%d)\n", path, w, h, (int)maxSize);
-        stbi_image_free(data);
-        return false;
-    }
-
     if (s.texture != 0)
     {
         glDeleteTextures(1, &s.texture);
     }
-    s.texture = glutil::make_texture(w, h, data, GL_RGBA8, GL_RGBA);
-    glTextureParameteri(s.texture, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTextureParameteri(s.texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    stbi_image_free(data);
-
-    strncpy(s.path, path, sizeof(s.path) - 1);
-    s.path[sizeof(s.path) - 1] = '\0';
-
-    printf("loaded skybox %s (%dx%d)\n", path, w, h);
-    return true;
+    s.texture = texture;
+    if (texture != 0)
+    {
+        glTextureParameteri(texture, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTextureParameteri(texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    }
 }
 
 void draw(const Skybox &s)
@@ -195,12 +171,7 @@ void draw(const Skybox &s)
 
 void reset(Skybox &s)
 {
-    if (s.texture != 0)
-    {
-        glDeleteTextures(1, &s.texture);
-    }
-    s.texture = 0;
-    s.path[0] = '\0';
+    set_texture(s, 0);
 }
 
 void free(Skybox &s)
