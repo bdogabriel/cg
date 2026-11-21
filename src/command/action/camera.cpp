@@ -1,9 +1,10 @@
 #include "camera.h"
-#include "action.h"
 #include "editor.h"
 
 namespace cmd
 {
+
+AxisLock axis_lock(const char *s);
 
 namespace
 {

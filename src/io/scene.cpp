@@ -30,6 +30,26 @@ void get_dir(const char *path, char *out, size_t outSize)
     }
 }
 
+void flush_object(Editor &e, const char *sceneDir, const char *curObj, const TRS &curTRS, bool &hasObj,
+                  int &loadedCount)
+{
+    if (!hasObj)
+    {
+        return;
+    }
+    char fullPath[512];
+    snprintf(fullPath, sizeof(fullPath), "%s%s", sceneDir, curObj);
+    if (wfront::load(e.meshBatch, e, fullPath, false))
+    {
+        Ref newRef = e.selectedRef;
+        buffer::ensure(e.transforms, sizeof(TRS), e.meshBatch.slotCount);
+        BUF(TRS, e.transforms)[newRef] = curTRS;
+        mesh::compose_model(e.meshBatch, newRef, trs::compose(curTRS));
+        loadedCount++;
+    }
+    hasObj = false;
+}
+
 } // namespace
 
 bool save(Editor &e, const char *name)
@@ -150,24 +170,6 @@ bool load(Editor &e, const char *name, bool clear)
     bool hasCam = false;
     char savedSkybox[256] = {};
 
-    auto flush = [&]() {
-        if (!hasObj)
-        {
-            return;
-        }
-        char fullPath[512];
-        snprintf(fullPath, sizeof(fullPath), "%s%s", sceneDir, curObj);
-        if (wfront::load(e.meshBatch, e, fullPath, false))
-        {
-            Ref newRef = e.selectedRef;
-            buffer::ensure(e.transforms, sizeof(TRS), e.meshBatch.slotCount);
-            BUF(TRS, e.transforms)[newRef] = curTRS;
-            mesh::compose_model(e.meshBatch, newRef, trs::compose(curTRS));
-            loadedCount++;
-        }
-        hasObj = false;
-    };
-
     while (fgets(line, sizeof(line), f))
     {
         if (strncmp(line, "bg ", 3) == 0)
@@ -205,7 +207,7 @@ bool load(Editor &e, const char *name, bool clear)
         }
         else if (line[0] == 'o' && line[1] == ' ')
         {
-            flush();
+            flush_object(e, sceneDir, curObj, curTRS, hasObj, loadedCount);
             char *p = line + 2;
             while (*p == ' ' || *p == '\t')
             {
@@ -251,7 +253,7 @@ bool load(Editor &e, const char *name, bool clear)
             }
         }
     }
-    flush();
+    flush_object(e, sceneDir, curObj, curTRS, hasObj, loadedCount);
 
     if (savedSkybox[0] != '\0')
     {

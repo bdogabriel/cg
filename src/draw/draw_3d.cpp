@@ -320,6 +320,17 @@ Mesh cylinder(int segments)
     return {vertices, vtxIdx, faceCorners, faceCornerCounts, faceIdx, colors};
 }
 
+namespace
+{
+
+// ring i base vertex index (ring 0 = north pole, ring stacks = south pole)
+int ring_base(int ring, int slices)
+{
+    return 2 + (ring - 1) * slices;
+}
+
+} // namespace
+
 Mesh sphere(int segments)
 {
     if (segments < 3)
@@ -360,15 +371,12 @@ Mesh sphere(int segments)
         }
     }
 
-    // ring i base vertex index (ring 0 = north pole, ring stacks = south pole)
-    auto ringBase = [&](int ring) { return 2 + (ring - 1) * slices; };
-
     // top cap: triangle fans from the north pole to ring 1
     for (int j = 0; j < slices; j++)
     {
         faceCorners[cornerIdx++] = 0;
-        faceCorners[cornerIdx++] = ringBase(1) + j;
-        faceCorners[cornerIdx++] = ringBase(1) + (j + 1) % slices;
+        faceCorners[cornerIdx++] = ring_base(1, slices) + j;
+        faceCorners[cornerIdx++] = ring_base(1, slices) + (j + 1) % slices;
         faceCornerCounts[faceIdx] = 3;
         colors[faceIdx] = {255, 255, 255, 255};
         faceIdx++;
@@ -380,10 +388,10 @@ Mesh sphere(int segments)
         for (int j = 0; j < slices; j++)
         {
             int next = (j + 1) % slices;
-            faceCorners[cornerIdx++] = ringBase(i) + j;
-            faceCorners[cornerIdx++] = ringBase(i) + next;
-            faceCorners[cornerIdx++] = ringBase(i + 1) + next;
-            faceCorners[cornerIdx++] = ringBase(i + 1) + j;
+            faceCorners[cornerIdx++] = ring_base(i, slices) + j;
+            faceCorners[cornerIdx++] = ring_base(i, slices) + next;
+            faceCorners[cornerIdx++] = ring_base(i + 1, slices) + next;
+            faceCorners[cornerIdx++] = ring_base(i + 1, slices) + j;
             faceCornerCounts[faceIdx] = 4;
             colors[faceIdx] = {255, 255, 255, 255};
             faceIdx++;
@@ -394,8 +402,8 @@ Mesh sphere(int segments)
     for (int j = 0; j < slices; j++)
     {
         faceCorners[cornerIdx++] = 1;
-        faceCorners[cornerIdx++] = ringBase(stacks - 1) + (j + 1) % slices;
-        faceCorners[cornerIdx++] = ringBase(stacks - 1) + j;
+        faceCorners[cornerIdx++] = ring_base(stacks - 1, slices) + (j + 1) % slices;
+        faceCorners[cornerIdx++] = ring_base(stacks - 1, slices) + j;
         faceCornerCounts[faceIdx] = 3;
         colors[faceIdx] = {255, 255, 255, 255};
         faceIdx++;

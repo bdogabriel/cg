@@ -5,6 +5,7 @@
 #include "arena.h"
 #include "binding.h"
 #include "camera.h"
+#include "command.h"
 #include "dispatch.h"
 #include "editor.h"
 #include "font.h"
@@ -62,8 +63,8 @@ void setup_bindings()
     binding::bind(Key::E, mods::NONE, true, "set_cmd", "op=extrude");
     binding::bind(Key::D, mods::CTRL, true, "set_cmd", "op=delete");
     binding::bind(Key::M, mods::NONE, true, "set_cmd", "op=merge");
-    binding::bind(Key::F, mods::NONE, true, "set_target", "t=face");
-    binding::bind(Key::O, mods::NONE, true, "set_target", "t=object");
+    binding::bind(Key::F, mods::NONE, true, "set_target", "target=face");
+    binding::bind(Key::O, mods::NONE, true, "set_target", "target=object");
     binding::bind(Key::H, mods::NONE, false, "set_args", "axis=x step=-1");
     binding::bind(Key::L, mods::NONE, false, "set_args", "axis=x step=1");
     binding::bind(Key::J, mods::NONE, false, "set_args", "axis=y step=-1");
@@ -137,6 +138,7 @@ int main(int argc, char *argv[])
     keyboard::setup(editor.keyboard, editor.window);
 
     setup_bindings();
+    editor.cmd = cmd::find("camera");
 
     while (!window::should_close(editor.window))
     {
@@ -214,7 +216,7 @@ int main(int argc, char *argv[])
         quad::reset(textBatch);
         quad::reset(solidBatch);
         ui2d::build_statusline(editor, g_fbW, g_fbH, textBatch, solidBatch);
-        if (editor::is_cmd_exec(editor))
+        if (cmd::is_exec(editor))
         {
             ui2d::build_prompt(editor, g_fbW, g_fbH, textBatch, solidBatch);
         }

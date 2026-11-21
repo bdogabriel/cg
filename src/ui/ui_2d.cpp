@@ -6,6 +6,7 @@
 #include "draw_2d.h"
 #include "font.h"
 #include <cstdio>
+#include <string.h>
 
 namespace ui2d
 {
@@ -69,7 +70,7 @@ void build_statusline(const Editor &e, int fbW, int fbH, QuadBatch &textBatch, Q
     draw_bar(solidBatch, 0.0f, statusY, fbW, barHeight, status_bg);
     char status[256];
     status[0] = '\0';
-    const char *cmdName = cmd::get(e.cmd)->name;
+    const char *cmdName = e.cmd ? e.cmd->name : "none";
     const char *axis = param::get(e.args, "axis");
     if (strcmp(cmdName, "none") != 0)
     {

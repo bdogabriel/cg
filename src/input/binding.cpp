@@ -17,8 +17,8 @@ void bind(Key key, uint8_t mods, bool oneShot, const char *cmdName, const char *
         exit(1);
     }
 
-    CommandId id;
-    if (!cmd::find_id(cmdName, id))
+    const Command *command = cmd::find(cmdName);
+    if (!command)
     {
         printf("E: binding: unknown command '%s'\n", cmdName);
         fflush(stdout);
@@ -39,7 +39,7 @@ void bind(Key key, uint8_t mods, bool oneShot, const char *cmdName, const char *
     b.key = key;
     b.mods = mods;
     b.oneShot = oneShot;
-    b.cmd = id;
+    b.cmd = command;
     b.args = args;
     bindingCount++;
 }

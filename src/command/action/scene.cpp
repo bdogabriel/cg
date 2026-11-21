@@ -1,7 +1,8 @@
 #include "gl_util.h"
 
-#include "action.h"
+#include "command.h"
 #include "draw_3d.h"
+#include "editor.h"
 #include "face_edit.h"
 #include "mesh_edit.h"
 #include "scene.h"
@@ -9,88 +10,10 @@
 #include "trs.h"
 #include "wavefront.h"
 #include <stdio.h>
+#include <string.h>
 
 namespace cmd
 {
-
-namespace
-{
-
-const char *const reset_choices[] = {"rotation", "translation", "scale", nullptr};
-const char *const clear_choices[] = {"true", "false", nullptr};
-
-} // namespace
-
-const ParamSpec params_cycle[] = {
-    {"step", ParamType::INT, nullptr, "+1 next, anything <=0 prev", true, nullptr},
-    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
-};
-
-const ParamSpec params_reset[] = {
-    {"property", ParamType::STRING, reset_choices, "which component to reset", true, nullptr},
-    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
-};
-
-const ParamSpec params_add_pyramid[] = {
-    {"sides", ParamType::INT, nullptr, "number of base sides", false, "4"},
-    {"color", ParamType::STRING, nullptr, "hex color (#RRGGBB or #RRGGBBAA)", false, "ffffff"},
-    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
-};
-
-const ParamSpec params_add_cylinder[] = {
-    {"segments", ParamType::INT, nullptr, "number of side segments", false, "8"},
-    {"color", ParamType::STRING, nullptr, "hex color (#RRGGBB or #RRGGBBAA)", false, "ffffff"},
-    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
-};
-
-const ParamSpec params_add_polyhedron[] = {
-    {"faces", ParamType::INT, nullptr, "face count (4, 6, 8, 12, 20)", false, "6"},
-    {"color", ParamType::STRING, nullptr, "hex color (#RRGGBB or #RRGGBBAA)", false, "ffffff"},
-    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
-};
-
-const ParamSpec params_add_sphere[] = {
-    {"segments", ParamType::INT, nullptr, "segments (slices and stacks)", false, "16"},
-    {"color", ParamType::STRING, nullptr, "hex color (#RRGGBB or #RRGGBBAA)", false, "ffffff"},
-    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
-};
-
-const ParamSpec params_save_obj[] = {
-    {"file", ParamType::STRING, nullptr, "output filename (default = current file)", false, ""},
-    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
-};
-
-const ParamSpec params_save_scene[] = {
-    {"name", ParamType::STRING, nullptr, "scene name (default scene)", false, "scene"},
-    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
-};
-
-const ParamSpec params_load_scene[] = {
-    {"name", ParamType::STRING, nullptr, "scene name", true, nullptr},
-    {"clear", ParamType::STRING, clear_choices, "clear existing scene first", false, "false"},
-    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
-};
-
-const ParamSpec params_load_obj[] = {
-    {"file", ParamType::STRING, nullptr, "input filename", true, nullptr},
-    {"clear", ParamType::STRING, clear_choices, "clear existing scene first", false, "false"},
-    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
-};
-
-const ParamSpec params_load_skybox[] = {
-    {"file", ParamType::STRING, nullptr, "path to equirectangular skybox image", true, nullptr},
-    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
-};
-
-const ParamSpec params_set_color[] = {
-    {"color", ParamType::STRING, nullptr, "hex color (#RRGGBB or #RRGGBBAA)", true, nullptr},
-    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
-};
-
-const ParamSpec params_merge_coplanar[] = {
-    {"angle", ParamType::INT, nullptr, "angle tolerance in degrees (default 1)", false, "1"},
-    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
-};
 
 void do_set_color(Editor &e, bool)
 {
@@ -243,7 +166,7 @@ void do_extrude(Editor &e, bool justPressed)
         editor::push_undo(e);
     }
     faceedit::extrude(e.meshBatch, e.selectedRef, BUF(int, e.selectedFaces), e.selectedFaceCount);
-    e.cmd = CommandId::camera;
+    e.cmd = find("camera");
 }
 
 namespace
@@ -324,15 +247,15 @@ void do_add_sphere(Editor &e, bool justPressed)
     {
         editor::push_undo(e);
     }
-    add_mesh(e, draw3d::sphere(param::get_int(e.args, "segments")), param::get(e.args, "color"), "sphere");
+    add_mesh(e, draw3d::sphere(param::get_int(e.args, "resolution")), param::get(e.args, "color"), "sphere");
 }
 
 void do_save_obj(Editor &e, bool)
 {
-    const char *file = param::get(e.args, "file");
-    if (file[0] != '\0')
+    const char *output = param::get(e.args, "output");
+    if (output[0] != '\0')
     {
-        strncpy(e.currentFile, file, sizeof(e.currentFile) - 1);
+        strncpy(e.currentFile, output, sizeof(e.currentFile) - 1);
         e.currentFile[sizeof(e.currentFile) - 1] = '\0';
     }
     else if (e.currentFile[0] == '\0')
@@ -347,7 +270,7 @@ void do_save_scene(Editor &e, bool)
 {
     const char *name = param::get(e.args, "name");
     scene::save(e, name);
-    e.cmd = CommandId::camera;
+    e.cmd = find("camera");
 }
 
 void do_load_scene(Editor &e, bool)
@@ -356,7 +279,7 @@ void do_load_scene(Editor &e, bool)
     bool clear = (strcmp(param::get(e.args, "clear"), "true") == 0);
     if (scene::load(e, name, clear))
     {
-        e.cmd = CommandId::camera;
+        e.cmd = find("camera");
         e.target = Target::OBJECT;
         e.locked = false;
     }
@@ -370,7 +293,7 @@ void do_load_obj(Editor &e, bool)
     {
         strncpy(e.currentFile, file, sizeof(e.currentFile) - 1);
         e.currentFile[sizeof(e.currentFile) - 1] = '\0';
-        e.cmd = CommandId::camera;
+        e.cmd = find("camera");
         e.target = Target::OBJECT;
         e.locked = false;
     }
@@ -420,7 +343,7 @@ void do_delete(Editor &e, bool justPressed)
     mesh::remove(e.meshBatch, oldRef);
     e.faceCursor = 0;
     e.selectedFaceCount = 0;
-    e.cmd = CommandId::camera;
+    e.cmd = find("camera");
     e.meshBatch.meshDirty = true;
 }
 
@@ -460,7 +383,7 @@ void do_merge(Editor &e, bool justPressed)
     e.selectedRef = meshedit::merge(e.meshBatch, e.selectedRef, nextUsedSlot);
     e.faceCursor = 0;
     e.selectedFaceCount = 0;
-    e.cmd = CommandId::camera;
+    e.cmd = find("camera");
 }
 
 void do_merge_coplanar(Editor &e, bool justPressed)
@@ -495,7 +418,7 @@ void do_merge_coplanar(Editor &e, bool justPressed)
     }
     e.faceCursor = 0;
     e.selectedFaceCount = 0;
-    e.cmd = CommandId::camera;
+    e.cmd = find("camera");
 }
 
 } // namespace cmd

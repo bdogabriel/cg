@@ -1,20 +1,16 @@
-#include "action.h"
 #include "binding.h"
 #include "command.h"
+#include "editor.h"
 #include <cstdio>
+#include <string.h>
 
 namespace cmd
 {
 
-const ParamSpec params_help[] = {
-    {"topic", ParamType::STRING, nullptr, "'commands', 'bindings', or a command name", true, nullptr},
-    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
-};
-
 namespace
 {
 
-void print_param(const ParamSpec &ps)
+void print_param(const Param &ps)
 {
     printf("    %-8s <%s>", ps.name, param::type_name(ps.type));
     if (ps.required)
@@ -48,12 +44,9 @@ void print_param(const ParamSpec &ps)
 void print_usage(const Command &c)
 {
     printf("usage: %s", c.name);
-    if (c.params)
+    for (int p = 0; p < c.paramCount; p++)
     {
-        for (int p = 0; c.params[p].name != nullptr; p++)
-        {
-            printf(c.params[p].required ? " <%s>" : " [%s]", c.params[p].name);
-        }
+        printf(c.params[p].required ? " <%s>" : " [%s]", c.params[p].name);
     }
     printf("\n");
 }
@@ -64,12 +57,9 @@ void print_command_help(const Command &c)
 {
     print_usage(c);
     printf("%s\n", c.help);
-    if (c.params)
+    for (int p = 0; p < c.paramCount; p++)
     {
-        for (int p = 0; c.params[p].name != nullptr; p++)
-        {
-            print_param(c.params[p]);
-        }
+        print_param(c.params[p]);
     }
 }
 
@@ -93,7 +83,7 @@ void print_all_bindings_help()
         char chord[64];
         binding::chord_name(*b, chord, sizeof(chord));
 
-        printf("%-8s -> %s", chord, cmd::get(b->cmd)->name);
+        printf("%-8s -> %s", chord, b->cmd->name);
         if (b->args && b->args[0])
         {
             printf(" %s", b->args);

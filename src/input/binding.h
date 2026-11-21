@@ -2,20 +2,21 @@
 #define BINDING_H
 
 #include "keyboard.h"
-#include "param.h"
+
+struct Command;
 
 struct Binding
 {
     Key key;
     uint8_t mods;
     bool oneShot;
-    CommandId cmd;
+    const Command *cmd;
     const char *args;
 };
 
 struct CommandCall
 {
-    CommandId cmd;
+    const Command *cmd;
     const char *args;
     bool justPressed;
 };

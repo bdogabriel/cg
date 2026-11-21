@@ -91,7 +91,7 @@ void setup(Keyboard &kb, Window &w)
 
 void reset(Keyboard &kb)
 {
-    for (auto &k : kb.keyStates)
+    for (KeyState &k : kb.keyStates)
     {
         if (k == KeyState::RELEASED)
         {

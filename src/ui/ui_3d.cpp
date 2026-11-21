@@ -7,6 +7,34 @@
 namespace ui3d
 {
 
+namespace
+{
+
+void add_outline(const Editor &e, LineBatch &batch, int face, Color color)
+{
+    const MeshBatch &meshBatch = e.meshBatch;
+    const DrawCommand &cmd = BUF(DrawCommand, meshBatch.drawCmds)[e.selectedRef];
+    Mat4 model = BUF(Mat4, meshBatch.models)[e.selectedRef];
+
+    int faceIdx = BUF(int, meshBatch.faceBatch.faceOffsets)[e.selectedRef] + face;
+    int cornerStart = BUF(int, meshBatch.faceBatch.faceCornerStarts)[faceIdx];
+    int cornerCount = BUF(int, meshBatch.faceBatch.faceCornerCounts)[faceIdx];
+    Vec4 *corners = (Vec4 *)arena::scratch_alloc(sizeof(Vec4) * (size_t)cornerCount);
+    for (int i = 0; i < cornerCount; i++)
+    {
+        corners[i] =
+            model *
+            BUF(Vec4, meshBatch.vertices)[cmd.vertexOffset +
+                                          BUF(unsigned int, meshBatch.faceBatch.faceCorners)[cornerStart + i]];
+    }
+    for (int i = 0; i < cornerCount; i++)
+    {
+        line::add(batch, corners[i], corners[(i + 1) % cornerCount], color);
+    }
+}
+
+} // namespace
+
 void build_axes(const Editor &e, LineBatch &batch)
 {
     Mat4 axisMat = mat4::IDENTITY;
@@ -34,32 +62,10 @@ void build_face_highlights(const Editor &e, LineBatch &batch)
         return;
     }
 
-    const MeshBatch &meshBatch = e.meshBatch;
-    const DrawCommand &cmd = BUF(DrawCommand, meshBatch.drawCmds)[e.selectedRef];
-    Mat4 model = BUF(Mat4, meshBatch.models)[e.selectedRef];
-
-    auto add_outline = [&](int face, Color color) {
-        int faceIdx = BUF(int, meshBatch.faceBatch.faceOffsets)[e.selectedRef] + face;
-        int cornerStart = BUF(int, meshBatch.faceBatch.faceCornerStarts)[faceIdx];
-        int cornerCount = BUF(int, meshBatch.faceBatch.faceCornerCounts)[faceIdx];
-        Vec4 *corners = (Vec4 *)arena::scratch_alloc(sizeof(Vec4) * (size_t)cornerCount);
-        for (int i = 0; i < cornerCount; i++)
-        {
-            corners[i] =
-                model *
-                BUF(Vec4, meshBatch.vertices)[cmd.vertexOffset +
-                                              BUF(unsigned int, meshBatch.faceBatch.faceCorners)[cornerStart + i]];
-        }
-        for (int i = 0; i < cornerCount; i++)
-        {
-            line::add(batch, corners[i], corners[(i + 1) % cornerCount], color);
-        }
-    };
-
-    add_outline(e.faceCursor, {255, 204, 0, 255});
+    add_outline(e, batch, e.faceCursor, {255, 204, 0, 255});
     for (int i = 0; i < e.selectedFaceCount; i++)
     {
-        add_outline(BUF(int, e.selectedFaces)[i], {255, 102, 0, 255});
+        add_outline(e, batch, BUF(int, e.selectedFaces)[i], {255, 102, 0, 255});
     }
 }
 

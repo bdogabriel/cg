@@ -10,17 +10,17 @@ void dispatch(Editor &e)
 {
     const Keyboard &kb = e.keyboard;
 
-    if (editor::is_cmd_exec(e))
+    if (cmd::is_exec(e))
     {
         if (kb.keyStates[(int)Key::ESC] == KeyState::JUST_PRESSED)
         {
-            e.cmd = CommandId::camera;
+            e.cmd = cmd::find("camera");
             return;
         }
         prompt::handle_input(e.prompt, kb);
         if (kb.keyStates[(int)Key::ENTER] == KeyState::JUST_PRESSED)
         {
-            cmd::get(e.cmd)->action(e, true);
+            e.cmd->action(e, true);
         }
         return;
     }

@@ -12,7 +12,7 @@ enum class ParamType
     STRING
 };
 
-struct ParamSpec
+struct Param
 {
     const char *name;
     ParamType type;
@@ -40,13 +40,5 @@ float get_float(const Args &a, const char *name);
 const char *type_name(ParamType type);
 
 } // namespace param
-
-enum class CommandId : int
-{
-#define CMD(id, name, help, params, action) id,
-#include "command.def"
-#undef CMD
-    COUNT
-};
 
 #endif

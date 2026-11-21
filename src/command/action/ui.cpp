@@ -1,28 +1,11 @@
-#include "action.h"
 #include "command.h"
 #include "editor.h"
 #include "prompt.h"
 #include <cstdio>
+#include <string.h>
 
 namespace cmd
 {
-
-namespace
-{
-
-const char *const target_choices[] = {"object", "face", nullptr};
-
-} // namespace
-
-const ParamSpec params_set_cmd[] = {
-    {"op", ParamType::STRING, cmd_choices, "command to switch into", true, nullptr},
-    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
-};
-
-const ParamSpec params_set_target[] = {
-    {"t", ParamType::STRING, target_choices, "object or face target", true, nullptr},
-    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
-};
 
 void do_none(Editor &, bool)
 {
@@ -31,7 +14,7 @@ void do_none(Editor &, bool)
 void do_prompt(Editor &e, bool)
 {
     prompt::reset(e.prompt);
-    e.cmd = CommandId::execute;
+    e.cmd = find("execute");
 }
 
 void do_execute(Editor &e, bool justPressed)
@@ -40,7 +23,7 @@ void do_execute(Editor &e, bool justPressed)
     {
         return;
     }
-    e.cmd = CommandId::camera;
+    e.cmd = find("camera");
 
     char buf[512];
     strncpy(buf, e.prompt.buffer, sizeof(buf) - 1);
@@ -57,13 +40,13 @@ void do_execute(Editor &e, bool justPressed)
     {
         return;
     }
-    CommandId id;
-    if (!find_id(name, id))
+    const Command *c = find(name);
+    if (!c)
     {
         printf("E: unknown command: %s\n", name);
         return;
     }
-    run(e, id, args, justPressed);
+    run(e, c, args, justPressed);
 }
 
 void do_set_cmd(Editor &e, bool justPressed)
@@ -72,14 +55,15 @@ void do_set_cmd(Editor &e, bool justPressed)
     const Command *c = find(op);
     if (!c)
     {
+        printf("E: unknown command: %s\n", op);
         return;
     }
-    e.cmd = c->id;
-    if (e.cmd == CommandId::none)
+    e.cmd = c;
+    if (strcmp(c->name, "none") == 0)
     {
         e.selectedFaceCount = 0;
     }
-    if (e.cmd == CommandId::extrude)
+    if (strcmp(c->name, "extrude") == 0)
     {
         e.target = Target::FACE;
     }
@@ -88,13 +72,16 @@ void do_set_cmd(Editor &e, bool justPressed)
 
 void do_set_args(Editor &e, bool justPressed)
 {
-    get(e.cmd)->action(e, justPressed);
+    if (e.cmd)
+    {
+        e.cmd->action(e, justPressed);
+    }
 }
 
 void do_set_target(Editor &e, bool)
 {
-    const char *t = param::get(e.args, "t");
-    e.target = (strcmp(t, "face") == 0) ? Target::FACE : Target::OBJECT;
+    const char *target = param::get(e.args, "target");
+    e.target = (strcmp(target, "face") == 0) ? Target::FACE : Target::OBJECT;
     e.selectedFaceCount = 0;
 }
 

@@ -1,4 +1,3 @@
-#include "action.h"
 #include "editor.h"
 #include "face_edit.h"
 #include "mesh_batch.h"
@@ -28,31 +27,13 @@ AxisLock axis_lock(const char *s)
     return AxisLock::NONE;
 }
 
-const char *const axis_choices[] = {"x", "y", "z", nullptr};
-
-const ParamSpec params_axis_step[] = {
-    {"axis", ParamType::STRING, axis_choices, "axis to act on", true, nullptr},
-    {"step", ParamType::INT, nullptr, "signed step size (negative = reverse)", true, nullptr},
-    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
-};
-
-const ParamSpec params_axis_degrees[] = {
-    {"axis", ParamType::STRING, axis_choices, "axis to act on", true, nullptr},
-    {"step", ParamType::FLOAT, nullptr, "signed angle in degrees (negative = reverse)", true, nullptr},
-    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
-};
-
-const ParamSpec params_uniform_scale[] = {
-    {"step", ParamType::INT, nullptr, "signed step size (negative = shrink)", true, nullptr},
-    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
-};
-
 namespace
 {
 
 constexpr float DEG_TO_RAD = mesh::PI / 180.0f;
 
-bool transform_prepare(const Editor &e, const Args &a, AxisLock &axis, float &step, bool &isFace)
+bool transform_prepare(const Editor &e, const Args &a, const char *stepName, AxisLock &axis, float &step,
+                       bool &isFace)
 {
     const char *ax = param::get(a, "axis");
     if (!ax)
@@ -69,20 +50,20 @@ bool transform_prepare(const Editor &e, const Args &a, AxisLock &axis, float &st
     {
         return false;
     }
-    step = param::get_float(a, "step");
+    step = param::get_float(a, stepName);
     return true;
 }
 
 using FaceDeltaFn = Mat4 (*)(AxisLock, float);
 using ObjectApplyFn = void (*)(Editor &, AxisLock, float);
 
-void run_transform(Editor &e, const Args &a, bool justPressed, float stepScale, FaceDeltaFn faceFn,
-                   ObjectApplyFn objFn)
+void run_transform(Editor &e, const Args &a, bool justPressed, const char *stepName, float stepScale,
+                   FaceDeltaFn faceFn, ObjectApplyFn objFn)
 {
     AxisLock axis;
     float step;
     bool isFace;
-    if (!transform_prepare(e, a, axis, step, isFace))
+    if (!transform_prepare(e, a, stepName, axis, step, isFace))
     {
         return;
     }
@@ -187,7 +168,8 @@ void translate_object_apply(Editor &e, AxisLock axis, float amount)
 
 void do_translate(Editor &e, bool justPressed)
 {
-    run_transform(e, e.args, justPressed, e.keySensitivity, translate_face_delta, translate_object_apply);
+    run_transform(e, e.args, justPressed, "step", e.keySensitivity, translate_face_delta,
+                  translate_object_apply);
 }
 
 namespace
@@ -252,12 +234,14 @@ void rotate_object_apply(Editor &e, AxisLock axis, float amount)
 
 void do_rotate(Editor &e, bool justPressed)
 {
-    run_transform(e, e.args, justPressed, e.keySensitivity, rotate_face_delta, rotate_object_apply);
+    run_transform(e, e.args, justPressed, "step", e.keySensitivity, rotate_face_delta, rotate_object_apply);
 }
 
 void do_rotate_degrees(Editor &e, bool justPressed)
 {
-    run_transform(e, e.args, justPressed, DEG_TO_RAD, rotate_face_delta, rotate_object_apply);
+    // Prompt usage provides "degrees"; keyboard set_args provides "step".
+    const char *stepName = param::get(e.args, "degrees") ? "degrees" : "step";
+    run_transform(e, e.args, justPressed, stepName, DEG_TO_RAD, rotate_face_delta, rotate_object_apply);
 }
 
 namespace
@@ -303,7 +287,7 @@ void scale_object_apply(Editor &e, AxisLock axis, float amount)
 
 void do_scale(Editor &e, bool justPressed)
 {
-    run_transform(e, e.args, justPressed, e.keySensitivity, scale_face_delta, scale_object_apply);
+    run_transform(e, e.args, justPressed, "step", e.keySensitivity, scale_face_delta, scale_object_apply);
 }
 
 void do_uniform_scale(Editor &e, bool justPressed)
@@ -378,7 +362,7 @@ void shear_object_apply(Editor &e, AxisLock axis, float amount)
 
 void do_shear(Editor &e, bool justPressed)
 {
-    run_transform(e, e.args, justPressed, e.keySensitivity, shear_face_delta, shear_object_apply);
+    run_transform(e, e.args, justPressed, "step", e.keySensitivity, shear_face_delta, shear_object_apply);
 }
 
 } // namespace cmd

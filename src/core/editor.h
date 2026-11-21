@@ -11,6 +11,8 @@
 #include "skybox.h"
 #include "window.h"
 
+struct Command;
+
 constexpr int MAX_UNDO = 100;
 
 enum class Target
@@ -52,7 +54,7 @@ struct Editor
     Color bgColor = {0, 0, 0, 255};
     Color currentColor = {255, 255, 255, 255};
 
-    CommandId cmd = CommandId::camera;
+    const Command *cmd = nullptr;
     Args args;
     Prompt prompt;
     Keyboard keyboard;
@@ -65,11 +67,6 @@ namespace editor
 {
 void push_undo(Editor &e);
 void pop_undo(Editor &e);
-
-inline bool is_cmd_exec(const Editor &e)
-{
-    return e.cmd == CommandId::execute;
-}
 } // namespace editor
 
 #endif

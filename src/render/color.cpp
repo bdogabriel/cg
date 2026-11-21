@@ -2,16 +2,35 @@
 
 namespace color
 {
+
+namespace
+{
+
+uint8_t to_byte(float v)
+{
+    int iv = static_cast<int>(v * 255.0f + 0.5f);
+    if (iv < 0)
+        iv = 0;
+    if (iv > 255)
+        iv = 255;
+    return static_cast<uint8_t>(iv);
+}
+
+int nibble(char c)
+{
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    if (c >= 'a' && c <= 'f')
+        return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F')
+        return c - 'A' + 10;
+    return -1;
+}
+
+} // namespace
+
 Color from_float(float r, float g, float b, float a)
 {
-    auto to_byte = [](float v) -> uint8_t {
-        int iv = static_cast<int>(v * 255.0f + 0.5f);
-        if (iv < 0)
-            iv = 0;
-        if (iv > 255)
-            iv = 255;
-        return static_cast<uint8_t>(iv);
-    };
     return {to_byte(r), to_byte(g), to_byte(b), to_byte(a)};
 }
 
@@ -27,16 +46,6 @@ bool from_hex(const char *hex, Color &out)
 
     if (len != 6 && len != 8)
         return false;
-
-    auto nibble = [](char c) -> int {
-        if (c >= '0' && c <= '9')
-            return c - '0';
-        if (c >= 'a' && c <= 'f')
-            return c - 'a' + 10;
-        if (c >= 'A' && c <= 'F')
-            return c - 'A' + 10;
-        return -1;
-    };
 
     int r0 = nibble(s[0]), r1 = nibble(s[1]);
     int g0 = nibble(s[2]), g1 = nibble(s[3]);
