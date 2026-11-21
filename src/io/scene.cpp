@@ -1,6 +1,5 @@
 #include "file.h"
-#include "gl_util.h"
-#include "skybox.h"
+#include "texture.h"
 #include "trs.h"
 #include "wavefront.h"
 #include <stdio.h>
@@ -149,7 +148,8 @@ bool load(Editor &e, const char *name, bool clear)
     {
         mesh::reset(e.meshBatch);
         modeltexture::reset(e.modelTextureCache);
-        skybox::reset(e.skybox);
+        render::destroy_texture(e.skyboxTexture);
+        e.skyboxTexture = 0;
         e.skyboxPath[0] = '\0';
         e.selectedRef = 0;
         e.faceCursor = 0;
@@ -259,10 +259,11 @@ bool load(Editor &e, const char *name, bool clear)
     {
         char skyPath[512];
         snprintf(skyPath, sizeof(skyPath), "%s%s", sceneDir, savedSkybox);
-        GLuint tex = glutil::load_texture(skyPath, GL_RGBA8, GL_RGBA);
+        render::TextureHandle tex = texture::load(skyPath);
         if (tex)
         {
-            skybox::set_texture(e.skybox, tex);
+            render::destroy_texture(e.skyboxTexture);
+            e.skyboxTexture = tex;
             strncpy(e.skyboxPath, skyPath, sizeof(e.skyboxPath) - 1);
             e.skyboxPath[sizeof(e.skyboxPath) - 1] = '\0';
         }

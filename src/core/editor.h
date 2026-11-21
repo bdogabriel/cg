@@ -8,7 +8,7 @@
 #include "model_texture_cache.h"
 #include "param.h"
 #include "prompt.h"
-#include "skybox.h"
+#include "renderer.h"
 #include "window.h"
 
 struct Command;
@@ -35,7 +35,7 @@ struct Editor
     ModelTextureCache modelTextureCache;
     Buffer transforms; // TRS; indexed by slot
     Camera camera;
-    Skybox skybox;
+    render::TextureHandle skyboxTexture = 0;
 
     MeshBatch undoMeshBatches[MAX_UNDO];
     Buffer undoTransforms[MAX_UNDO]; // TRS; indexed by slot

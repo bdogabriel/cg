@@ -1,5 +1,5 @@
 #include "model_texture_cache.h"
-#include "gl_util.h"
+#include "texture.h"
 
 #include <string.h>
 
@@ -31,26 +31,26 @@ int add(ModelTextureCache &modelTexCache, const char *path)
         return existing;
     }
 
-    GLuint tex = glutil::load_texture(path, GL_RGBA8, GL_RGBA);
+    render::TextureHandle tex = texture::load(path);
     if (tex == 0)
     {
         return -1;
     }
 
-    buffer::ensure(modelTexCache.textures, sizeof(unsigned int), modelTexCache.count + 1);
+    buffer::ensure(modelTexCache.textures, sizeof(render::TextureHandle), modelTexCache.count + 1);
     buffer::ensure(modelTexCache.paths, 256, modelTexCache.count + 1);
 
     int idx = modelTexCache.count++;
-    BUF(unsigned int, modelTexCache.textures)[idx] = tex;
+    BUF(render::TextureHandle, modelTexCache.textures)[idx] = tex;
     strncpy(BUF(TexturePath, modelTexCache.paths)[idx], path, 255);
     BUF(TexturePath, modelTexCache.paths)[idx][255] = '\0';
 
     return idx;
 }
 
-unsigned int get(const ModelTextureCache &modelTexCache, int index)
+render::TextureHandle get(const ModelTextureCache &modelTexCache, int index)
 {
-    return BUF(unsigned int, modelTexCache.textures)[index];
+    return BUF(render::TextureHandle, modelTexCache.textures)[index];
 }
 
 int count(const ModelTextureCache &modelTexCache)
@@ -62,11 +62,12 @@ void reset(ModelTextureCache &modelTexCache)
 {
     for (int i = 0; i < modelTexCache.count; i++)
     {
-        if (BUF(unsigned int, modelTexCache.textures)[i] != 0)
+        render::TextureHandle &tex = BUF(render::TextureHandle, modelTexCache.textures)[i];
+        if (tex != 0)
         {
-            glDeleteTextures(1, &BUF(unsigned int, modelTexCache.textures)[i]);
+            render::destroy_texture(tex);
         }
-        BUF(unsigned int, modelTexCache.textures)[i] = 0;
+        tex = 0;
         BUF(TexturePath, modelTexCache.paths)[i][0] = '\0';
     }
     modelTexCache.count = 0;

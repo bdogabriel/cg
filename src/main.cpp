@@ -1,57 +1,30 @@
-#include "gl_util.h"
-#include "mesh_batch.h"
-#include "render_1d.h"
+#include "renderer.h"
 
 #include "arena.h"
 #include "binding.h"
-#include "camera.h"
 #include "command.h"
 #include "dispatch.h"
 #include "editor.h"
 #include "font.h"
-#include "render_2d.h"
-#include "render_3d.h"
-#include "skybox.h"
+#include "model_texture_cache.h"
 #include "ui_2d.h"
 #include "ui_3d.h"
-
-constexpr GLuint IDX_VERTEX = 0;
+#include "window.h"
 
 namespace
 {
 
-int g_fbW = 1000;
-int g_fbH = 1000;
-
-void framebuffer_size_callback(GLFWwindow *window, int width, int height)
+bool setup_window(Window &w)
 {
-    (void)window;
-    g_fbW = width;
-    g_fbH = height;
-    glViewport(0, 0, width, height);
+    WindowConfig config;
+    config.width = 1000;
+    config.height = 1000;
+    config.title = "Editor";
+    config.createGraphicsContext = render::needs_graphics_context();
+    return window::create(w, config);
 }
 
 } // namespace
-
-void setup_window(Window &w)
-{
-    window::create(w, 1000, 1000, "Editor");
-    glViewport(0, 0, g_fbW, g_fbH);
-    glfwSetFramebufferSizeCallback(window::native(w), framebuffer_size_callback);
-    glewInit();
-
-    glfwShowWindow(window::native(w));
-}
-
-void setup_graphics()
-{
-    glEnable(GL_BLEND);
-    glEnable(GL_LINE_SMOOTH);
-    glEnable(GL_DEPTH_TEST);
-
-    glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-}
 
 void setup_bindings()
 {
@@ -91,49 +64,29 @@ int main(int argc, char *argv[])
     (void)argv;
 
     static Editor editor;
-    setup_window(editor.window);
+    if (!setup_window(editor.window))
+    {
+        return 1;
+    }
 
-    GLuint meshProgram = glutil::make_program("shader/mesh_vertex.glsl", "shader/mesh_fragment.glsl");
-    GLuint meshTexturedProgram =
-        glutil::make_program("shader/mesh_textured_vertex.glsl", "shader/mesh_textured_fragment.glsl");
-    glUseProgram(meshProgram);
-    GLuint quadTexturedR8Program =
-        glutil::make_program("shader/quad_textured_r8_vertex.glsl", "shader/quad_textured_r8_fragment.glsl");
-    GLint u_quadTexturedR8FbSize = glGetUniformLocation(quadTexturedR8Program, "fbSize");
-    GLint u_quadTexturedR8Sampler = glGetUniformLocation(quadTexturedR8Program, "tex");
-    glProgramUniform1i(quadTexturedR8Program, u_quadTexturedR8Sampler, 0);
-    GLuint quadProgram = glutil::make_program("shader/quad_vertex.glsl", "shader/quad_fragment.glsl");
-    GLint u_quadFbSize = glGetUniformLocation(quadProgram, "fbSize");
-    GLuint lineProgram = glutil::make_program("shader/line_vertex.glsl", "shader/line_fragment.glsl");
-    GLint u_meshViewProj = glGetUniformLocation(meshProgram, "u_viewProj");
-    GLint u_meshTexturedViewProj = glGetUniformLocation(meshTexturedProgram, "u_viewProj");
-    GLint u_meshTexturedSampler = glGetUniformLocation(meshTexturedProgram, "u_tex");
-    glProgramUniform1i(meshTexturedProgram, u_meshTexturedSampler, 0);
-    GLint u_lineViewProj = glGetUniformLocation(lineProgram, "u_viewProj");
-    GLuint skyboxProgram = glutil::make_program("shader/skybox_vertex.glsl", "shader/skybox_fragment.glsl");
-    GLint u_skyboxViewProj = glGetUniformLocation(skyboxProgram, "u_viewProj");
-    GLint u_skyboxSampler = glGetUniformLocation(skyboxProgram, "u_skybox");
-    glProgramUniform1i(skyboxProgram, u_skyboxSampler, 0);
-    setup_graphics();
+    if (!render::init(editor.window))
+    {
+        window::destroy(editor.window);
+        return 1;
+    }
+    window::show(editor.window);
 
     mesh::reset(editor.meshBatch);
 
-    Render3D meshRenderer;
-    Render2D hudRenderer;
     QuadBatch textBatch;
     QuadBatch solidBatch;
 
     LineBatch highlightLines;
     LineBatch axesLines;
-    Render1D lineRenderer;
 
     const Font &font = baked_font();
-    GLuint atlasTexture = glutil::make_texture(font.atlasWidth, font.atlasHeight, baked_atlas(), GL_R8, GL_RED);
-
-    render3d::init(meshRenderer, IDX_VERTEX);
-    render2d::init(hudRenderer);
-    render1d::init(lineRenderer);
-    skybox::init(editor.skybox);
+    render::TextureHandle atlasTexture =
+        render::create_texture({font.atlasWidth, font.atlasHeight, render::TextureFormat::R8, baked_atlas()});
 
     keyboard::setup(editor.keyboard, editor.window);
 
@@ -152,20 +105,15 @@ int main(int argc, char *argv[])
         }
         keyboard::reset(editor.keyboard);
 
+        int fbW = editor.window.fbWidth;
+        int fbH = editor.window.fbHeight;
+
         if (editor.meshBatch.meshDirty)
         {
             mesh::triangulate(editor.meshBatch);
             mesh::build_commands(editor.meshBatch, modeltexture::count(editor.modelTextureCache));
-            render3d::upload_mesh(meshRenderer, editor.meshBatch);
-            render3d::upload_commands(meshRenderer, editor.meshBatch);
-            render3d::upload_face_colors(meshRenderer, editor.meshBatch);
-            editor.meshBatch.meshDirty = false;
         }
-        if (editor.meshBatch.modelsDirty)
-        {
-            render3d::upload_models(meshRenderer, editor.meshBatch);
-            editor.meshBatch.modelsDirty = false;
-        }
+        render::sync_mesh(editor.meshBatch);
 
         line::reset(axesLines);
         line::reset(highlightLines);
@@ -173,76 +121,33 @@ int main(int argc, char *argv[])
         ui3d::build_axes(editor, axesLines);
         ui3d::build_face_highlights(editor, highlightLines);
 
-        glClearColor(editor.bgColor.r / 255.0f, editor.bgColor.g / 255.0f, editor.bgColor.b / 255.0f,
-                     editor.bgColor.a / 255.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glPolygonMode(GL_FRONT_AND_BACK, editor.wireframe ? GL_LINE : GL_FILL);
-
-        float aspect = (g_fbH > 0) ? (float)g_fbW / (float)g_fbH : 1.0f;
-        Mat4 viewProj = camera::projection(editor.camera, aspect) * camera::view(editor.camera);
-
-        glUseProgram(meshProgram);
-        glUniformMatrix4fv(u_meshViewProj, 1, GL_FALSE, viewProj.data());
-        render3d::draw_flat(meshRenderer, editor.meshBatch);
-
-        glUseProgram(meshTexturedProgram);
-        glUniformMatrix4fv(u_meshTexturedViewProj, 1, GL_FALSE, viewProj.data());
-        render3d::draw_textured(meshRenderer, editor.meshBatch, editor.modelTextureCache);
-
-        glUseProgram(lineProgram);
-        glUniformMatrix4fv(u_lineViewProj, 1, GL_FALSE, viewProj.data());
-        glLineWidth(3.0f);
-        glDepthFunc(GL_LEQUAL);
-        render1d::draw(lineRenderer, highlightLines);
-        glDepthFunc(GL_LESS);
-        glLineWidth(1.0f);
-        render1d::draw(lineRenderer, axesLines);
-
-        if (editor.skybox.texture != 0)
-        {
-            Mat4 skyViewProj = camera::projection(editor.camera, aspect) * camera::view_rotation(editor.camera);
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            glUseProgram(skyboxProgram);
-            glUniformMatrix4fv(u_skyboxViewProj, 1, GL_FALSE, skyViewProj.data());
-            glDepthFunc(GL_LEQUAL);
-            glDepthMask(GL_FALSE);
-            skybox::draw(editor.skybox);
-            glDepthMask(GL_TRUE);
-            glDepthFunc(GL_LESS);
-        }
-
-        glDisable(GL_DEPTH_TEST);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         quad::reset(textBatch);
         quad::reset(solidBatch);
-        ui2d::build_statusline(editor, g_fbW, g_fbH, textBatch, solidBatch);
+        ui2d::build_statusline(editor, fbW, fbH, textBatch, solidBatch);
         if (cmd::is_exec(editor))
         {
-            ui2d::build_prompt(editor, g_fbW, g_fbH, textBatch, solidBatch);
+            ui2d::build_prompt(editor, fbW, fbH, textBatch, solidBatch);
         }
-        glUseProgram(quadProgram);
-        glUniform2f(u_quadFbSize, (float)g_fbW, (float)g_fbH);
-        render2d::draw(hudRenderer, solidBatch);
-        glUseProgram(quadTexturedR8Program);
-        glUniform2f(u_quadTexturedR8FbSize, (float)g_fbW, (float)g_fbH);
-        glBindTextureUnit(0, atlasTexture);
-        render2d::draw(hudRenderer, textBatch);
-        glEnable(GL_DEPTH_TEST);
 
-        window::swap_buffers(editor.window);
+        float aspect = (fbH > 0) ? (float)fbW / (float)fbH : 1.0f;
+
+        render::begin_frame(fbW, fbH, editor.bgColor);
+        render::set_camera(editor.camera, aspect);
+        render::draw_meshes(editor.meshBatch, editor.modelTextureCache,
+                            editor.wireframe ? render::DrawMode::WIREFRAME : render::DrawMode::SHADED);
+        render::draw_lines(highlightLines, {3.0f, true});
+        render::draw_lines(axesLines, {1.0f, false});
+        render::draw_skybox(editor.skyboxTexture);
+        render::draw_quads(solidBatch, render::QuadPipeline::SOLID, 0);
+        render::draw_quads(textBatch, render::QuadPipeline::TEXT, atlasTexture);
+        render::end_frame();
     }
 
-    render3d::free(meshRenderer);
-    render1d::free(lineRenderer);
-    render2d::free(hudRenderer);
-    skybox::free(editor.skybox);
-    glDeleteProgram(meshProgram);
-    glDeleteProgram(meshTexturedProgram);
-    glDeleteProgram(quadTexturedR8Program);
-    glDeleteProgram(quadProgram);
-    glDeleteProgram(lineProgram);
-    glDeleteProgram(skyboxProgram);
-    glDeleteTextures(1, &atlasTexture);
+    render::destroy_texture(atlasTexture);
+    modeltexture::reset(editor.modelTextureCache);
+    render::destroy_texture(editor.skyboxTexture);
+    editor.skyboxTexture = 0;
+    render::shutdown();
     window::destroy(editor.window);
 
     return 0;

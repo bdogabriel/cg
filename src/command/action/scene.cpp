@@ -1,12 +1,10 @@
-#include "gl_util.h"
-
 #include "command.h"
 #include "draw_3d.h"
 #include "editor.h"
 #include "face_edit.h"
 #include "mesh_edit.h"
 #include "scene.h"
-#include "skybox.h"
+#include "texture.h"
 #include "trs.h"
 #include "wavefront.h"
 #include <stdio.h>
@@ -302,10 +300,11 @@ void do_load_obj(Editor &e, bool)
 void do_load_skybox(Editor &e, bool)
 {
     const char *file = param::get(e.args, "file");
-    GLuint tex = glutil::load_texture(file, GL_RGBA8, GL_RGBA);
+    render::TextureHandle tex = texture::load(file);
     if (tex)
     {
-        skybox::set_texture(e.skybox, tex);
+        render::destroy_texture(e.skyboxTexture);
+        e.skyboxTexture = tex;
         strncpy(e.skyboxPath, file, sizeof(e.skyboxPath) - 1);
         e.skyboxPath[sizeof(e.skyboxPath) - 1] = '\0';
     }

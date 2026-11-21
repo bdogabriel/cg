@@ -1,8 +1,8 @@
-#include "skybox.h"
+#include "gl_skybox.h"
 
 #include <GL/glew.h>
 
-namespace skybox
+namespace glskybox
 {
 
 namespace
@@ -135,6 +135,7 @@ void init(Skybox &s)
 {
     glCreateVertexArrays(1, &s.vao);
     glCreateBuffers(1, &s.vbo);
+    glCreateSamplers(1, &s.sampler);
 
     glVertexArrayVertexBuffer(s.vao, 0, s.vbo, 0, 3 * sizeof(float));
     glEnableVertexArrayAttrib(s.vao, 0);
@@ -142,41 +143,24 @@ void init(Skybox &s)
     glVertexArrayAttribBinding(s.vao, 0, 0);
 
     glNamedBufferData(s.vbo, sizeof(CUBE_VERTICES), CUBE_VERTICES, GL_STATIC_DRAW);
+
+    glSamplerParameteri(s.sampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glSamplerParameteri(s.sampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glSamplerParameteri(s.sampler, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glSamplerParameteri(s.sampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 }
 
-void set_texture(Skybox &s, unsigned int texture)
+void draw(const Skybox &s, unsigned int texture)
 {
-    if (s.texture != 0)
-    {
-        glDeleteTextures(1, &s.texture);
-    }
-    s.texture = texture;
-    if (texture != 0)
-    {
-        glTextureParameteri(texture, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTextureParameteri(texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    }
-}
-
-void draw(const Skybox &s)
-{
-    if (s.texture == 0)
-    {
-        return;
-    }
     glBindVertexArray(s.vao);
-    glBindTextureUnit(0, s.texture);
+    glBindTextureUnit(0, texture);
+    glBindSampler(0, s.sampler);
     glDrawArrays(GL_TRIANGLES, 0, CUBE_VERTEX_COUNT);
-}
-
-void reset(Skybox &s)
-{
-    set_texture(s, 0);
+    glBindSampler(0, 0);
 }
 
 void free(Skybox &s)
 {
-    reset(s);
     if (s.vao != 0)
     {
         glDeleteVertexArrays(1, &s.vao);
@@ -185,8 +169,13 @@ void free(Skybox &s)
     {
         glDeleteBuffers(1, &s.vbo);
     }
+    if (s.sampler != 0)
+    {
+        glDeleteSamplers(1, &s.sampler);
+    }
     s.vao = 0;
     s.vbo = 0;
+    s.sampler = 0;
 }
 
-} // namespace skybox
+} // namespace glskybox

@@ -1,8 +1,9 @@
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
 
-#include "window.h"
 #include <stdint.h>
+
+struct Window;
 
 enum class KeyState
 {
@@ -47,9 +48,9 @@ enum class Key : uint8_t
 namespace mods
 {
 constexpr uint8_t NONE = 0;
-constexpr uint8_t SHIFT = GLFW_MOD_SHIFT;
-constexpr uint8_t CTRL = GLFW_MOD_CONTROL;
-constexpr uint8_t ALT = GLFW_MOD_ALT;
+constexpr uint8_t SHIFT = 1u << 0;
+constexpr uint8_t CTRL = 1u << 1;
+constexpr uint8_t ALT = 1u << 2;
 constexpr uint8_t ALL = SHIFT | CTRL | ALT;
 } // namespace mods
 
