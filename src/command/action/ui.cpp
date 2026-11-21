@@ -68,7 +68,7 @@ void do_execute(Editor &e, bool justPressed)
 
 void do_set_cmd(Editor &e, bool justPressed)
 {
-    const char *op = e.args.get("op");
+    const char *op = param::get(e.args, "op");
     const Command *c = find(op);
     if (!c)
     {
@@ -93,7 +93,7 @@ void do_set_args(Editor &e, bool justPressed)
 
 void do_set_target(Editor &e, bool)
 {
-    const char *t = e.args.get("t");
+    const char *t = param::get(e.args, "t");
     e.target = (strcmp(t, "face") == 0) ? Target::FACE : Target::OBJECT;
     e.selectedFaceCount = 0;
 }
@@ -106,9 +106,9 @@ void do_toggle_lock(Editor &e, bool)
 void do_set_bg_color(Editor &e, bool)
 {
     Color c;
-    if (!color::from_hex(e.args.get("color"), c))
+    if (!color::from_hex(param::get(e.args, "color"), c))
     {
-        printf("E: invalid color '%s' (expected #RRGGBB or #RRGGBBAA)\n", e.args.get("color"));
+        printf("E: invalid color '%s' (expected #RRGGBB or #RRGGBBAA)\n", param::get(e.args, "color"));
         return;
     }
     e.bgColor = c;

@@ -80,6 +80,7 @@ Open the prompt with `shift+;` and type commands:
 - `add_polyhedron [faces] [color]` - add a polyhedron (4, 6, 8, 12, 20 faces; 6 = cube)
 - `add_sphere [segments] [color]` - add a sphere primitive
 - `camera <axis> <step>` - move/look the camera
+- `rotate_degrees <axis> <degrees>` - rotate selected object/faces by a signed angle in degrees (decimals allowed)
 - `merge_coplanar <angle>` - merge coplanar faces (angle tolerance in degrees)
 - `set_color <#RRGGBB>` - set current color
 - `set_bg_color <#RRGGBB>` - set background color

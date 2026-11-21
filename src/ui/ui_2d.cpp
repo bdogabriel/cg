@@ -70,7 +70,7 @@ void build_statusline(const Editor &e, int fbW, int fbH, QuadBatch &textBatch, Q
     char status[256];
     status[0] = '\0';
     const char *cmdName = cmd::get(e.cmd)->name;
-    const char *axis = e.args.get("axis");
+    const char *axis = param::get(e.args, "axis");
     if (strcmp(cmdName, "none") != 0)
     {
         append_upper(status, sizeof(status), cmdName);

@@ -28,6 +28,7 @@ void do_undo(Editor &e, bool justPressed);
 void do_quit(Editor &e, bool justPressed);
 void do_translate(Editor &e, bool justPressed);
 void do_rotate(Editor &e, bool justPressed);
+void do_rotate_degrees(Editor &e, bool justPressed);
 void do_scale(Editor &e, bool justPressed);
 void do_uniform_scale(Editor &e, bool justPressed);
 void do_shear(Editor &e, bool justPressed);
@@ -49,6 +50,7 @@ void do_help(Editor &e, bool justPressed);
 
 extern const ParamSpec params_set_cmd[];
 extern const ParamSpec params_axis_step[];
+extern const ParamSpec params_axis_degrees[];
 extern const ParamSpec params_uniform_scale[];
 extern const ParamSpec params_set_target[];
 extern const ParamSpec params_set_color[];

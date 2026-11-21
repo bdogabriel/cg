@@ -17,6 +17,7 @@ CMD(undo,             "undo",             "undo the last mutating command",     
 CMD(quit,             "quit",             "exit the application",                           nullptr,            do_quit)
 CMD(translate,        "translate",        "translate by signed step on axis",               params_axis_step,   do_translate)
 CMD(rotate,           "rotate",           "rotate by signed step around axis",              params_axis_step,   do_rotate)
+CMD(rotate_degrees,   "rotate_degrees",   "rotate by signed degrees around axis",           params_axis_degrees, do_rotate_degrees)
 CMD(scale,            "scale",            "scale by signed step on axis",                   params_axis_step,   do_scale)
 CMD(uniform_scale,    "uniform_scale",    "scale uniformly on all axes",                    params_uniform_scale, do_uniform_scale)
 CMD(shear,            "shear",            "shear by signed step on axis",                   params_axis_step,   do_shear)

@@ -16,7 +16,7 @@ namespace
 
 void print_param(const ParamSpec &ps)
 {
-    printf("    %-8s <%s>", ps.name, ps.type == ParamType::INT ? "int" : "string");
+    printf("    %-8s <%s>", ps.name, param::type_name(ps.type));
     if (ps.required)
     {
         printf(" (required)");
@@ -110,7 +110,7 @@ void print_all_bindings_help()
 
 void do_help(Editor &e, bool)
 {
-    const char *topic = e.args.get("topic");
+    const char *topic = param::get(e.args, "topic");
     if (strcmp(topic, "commands") == 0)
     {
         print_all_commands_help();

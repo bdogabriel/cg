@@ -2,13 +2,13 @@
 #define PARAM_H
 
 #include <stdlib.h>
-#include <string.h>
 
 constexpr int MAX_PARAMS = 8;
 
 enum class ParamType
 {
     INT,
+    FLOAT,
     STRING
 };
 
@@ -22,39 +22,24 @@ struct ParamSpec
     const char *defaultVal;
 };
 
-// TODO: move functions to namespace
 struct Args
 {
     static constexpr int MAX_VALUE = 256;
     const char *names[MAX_PARAMS];
     char values[MAX_PARAMS][MAX_VALUE];
     int count = 0;
-
-    void set(int i, const char *name, const char *value)
-    {
-        names[i] = name;
-        strncpy(values[i], value, MAX_VALUE - 1);
-        values[i][MAX_VALUE - 1] = '\0';
-    }
-
-    const char *get(const char *name) const
-    {
-        for (int i = 0; i < count; i++)
-        {
-            if (strcmp(names[i], name) == 0)
-            {
-                return values[i];
-            }
-        }
-        return nullptr;
-    }
-
-    int getInt(const char *name) const
-    {
-        const char *v = get(name);
-        return v ? atoi(v) : 0;
-    }
 };
+
+namespace param
+{
+
+void add(Args &a, const char *name, const char *value);
+const char *get(const Args &a, const char *name);
+int get_int(const Args &a, const char *name);
+float get_float(const Args &a, const char *name);
+const char *type_name(ParamType type);
+
+} // namespace param
 
 enum class CommandId : int
 {

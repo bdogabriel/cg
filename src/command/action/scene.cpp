@@ -95,9 +95,9 @@ const ParamSpec params_merge_coplanar[] = {
 void do_set_color(Editor &e, bool)
 {
     Color c;
-    if (!color::from_hex(e.args.get("color"), c))
+    if (!color::from_hex(param::get(e.args, "color"), c))
     {
-        printf("E: invalid color '%s' (expected #RRGGBB or #RRGGBBAA)\n", e.args.get("color"));
+        printf("E: invalid color '%s' (expected #RRGGBB or #RRGGBBAA)\n", param::get(e.args, "color"));
         return;
     }
     e.currentColor = c;
@@ -141,7 +141,7 @@ void do_apply_color(Editor &e, bool justPressed)
 
 void do_cycle(Editor &e, bool)
 {
-    int step = e.args.getInt("step");
+    int step = param::get_int(e.args, "step");
     bool isFace = (e.target == Target::FACE);
 
     if (isFace)
@@ -204,11 +204,11 @@ void do_reset(Editor &e, bool justPressed)
     {
         editor::push_undo(e);
     }
-    if (strcmp(e.args.get("property"), "rotation") == 0)
+    if (strcmp(param::get(e.args, "property"), "rotation") == 0)
     {
         BUF(TRS, e.transforms)[e.selectedRef].r = quat::identity();
     }
-    else if (strcmp(e.args.get("property"), "scale") == 0)
+    else if (strcmp(param::get(e.args, "property"), "scale") == 0)
     {
         BUF(TRS, e.transforms)[e.selectedRef].sx = 1;
         BUF(TRS, e.transforms)[e.selectedRef].sy = 1;
@@ -291,7 +291,7 @@ void do_add_pyramid(Editor &e, bool justPressed)
     {
         editor::push_undo(e);
     }
-    add_mesh(e, draw3d::pyramid(e.args.getInt("sides")), e.args.get("color"), "pyramid");
+    add_mesh(e, draw3d::pyramid(param::get_int(e.args, "sides")), param::get(e.args, "color"), "pyramid");
 }
 
 void do_add_cylinder(Editor &e, bool justPressed)
@@ -300,7 +300,7 @@ void do_add_cylinder(Editor &e, bool justPressed)
     {
         editor::push_undo(e);
     }
-    add_mesh(e, draw3d::cylinder(e.args.getInt("segments")), e.args.get("color"), "cylinder");
+    add_mesh(e, draw3d::cylinder(param::get_int(e.args, "segments")), param::get(e.args, "color"), "cylinder");
 }
 
 void do_add_polyhedron(Editor &e, bool justPressed)
@@ -309,13 +309,13 @@ void do_add_polyhedron(Editor &e, bool justPressed)
     {
         editor::push_undo(e);
     }
-    int faces = e.args.getInt("faces");
+    int faces = param::get_int(e.args, "faces");
     if (faces != 4 && faces != 6 && faces != 8 && faces != 12 && faces != 20)
     {
         printf("E: invalid face count %d (valid: 4, 6, 8, 12, 20)\n", faces);
         return;
     }
-    add_mesh(e, draw3d::polyhedron(faces), e.args.get("color"), "polyhedron");
+    add_mesh(e, draw3d::polyhedron(faces), param::get(e.args, "color"), "polyhedron");
 }
 
 void do_add_sphere(Editor &e, bool justPressed)
@@ -324,12 +324,12 @@ void do_add_sphere(Editor &e, bool justPressed)
     {
         editor::push_undo(e);
     }
-    add_mesh(e, draw3d::sphere(e.args.getInt("segments")), e.args.get("color"), "sphere");
+    add_mesh(e, draw3d::sphere(param::get_int(e.args, "segments")), param::get(e.args, "color"), "sphere");
 }
 
 void do_save_obj(Editor &e, bool)
 {
-    const char *file = e.args.get("file");
+    const char *file = param::get(e.args, "file");
     if (file[0] != '\0')
     {
         strncpy(e.currentFile, file, sizeof(e.currentFile) - 1);
@@ -345,15 +345,15 @@ void do_save_obj(Editor &e, bool)
 
 void do_save_scene(Editor &e, bool)
 {
-    const char *name = e.args.get("name");
+    const char *name = param::get(e.args, "name");
     scene::save(e, name);
     e.cmd = CommandId::camera;
 }
 
 void do_load_scene(Editor &e, bool)
 {
-    const char *name = e.args.get("name");
-    bool clear = (strcmp(e.args.get("clear"), "true") == 0);
+    const char *name = param::get(e.args, "name");
+    bool clear = (strcmp(param::get(e.args, "clear"), "true") == 0);
     if (scene::load(e, name, clear))
     {
         e.cmd = CommandId::camera;
@@ -364,8 +364,8 @@ void do_load_scene(Editor &e, bool)
 
 void do_load_obj(Editor &e, bool)
 {
-    const char *file = e.args.get("file");
-    bool clear = (strcmp(e.args.get("clear"), "true") == 0);
+    const char *file = param::get(e.args, "file");
+    bool clear = (strcmp(param::get(e.args, "clear"), "true") == 0);
     if (wfront::load(e.meshBatch, e, file, clear))
     {
         strncpy(e.currentFile, file, sizeof(e.currentFile) - 1);
@@ -378,7 +378,7 @@ void do_load_obj(Editor &e, bool)
 
 void do_load_skybox(Editor &e, bool)
 {
-    const char *file = e.args.get("file");
+    const char *file = param::get(e.args, "file");
     GLuint tex = glutil::load_texture(file, GL_RGBA8, GL_RGBA);
     if (tex)
     {
@@ -479,7 +479,7 @@ void do_merge_coplanar(Editor &e, bool justPressed)
     {
         editor::push_undo(e);
     }
-    int angle = e.args.getInt("angle");
+    int angle = param::get_int(e.args, "angle");
     if (angle <= 0)
     {
         angle = 1;

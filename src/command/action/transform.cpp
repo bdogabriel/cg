@@ -36,6 +36,12 @@ const ParamSpec params_axis_step[] = {
     {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
 };
 
+const ParamSpec params_axis_degrees[] = {
+    {"axis", ParamType::STRING, axis_choices, "axis to act on", true, nullptr},
+    {"step", ParamType::FLOAT, nullptr, "signed angle in degrees (negative = reverse)", true, nullptr},
+    {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
+};
+
 const ParamSpec params_uniform_scale[] = {
     {"step", ParamType::INT, nullptr, "signed step size (negative = shrink)", true, nullptr},
     {nullptr, ParamType::STRING, nullptr, "", false, nullptr},
@@ -44,9 +50,11 @@ const ParamSpec params_uniform_scale[] = {
 namespace
 {
 
-bool transform_prepare(const Editor &e, const Args &a, AxisLock &axis, int &step, bool &isFace)
+constexpr float DEG_TO_RAD = mesh::PI / 180.0f;
+
+bool transform_prepare(const Editor &e, const Args &a, AxisLock &axis, float &step, bool &isFace)
 {
-    const char *ax = a.get("axis");
+    const char *ax = param::get(a, "axis");
     if (!ax)
     {
         return false;
@@ -61,17 +69,18 @@ bool transform_prepare(const Editor &e, const Args &a, AxisLock &axis, int &step
     {
         return false;
     }
-    step = a.getInt("step");
+    step = param::get_float(a, "step");
     return true;
 }
 
 using FaceDeltaFn = Mat4 (*)(AxisLock, float);
 using ObjectApplyFn = void (*)(Editor &, AxisLock, float);
 
-void run_transform(Editor &e, const Args &a, bool justPressed, FaceDeltaFn faceFn, ObjectApplyFn objFn)
+void run_transform(Editor &e, const Args &a, bool justPressed, float stepScale, FaceDeltaFn faceFn,
+                   ObjectApplyFn objFn)
 {
     AxisLock axis;
-    int step;
+    float step;
     bool isFace;
     if (!transform_prepare(e, a, axis, step, isFace))
     {
@@ -81,7 +90,7 @@ void run_transform(Editor &e, const Args &a, bool justPressed, FaceDeltaFn faceF
     {
         editor::push_undo(e);
     }
-    float amount = step * e.keySensitivity;
+    float amount = step * stepScale;
     if (isFace)
     {
         faceedit::transform(e.meshBatch, e.selectedRef, BUF(int, e.selectedFaces), e.selectedFaceCount,
@@ -178,7 +187,7 @@ void translate_object_apply(Editor &e, AxisLock axis, float amount)
 
 void do_translate(Editor &e, bool justPressed)
 {
-    run_transform(e, e.args, justPressed, translate_face_delta, translate_object_apply);
+    run_transform(e, e.args, justPressed, e.keySensitivity, translate_face_delta, translate_object_apply);
 }
 
 namespace
@@ -243,7 +252,12 @@ void rotate_object_apply(Editor &e, AxisLock axis, float amount)
 
 void do_rotate(Editor &e, bool justPressed)
 {
-    run_transform(e, e.args, justPressed, rotate_face_delta, rotate_object_apply);
+    run_transform(e, e.args, justPressed, e.keySensitivity, rotate_face_delta, rotate_object_apply);
+}
+
+void do_rotate_degrees(Editor &e, bool justPressed)
+{
+    run_transform(e, e.args, justPressed, DEG_TO_RAD, rotate_face_delta, rotate_object_apply);
 }
 
 namespace
@@ -289,12 +303,12 @@ void scale_object_apply(Editor &e, AxisLock axis, float amount)
 
 void do_scale(Editor &e, bool justPressed)
 {
-    run_transform(e, e.args, justPressed, scale_face_delta, scale_object_apply);
+    run_transform(e, e.args, justPressed, e.keySensitivity, scale_face_delta, scale_object_apply);
 }
 
 void do_uniform_scale(Editor &e, bool justPressed)
 {
-    int step = e.args.getInt("step");
+    int step = param::get_int(e.args, "step");
     if (step == 0)
     {
         return;
@@ -364,7 +378,7 @@ void shear_object_apply(Editor &e, AxisLock axis, float amount)
 
 void do_shear(Editor &e, bool justPressed)
 {
-    run_transform(e, e.args, justPressed, shear_face_delta, shear_object_apply);
+    run_transform(e, e.args, justPressed, e.keySensitivity, shear_face_delta, shear_object_apply);
 }
 
 } // namespace cmd

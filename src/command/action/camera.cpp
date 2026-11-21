@@ -53,12 +53,12 @@ void camera_rotate(Editor &e, AxisLock axis, float step)
 
 void do_camera(Editor &e, bool)
 {
-    AxisLock axis = axis_lock(e.args.get("axis"));
+    AxisLock axis = axis_lock(param::get(e.args, "axis"));
     if (axis == AxisLock::NONE)
     {
         return;
     }
-    float step = (float)e.args.getInt("step");
+    float step = (float)param::get_int(e.args, "step");
 
     if (e.locked)
     {

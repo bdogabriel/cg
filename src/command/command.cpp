@@ -69,6 +69,59 @@ namespace
 
 char tokenbuf[512];
 
+bool validate_param_value(const ParamSpec &p, const char *value)
+{
+    if (p.type == ParamType::INT)
+    {
+        char *end = nullptr;
+        long v = strtol(value, &end, 10);
+        if (end == value || (*end != '\0'))
+        {
+            printf("E: '%s' expects an integer\n", p.name);
+            return false;
+        }
+        (void)v;
+    }
+    else if (p.type == ParamType::FLOAT)
+    {
+        char *end = nullptr;
+        float v = strtof(value, &end);
+        if (end == value || (*end != '\0'))
+        {
+            printf("E: '%s' expects a number\n", p.name);
+            return false;
+        }
+        (void)v;
+    }
+    else if (p.type == ParamType::STRING && p.choices != nullptr)
+    {
+        bool found = false;
+        for (int i = 0; p.choices[i] != nullptr; i++)
+        {
+            if (strcmp(p.choices[i], value) == 0)
+            {
+                found = true;
+                break;
+            }
+        }
+        if (!found)
+        {
+            printf("E: bad value for '%s' (expected one of ", p.name);
+            for (int i = 0; p.choices[i] != nullptr; i++)
+            {
+                if (i > 0)
+                {
+                    printf("|");
+                }
+                printf("%s", p.choices[i]);
+            }
+            printf(")\n");
+            return false;
+        }
+    }
+    return true;
+}
+
 } // namespace
 
 // TODO: extract/split
@@ -122,16 +175,7 @@ bool parse_args(const char *argsStr, const ParamSpec *params, Args &out)
         return -1;
     };
 
-    auto already_set = [&](const char *name) -> bool {
-        for (int i = 0; i < out.count; i++)
-        {
-            if (strcmp(out.names[i], name) == 0)
-            {
-                return true;
-            }
-        }
-        return false;
-    };
+    auto already_set = [&](const char *name) -> bool { return param::get(out, name) != nullptr; };
 
     for (int t = 0; t < ntok; t++)
     {
@@ -156,46 +200,12 @@ bool parse_args(const char *argsStr, const ParamSpec *params, Args &out)
                 return false;
             }
 
-            if (p.type == ParamType::INT)
+            if (!validate_param_value(p, value))
             {
-                char *end = nullptr;
-                long v = strtol(value, &end, 10);
-                if (end == value || (*end != '\0'))
-                {
-                    printf("E: '%s' expects an integer\n", p.name);
-                    return false;
-                }
-                (void)v;
-            }
-            else if (p.type == ParamType::STRING && p.choices != nullptr)
-            {
-                bool found = false;
-                for (int i = 0; p.choices[i] != nullptr; i++)
-                {
-                    if (strcmp(p.choices[i], value) == 0)
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found)
-                {
-                    printf("E: bad value for '%s' (expected one of ", p.name);
-                    for (int i = 0; p.choices[i] != nullptr; i++)
-                    {
-                        if (i > 0)
-                        {
-                            printf("|");
-                        }
-                        printf("%s", p.choices[i]);
-                    }
-                    printf(")\n");
-                    return false;
-                }
+                return false;
             }
 
-            out.set(out.count, p.name, value);
-            out.count++;
+            param::add(out, p.name, value);
         }
         else
         {
@@ -216,46 +226,12 @@ bool parse_args(const char *argsStr, const ParamSpec *params, Args &out)
             const ParamSpec &p = params[idx];
             const char *value = tokens[t];
 
-            if (p.type == ParamType::INT)
+            if (!validate_param_value(p, value))
             {
-                char *end = nullptr;
-                long v = strtol(value, &end, 10);
-                if (end == value || (*end != '\0'))
-                {
-                    printf("E: '%s' expects an integer\n", p.name);
-                    return false;
-                }
-                (void)v;
-            }
-            else if (p.type == ParamType::STRING && p.choices != nullptr)
-            {
-                bool found = false;
-                for (int i = 0; p.choices[i] != nullptr; i++)
-                {
-                    if (strcmp(p.choices[i], value) == 0)
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found)
-                {
-                    printf("E: bad value for '%s' (expected one of ", p.name);
-                    for (int i = 0; p.choices[i] != nullptr; i++)
-                    {
-                        if (i > 0)
-                        {
-                            printf("|");
-                        }
-                        printf("%s", p.choices[i]);
-                    }
-                    printf(")\n");
-                    return false;
-                }
+                return false;
             }
 
-            out.set(out.count, p.name, value);
-            out.count++;
+            param::add(out, p.name, value);
         }
     }
 
@@ -270,8 +246,7 @@ bool parse_args(const char *argsStr, const ParamSpec *params, Args &out)
             printf("E: missing required parameter '%s'\n", params[i].name);
             return false;
         }
-        out.set(out.count, params[i].name, (params[i].defaultVal != nullptr) ? params[i].defaultVal : "");
-        out.count++;
+        param::add(out, params[i].name, (params[i].defaultVal != nullptr) ? params[i].defaultVal : "");
     }
 
     return true;
